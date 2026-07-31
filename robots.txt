@@ -1,0 +1,9 @@
+User-agent: *
+Allow: /
+
+Disallow: /dashboard.html
+Disallow: /murid-dashboard.html
+Disallow: /ortu-dashboard.html
+Disallow: /login.html
+
+Sitemap: https://lesprivat-kakharris.netlify.app/sitemap.xml
