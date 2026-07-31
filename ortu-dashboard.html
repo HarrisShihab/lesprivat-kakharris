@@ -1,0 +1,165 @@
+<!doctype html>
+<html lang="id">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="theme-color" content="#1d4ed8" />
+    <title>Portal Orang Tua - Les Privat Kak Harris</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css" />
+    <link rel="stylesheet" href="dashboard-design.css" />
+    <link rel="stylesheet" href="portal-dashboard.css" />
+  </head>
+  <body data-portal-role="orangtua" class="bg-slate-50 text-slate-600">
+    <div id="page-loader" class="page-loader"><i class="fa-solid fa-circle-notch fa-spin"></i><span>Memuat portal...</span></div>
+    <div id="portal-app" class="min-h-screen hidden">
+      <aside id="sidebar" class="portal-sidebar">
+        <div>
+          <div class="flex items-center justify-between border-b border-slate-100 pb-5 mb-5">
+            <div>
+              <p class="text-lg font-bold text-blue-600">⚡ Kak Harris</p>
+              <p class="text-[10px] uppercase tracking-widest text-slate-400 mt-1">Portal Orang Tua</p>
+            </div>
+            <button class="md:hidden text-slate-400" data-sidebar-close aria-label="Tutup menu"><i class="fa-solid fa-xmark"></i></button>
+          </div>
+          <nav class="space-y-2">
+            <button class="portal-nav active" data-view-target="beranda"><i class="fa-solid fa-wallet"></i><span>Beranda</span></button>
+            <button class="portal-nav" data-view-target="profil"><i class="fa-solid fa-user-group"></i><span>Profil Saya</span></button>
+            <button class="portal-nav" data-view-target="pengaturan"><i class="fa-solid fa-gear"></i><span>Pengaturan</span></button>
+          </nav>
+        </div>
+        <button class="portal-logout" data-logout><i class="fa-solid fa-arrow-right-from-bracket"></i><span>Keluar Akun</span></button>
+      </aside>
+
+      <main class="portal-main">
+        <div class="max-w-6xl mx-auto space-y-6">
+          <header class="flex items-center justify-between gap-4">
+            <div class="flex items-center gap-3">
+              <button class="portal-menu-button" data-sidebar-open aria-label="Buka menu"><i class="fa-solid fa-bars"></i></button>
+              <div>
+                <p class="text-xs text-slate-400">Les Privat Kak Harris</p>
+                <h1 id="page-title" class="text-lg font-bold text-slate-800">Beranda Administrasi</h1>
+              </div>
+            </div>
+            <div class="account-chip">
+              <span id="account-initial">O</span>
+              <div><strong id="header-name">-</strong><small>Orang Tua</small></div>
+            </div>
+          </header>
+
+          <section id="view-beranda" class="portal-view space-y-6">
+            <div class="welcome-card">
+              <div>
+                <p class="text-sm font-semibold text-blue-100">Selamat datang,</p>
+                <h2 id="welcome-name" class="text-2xl font-bold text-white mt-1">Bapak/Ibu Wali Murid</h2>
+                <p class="text-sm text-blue-100 mt-2">Kelola administrasi dan jadwal les anak dari satu halaman.</p>
+              </div>
+              <div class="welcome-icon"><i class="fa-solid fa-receipt"></i></div>
+            </div>
+
+            <section id="multi-child-panel" class="content-card hidden">
+              <div class="section-title">
+                <div><h3>Ringkasan Semua Anak</h3><p>Pilih anak untuk melihat administrasi, jadwal, dan catatan belajarnya.</p></div>
+                <label class="child-picker-label">Data yang dilihat
+                  <select id="child-picker" class="field-input"></select>
+                </label>
+              </div>
+              <div id="children-summary-list" class="children-summary-grid"></div>
+            </section>
+
+            <div class="grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
+              <article class="summary-card"><span class="summary-icon bg-blue-50 text-blue-600"><i class="fa-solid fa-child-reaching"></i></span><small>Nama Murid</small><strong id="summary-student">-</strong></article>
+              <article class="summary-card"><span class="summary-icon bg-emerald-50 text-emerald-600"><i class="fa-solid fa-circle-check"></i></span><small>Status Paket</small><strong id="summary-status">-</strong></article>
+              <article class="summary-card"><span class="summary-icon bg-amber-50 text-amber-600"><i class="fa-solid fa-layer-group"></i></span><small>Sisa Pertemuan</small><strong id="summary-sessions">-</strong></article>
+              <article class="summary-card"><span class="summary-icon bg-purple-50 text-purple-600"><i class="fa-solid fa-clock"></i></span><small>Jadwal Aktif</small><strong id="summary-schedule">-</strong></article>
+            </div>
+
+            <div class="grid lg:grid-cols-3 gap-6 items-start">
+              <section class="content-card lg:col-span-2">
+                <div class="section-title">
+                  <div><h3>Riwayat Pembayaran</h3><p>Catatan transaksi dan administrasi les.</p></div>
+                  <a href="https://wa.me/6282129553368" target="_blank" rel="noopener" class="small-action bg-emerald-600 text-white"><i class="fa-brands fa-whatsapp"></i> Kirim Bukti</a>
+                </div>
+                <div class="table-wrap">
+                  <table>
+                    <thead><tr><th>Tanggal</th><th>Nominal</th><th>Keterangan</th></tr></thead>
+                    <tbody id="finance-body"><tr><td colspan="3" class="empty-cell">Memuat data...</td></tr></tbody>
+                  </table>
+                </div>
+              </section>
+
+              <section class="content-card">
+                <div class="section-title"><div><h3>Ajukan Jadwal</h3><p>Durasi mengikuti paket aktif.</p></div></div>
+                <form id="schedule-form" class="space-y-4">
+                  <label class="field-label">Hari<select id="schedule-day" class="field-input" required><option value="">Pilih hari</option><option>Senin</option><option>Selasa</option><option>Rabu</option><option>Kamis</option><option>Jumat</option><option>Sabtu</option></select></label>
+                  <label class="field-label">Durasi<input id="schedule-duration" class="field-input bg-slate-100" readonly /></label>
+                  <label class="field-label">Jam tersedia<select id="schedule-time" class="field-input" required disabled><option value="">Pilih hari dahulu</option></select></label>
+                  <button id="schedule-submit" class="primary-action w-full" type="submit"><i class="fa-solid fa-paper-plane"></i> Kirim Pengajuan</button>
+                  <p id="schedule-feedback" class="form-feedback" aria-live="polite"></p>
+                </form>
+              </section>
+            </div>
+
+            <section class="content-card">
+              <div class="section-title"><div><h3>Catatan Belajar &amp; Perkembangan</h3><p>Riwayat sesi dan catatan pengajar untuk anak.</p></div></div>
+              <div class="table-wrap">
+                <table>
+                  <thead><tr><th>Tanggal</th><th>Status</th><th>Materi</th><th>Catatan Pengajar</th></tr></thead>
+                  <tbody id="attendance-body"><tr><td colspan="4" class="empty-cell">Memuat data...</td></tr></tbody>
+                </table>
+              </div>
+            </section>
+          </section>
+
+          <section id="view-profil" class="portal-view hidden space-y-6">
+            <div class="content-card">
+              <div class="section-title"><div><h3>Profil Orang Tua</h3><p>Identitas akun dan anak yang terhubung.</p></div></div>
+              <div class="profile-grid">
+                <div class="profile-item"><small>Nama Orang Tua</small><strong id="profile-parent-name">-</strong></div>
+                <div class="profile-item"><small>Username</small><strong id="profile-username">-</strong></div>
+                <div class="profile-item"><small>Email Kontak</small><strong id="profile-email">-</strong></div>
+                <div class="profile-item"><small>Nomor WhatsApp</small><strong id="profile-phone">-</strong></div>
+              </div>
+            </div>
+            <div class="content-card">
+              <div class="section-title"><div><h3>Data Anak Terhubung</h3><p>Data akademik hanya dapat diubah oleh admin.</p></div></div>
+              <div id="profile-students-list" class="space-y-4"></div>
+            </div>
+          </section>
+
+          <section id="view-pengaturan" class="portal-view hidden space-y-6">
+            <div class="grid lg:grid-cols-2 gap-6 items-start">
+              <form id="account-form" class="content-card space-y-4">
+                <div class="section-title"><div><h3>Informasi Akun</h3><p>Nama dan kontak tersimpan di profil akun.</p></div></div>
+                <label class="field-label">Nama akun<input id="setting-name" class="field-input" maxlength="120" required /></label>
+                <label class="field-label">Username<input id="setting-username" class="field-input bg-slate-100" readonly /><span class="field-hint">Username login belum dapat diubah.</span></label>
+                <label class="field-label">Email kontak<input id="setting-email" class="field-input" type="email" maxlength="160" placeholder="nama@email.com" /></label>
+                <label class="field-label">Nomor WhatsApp<input id="setting-phone" class="field-input" inputmode="numeric" maxlength="18" placeholder="628..." /></label>
+                <button class="primary-action" type="submit"><i class="fa-solid fa-floppy-disk"></i> Simpan Perubahan</button>
+                <p id="account-feedback" class="form-feedback" aria-live="polite"></p>
+              </form>
+
+              <form id="password-form" class="content-card space-y-4">
+                <div class="section-title"><div><h3>Ganti Password</h3><p>Password diperbarui langsung di Firebase Authentication.</p></div></div>
+                <label class="field-label">Password saat ini<input id="current-password" class="field-input" type="password" autocomplete="current-password" required /></label>
+                <label class="field-label">Password baru<input id="new-password" class="field-input" type="password" autocomplete="new-password" minlength="10" required /><span class="field-hint">Minimal 10 karakter.</span></label>
+                <label class="field-label">Ulangi password baru<input id="confirm-password" class="field-input" type="password" autocomplete="new-password" minlength="10" required /></label>
+                <button class="primary-action" type="submit"><i class="fa-solid fa-key"></i> Ubah Password</button>
+                <p id="password-feedback" class="form-feedback" aria-live="polite"></p>
+              </form>
+            </div>
+          </section>
+        </div>
+      </main>
+      <div id="sidebar-overlay" class="sidebar-overlay" data-sidebar-close></div>
+    </div>
+
+    <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore-compat.js"></script>
+    <script src="firebase-config.js"></script>
+    <script src="firebase-api.js"></script>
+    <script src="portal-dashboard.js"></script>
+  </body>
+</html>

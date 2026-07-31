@@ -1,0 +1,2085 @@
+<!doctype html>
+<html lang="id">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Dashboard Admin - Les Privat</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css" />
+    <link rel="stylesheet" href="style.css" />
+    <link rel="stylesheet" href="dashboard-design.css" />
+    <style>
+      body {
+        font-family: "Poppins", sans-serif;
+      }
+    </style>
+  </head>
+  <body class="dashboard-admin bg-slate-50 text-slate-700">
+    <div class="flex flex-col lg:flex-row min-h-screen">
+      <aside class="w-full lg:w-64 bg-white border-b lg:border-r border-slate-200 p-6 flex flex-col gap-6">
+        <div class="flex justify-between items-center">
+          <div class="text-xl font-bold text-blue-800">⚡ Admin Les</div>
+        </div>
+        <nav class="flex flex-col gap-2">
+          <button id="btn-absensi" class="menu-btn flex items-center gap-3 px-4 py-3 bg-blue-50 text-blue-600 rounded-xl font-semibold w-full text-left">
+            <i class="fa-solid fa-calendar-check text-lg"></i> Input Absensi
+          </button>
+          <button id="btn-catatan" class="menu-btn flex items-center gap-3 px-4 py-3 text-slate-600 hover:bg-slate-50 rounded-xl transition w-full text-left">
+            <i class="fa-solid fa-book-open text-lg"></i> Catatan Belajar
+          </button>
+          <button id="btn-keuangan" class="menu-btn flex items-center gap-3 px-4 py-3 text-slate-600 hover:bg-slate-50 rounded-xl transition w-full text-left">
+            <i class="fa-solid fa-credit-card text-lg"></i> Kas & Invoice
+          </button>
+          <button id="btn-pendaftaran" class="menu-btn flex items-center gap-3 px-4 py-3 text-slate-600 hover:bg-slate-50 rounded-xl transition w-full text-left">
+            <i class="fa-solid fa-user-plus text-lg"></i> Pendaftaran Murid
+          </button>
+          <button id="btn-materi" class="menu-btn flex items-center gap-3 px-4 py-3 text-slate-600 hover:bg-slate-50 rounded-xl transition w-full text-left">
+            <i class="fa-solid fa-book-bookmark text-lg"></i> Materi Belajar
+          </button>
+          <!-- MENU TAB BARU -->
+          <button id="btn-pengajuan" class="menu-btn flex items-center gap-3 px-4 py-3 text-slate-600 hover:bg-slate-50 rounded-xl transition w-full text-left">
+            <i class="fa-solid fa-clock-rotate-left text-lg"></i> Pengajuan Jadwal
+          </button>
+          <button id="btn-manajemen" class="menu-btn flex items-center gap-3 px-4 py-3 text-slate-600 hover:bg-slate-50 rounded-xl transition w-full text-left">
+            <i class="fa-solid fa-users-gear text-lg"></i> Murid &amp; Akun
+          </button>
+          <button type="button" onclick="keluarAdmin()" class="flex items-center gap-3 px-4 py-3 text-red-600 hover:bg-red-50 rounded-xl mt-8 transition text-left"> <i class="fa-solid fa-right-from-bracket text-lg"></i> Keluar </button>
+        </nav>
+      </aside>
+
+      <main class="flex-1 p-6 lg:p-10">
+        <header class="mb-8 flex items-start justify-between">
+          <div>
+            <h1 class="text-2xl lg:text-3xl font-bold text-slate-800">Halo, Kak Harris! 👋</h1>
+            <p class="text-slate-500 mt-1">Yuk catat agenda dan perkembangan belajar anak-anak hari ini.</p>
+          </div>
+          <!-- 🔔 NOTIFIKASI BELL -->
+          <div class="relative notif-btn flex-shrink-0 mt-1">
+            <button
+              onclick="toggleNotifikasi()"
+              class="w-10 h-10 rounded-xl bg-white border border-slate-200 text-slate-500 hover:text-blue-600 hover:border-blue-200 hover:bg-blue-50 flex items-center justify-center transition shadow-sm relative"
+            >
+              <i class="fa-solid fa-bell text-lg"></i>
+              <span id="notif-badge" class="notif-badge hidden">0</span>
+            </button>
+            <!-- DROPDOWN PANEL -->
+            <div id="notif-panel" class="notif-panel">
+              <div class="notif-panel-header">
+                <span><i class="fa-solid fa-bell text-blue-500 mr-2"></i>Notifikasi</span>
+                <button onclick="muatNotifikasi()" class="text-blue-500 hover:text-blue-700 text-xs font-semibold transition" title="Refresh">
+                  <i class="fa-solid fa-rotate"></i>
+                </button>
+              </div>
+              <div id="notif-list" class="divide-y divide-slate-50">
+                <div class="notif-empty"><i class="fa-solid fa-spinner fa-spin mr-2"></i>Memuat...</div>
+              </div>
+            </div>
+          </div>
+        </header>
+
+        <div class="grid grid-cols-1 gap-8">
+          <section id="content-absensi" class="tab-content bg-white p-6 lg:p-8 rounded-2xl shadow-sm border border-slate-100">
+            <h2 class="text-lg font-bold text-blue-800 mb-6 flex items-center gap-2"><i class="fa-solid fa-pen-to-square"></i> Form Input Sesi Belajar</h2>
+            <form id="form-admin" class="space-y-6">
+              <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                  <label class="block text-sm font-semibold mb-2 text-slate-600">Nama Murid</label>
+                  <select
+                    id="input-murid"
+                    class="w-full px-4 py-3 rounded-xl border border-slate-200 bg-slate-50 focus:bg-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition"
+                    required
+                  >
+                    <option value="">-- Memuat Nama Murid... --</option>
+                  </select>
+                </div>
+                <div>
+                  <label class="block text-sm font-semibold mb-2 text-slate-600">Tanggal Pertemuan</label>
+                  <input
+                    type="date"
+                    id="input-tanggal"
+                    class="w-full px-4 py-3 rounded-xl border border-slate-200 bg-slate-50 focus:bg-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition"
+                    required
+                  />
+                </div>
+              </div>
+              <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                  <label class="block text-sm font-semibold mb-2 text-slate-600">Status Kehadiran</label>
+                  <div class="grid grid-cols-3 gap-3">
+                    <div>
+                      <input type="radio" name="status" id="status-hadir" value="Hadir" class="sr-only peer" checked />
+                      <label
+                        for="status-hadir"
+                        class="flex items-center justify-center py-3 border border-slate-200 rounded-xl cursor-pointer bg-slate-50 hover:bg-white peer-checked:bg-blue-50 peer-checked:border-blue-500 peer-checked:text-blue-600 transition text-sm font-medium"
+                        >Hadir</label
+                      >
+                    </div>
+                    <div>
+                      <input type="radio" name="status" id="status-izin" value="Izin" class="sr-only peer" />
+                      <label
+                        for="status-izin"
+                        class="flex items-center justify-center py-3 border border-slate-200 rounded-xl cursor-pointer bg-slate-50 hover:bg-white peer-checked:bg-blue-50 peer-checked:border-blue-500 peer-checked:text-blue-600 transition text-sm font-medium"
+                        >Izin</label
+                      >
+                    </div>
+                    <div>
+                      <input type="radio" name="status" id="status-sakit" value="Sakit" class="sr-only peer" />
+                      <label
+                        for="status-sakit"
+                        class="flex items-center justify-center py-3 border border-slate-200 rounded-xl cursor-pointer bg-slate-50 hover:bg-white peer-checked:bg-blue-50 peer-checked:border-blue-500 peer-checked:text-blue-600 transition text-sm font-medium"
+                        >Sakit</label
+                      >
+                    </div>
+                  </div>
+                </div>
+                <div>
+                  <label class="block text-sm font-semibold mb-2 text-slate-600">Materi Pembelajaran</label>
+                  <input
+                    type="text"
+                    id="input-materi"
+                    placeholder="Contoh: Operasi Pecahan (SD)"
+                    class="w-full px-4 py-3 rounded-xl border border-slate-200 bg-slate-50 focus:bg-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition"
+                    required
+                  />
+                </div>
+              </div>
+              <div>
+                <label class="block text-sm font-semibold mb-2 text-slate-600">Catatan Perkembangan Anak</label>
+                <textarea
+                  id="input-catatan"
+                  rows="4"
+                  placeholder="Tulis catatan evaluasi hari ini..."
+                  class="w-full px-4 py-3 rounded-xl border border-slate-200 bg-slate-50 focus:bg-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition"
+                  required
+                ></textarea>
+              </div>
+              <div class="flex justify-end">
+                <button
+                  type="submit"
+                  class="w-full md:w-auto px-8 py-3.5 bg-blue-600 text-white font-semibold rounded-xl shadow-md hover:bg-blue-700 transition flex items-center justify-center gap-2"
+                >
+                  <i class="fa-solid fa-cloud-arrow-up"></i> Simpan Data
+                </button>
+              </div>
+            </form>
+          </section>
+
+          <section id="content-catatan" class="tab-content hidden bg-white p-6 lg:p-8 rounded-2xl shadow-sm border border-slate-100">
+            <h2 class="text-lg font-bold text-blue-800 mb-6 flex items-center gap-2"><i class="fa-solid fa-book-open"></i> Riwayat Catatan Belajar Murid</h2>
+            <div class="overflow-x-auto border border-slate-200 rounded-xl">
+              <table class="w-full text-left border-collapse min-w-[700px]">
+                <thead>
+                  <tr class="bg-slate-50 text-slate-700 text-sm font-semibold border-b border-slate-200">
+                    <th class="p-4">Tanggal</th>
+                    <th class="p-4">Nama Murid</th>
+                    <th class="p-4">Kelas</th>
+                    <th class="p-4">Status</th>
+                    <th class="p-4">Materi</th>
+                    <th class="p-4">Catatan Evaluasi</th>
+                    <th class="p-4 text-center">Aksi</th>
+                    <!-- tambahan -->
+                  </tr>
+                </thead>
+                <tbody id="tabel-riwayat" class="text-sm divide-y divide-slate-100 text-slate-600"></tbody>
+              </table>
+            </div>
+          </section>
+
+          <section id="content-keuangan" class="tab-content hidden bg-white p-6 lg:p-8 rounded-2xl shadow-sm border border-slate-100">
+            <h2 class="text-lg font-bold text-blue-800 mb-6 flex items-center gap-2"><i class="fa-solid fa-credit-card"></i> Pencatatan Kas & Invoice Keuangan</h2>
+            <form id="form-keuangan" class="space-y-6">
+              <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                  <label class="block text-sm font-semibold mb-2 text-slate-600">Nama Murid</label>
+                  <select
+                    id="keuangan-murid"
+                    class="w-full px-4 py-3 rounded-xl border border-slate-200 bg-slate-50 focus:bg-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition"
+                    required
+                  ></select>
+                </div>
+                <div>
+                  <label class="block text-sm font-semibold mb-2 text-slate-600">Tanggal Pembayaran</label>
+                  <input
+                    type="date"
+                    id="keuangan-tanggal"
+                    class="w-full px-4 py-3 rounded-xl border border-slate-200 bg-slate-50 focus:bg-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition"
+                    required
+                  />
+                </div>
+              </div>
+              <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                  <label class="block text-sm font-semibold mb-2 text-slate-600">Jumlah Pembayaran (Rp)</label>
+                  <input
+                    type="number"
+                    id="keuangan-nominal"
+                    placeholder="Contoh: 500000"
+                    class="w-full px-4 py-3 rounded-xl border border-slate-200 bg-slate-50 focus:bg-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition"
+                    required
+                  />
+                </div>
+                <div>
+                  <label class="block text-sm font-semibold mb-2 text-slate-600">Keterangan / Bulan SPP</label>
+                  <input
+                    type="text"
+                    id="keuangan-keterangan"
+                    placeholder="Contoh: SPP Bulan Juni"
+                    class="w-full px-4 py-3 rounded-xl border border-slate-200 bg-slate-50 focus:bg-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition"
+                    required
+                  />
+                </div>
+              </div>
+              <div class="flex justify-end">
+                <button
+                  type="submit"
+                  class="w-full md:w-auto px-8 py-3.5 bg-blue-600 text-white font-semibold rounded-xl shadow-md hover:bg-blue-700 transition flex items-center justify-center gap-2"
+                >
+                  <i class="fa-solid fa-cloud-arrow-up"></i> Simpan Transaksi Keuangan
+                </button>
+              </div>
+            </form>
+            <div class="mt-10 border-t border-slate-100 pt-8">
+              <h3 class="text-md font-bold text-slate-700 mb-4 flex items-center gap-2"><i class="fa-solid fa-clock-history"></i> Riwayat Transaksi Masuk</h3>
+              <div class="overflow-x-auto border border-slate-200 rounded-xl">
+                <table class="w-full text-left border-collapse min-w-[600px]">
+                  <thead>
+                    <tr class="bg-slate-50 text-slate-700 text-sm font-semibold border-b border-slate-200">
+                      <th class="p-4">Tanggal</th>
+                      <th class="p-4">Nama Murid</th>
+                      <th class="p-4">Kelas</th>
+                      <th class="p-4">Nominal</th>
+                      <th class="p-4">Keterangan</th>
+                      <th class="p-4 text-center">Aksi</th>
+                    </tr>
+                  </thead>
+                  <tbody id="tabel-keuangan" class="text-sm divide-y divide-slate-100 text-slate-600"></tbody>
+                </table>
+              </div>
+            </div>
+          </section>
+
+          <section id="content-pendaftaran" class="tab-content hidden space-y-8">
+            <div class="bg-white p-6 lg:p-8 rounded-2xl shadow-sm border border-slate-100">
+              <h2 class="text-lg font-bold text-blue-800 mb-6 flex items-center gap-2"><i class="fa-solid fa-user-plus"></i> Form Pendaftaran Siswa Baru</h2>
+              <form id="formDaftarMurid" onsubmit="daftarMurid(event)" class="space-y-6">
+                <!-- Baris 1: Nama Murid & Nama Orang Tua -->
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div>
+                    <label class="block text-sm font-semibold mb-2 text-slate-600">Nama Murid</label>
+                    <input
+                      type="text"
+                      id="pendaftarNama"
+                      placeholder="Nama Lengkap Murid"
+                      class="w-full px-4 py-3 rounded-xl border border-slate-200 bg-slate-50 focus:bg-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition"
+                      required
+                    />
+                  </div>
+                  <div>
+                    <label class="block text-sm font-semibold mb-2 text-slate-600">Nama Orang Tua</label>
+                    <input
+                      type="text"
+                      id="pendaftarOrtu"
+                      placeholder="Nama Ibu / Ayah"
+                      class="w-full px-4 py-3 rounded-xl border border-slate-200 bg-slate-50 focus:bg-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition"
+                      required
+                    />
+                  </div>
+                </div>
+
+                <!-- Baris 2: WhatsApp & Paket Belajar (Dropdown) -->
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div>
+                    <label class="block text-sm font-semibold mb-2 text-slate-600">No. WhatsApp Ortu</label>
+                    <input
+                      type="text"
+                      id="pendaftarWa"
+                      placeholder="Contoh: 62812345678"
+                      class="w-full px-4 py-3 rounded-xl border border-slate-200 bg-slate-50 focus:bg-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition"
+                      required
+                    />
+                  </div>
+                  <div>
+                    <label class="block text-sm font-semibold mb-2 text-slate-600">Paket Belajar</label>
+                    <select
+                      id="pendaftarPaket"
+                      class="w-full px-4 py-3 rounded-xl border border-slate-200 bg-slate-50 focus:bg-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition"
+                      required
+                    >
+                      <option value="">-- Pilih Paket Belajar --</option>
+                      <option value="reguler_1_pertemuan">Reguler 1 Pertemuan</option>
+                      <option value="reguler_2_pertemuan">Reguler 2 Pertemuan</option>
+                      <option value="reguler_4_pertemuan">Reguler 4 Pertemuan</option>
+                      <option value="reguler_8_pertemuan">Reguler 8 Pertemuan</option>
+                      <option value="reguler_12_pertemuan">Reguler 12 Pertemuan</option>
+                    </select>
+                  </div>
+                </div>
+
+                <!-- Baris 3: Jenjang (Dropdown) & Kelas (Dropdown) -->
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div>
+                    <label class="block text-sm font-semibold mb-2 text-slate-600">Jenjang</label>
+                    <select
+                      id="pendaftarJenjang"
+                      class="w-full px-4 py-3 rounded-xl border border-slate-200 bg-slate-50 focus:bg-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition"
+                      required
+                    >
+                      <option value="">-- Pilih Jenjang --</option>
+                      <option value="SD">SD</option>
+                      <option value="SMP">SMP</option>
+                      <option value="SMA">SMA</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label class="block text-sm font-semibold mb-2 text-slate-600">Kelas</label>
+                    <select
+                      id="pendaftarKelas"
+                      class="w-full px-4 py-3 rounded-xl border border-slate-200 bg-slate-50 focus:bg-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition"
+                      required
+                    >
+                      <option value="">-- Pilih Kelas --</option>
+                      <option value="1">Kelas 1 (SD)</option>
+                      <option value="2">Kelas 2 (SD)</option>
+                      <option value="3">Kelas 3 (SD)</option>
+                      <option value="4">Kelas 4 (SD)</option>
+                      <option value="5">Kelas 5 (SD)</option>
+                      <option value="6">Kelas 6 (SD)</option>
+                      <option value="7">Kelas 7 (SMP)</option>
+                      <option value="8">Kelas 8 (SMP)</option>
+                      <option value="9">Kelas 9 (SMP)</option>
+                      <option value="10">Kelas 10 (SMA)</option>
+                      <option value="11">Kelas 11 (SMA)</option>
+                      <option value="12">Kelas 12 (SMA)</option>
+                    </select>
+                  </div>
+                </div>
+
+                <!-- Baris 4: Durasi -->
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div>
+                    <label class="block text-sm font-semibold mb-2 text-slate-600">Durasi Per Pertemuan</label>
+                    <select
+                      id="pendaftarDurasi"
+                      class="w-full px-4 py-3 rounded-xl border border-slate-200 bg-slate-50 focus:bg-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition"
+                      required
+                    >
+                      <option value="60">60 Menit</option>
+                      <option value="90">90 Menit</option>
+                    </select>
+                  </div>
+                  <div></div>
+                </div>
+
+                <div class="flex justify-end">
+                  <button
+                    type="submit"
+                    class="w-full md:w-auto px-8 py-3.5 bg-blue-600 text-white font-semibold rounded-xl shadow-md hover:bg-blue-700 transition flex items-center justify-center gap-2"
+                  >
+                    <i class="fa-solid fa-user-plus"></i> Daftarkan Murid Baru
+                  </button>
+                </div>
+              </form>
+            </div>
+          </section>
+          <!-- TAB SECTION PENGAJUAN JADWAL -->
+          <section id="content-pengajuan" class="tab-content hidden bg-white p-6 lg:p-8 rounded-2xl shadow-sm border border-slate-100 space-y-6">
+            <div class="flex justify-between items-center border-b border-slate-100 pb-4">
+              <h2 class="text-lg font-bold text-blue-800 flex items-center gap-2"><i class="fa-solid fa-calendar-check"></i> Persetujuan Pengajuan Jadwal Wali Murid</h2>
+              <div class="flex gap-2">
+                <button onclick="muatPengajuanJadwal()" class="px-4 py-2 bg-slate-100 text-slate-600 hover:bg-slate-200 rounded-xl text-xs font-semibold transition flex items-center gap-2">
+                  <i class="fa-solid fa-rotate"></i> Refresh Data
+                </button>
+                <button
+                  onclick="hapusSemuaPengajuan()"
+                  class="px-4 py-2 bg-rose-600 hover:bg-rose-700 text-white rounded-xl text-xs font-semibold flex items-center justify-center gap-2 transition shadow-sm"
+                >
+                  <i class="fa-solid fa-trash-can"></i> Hapus Pengajuan
+                </button>
+                <button
+                  onclick="resetSemuaJadwal()"
+                  class="px-4 py-2 bg-orange-600 hover:bg-orange-700 text-white rounded-xl text-xs font-semibold flex items-center justify-center gap-2 transition shadow-sm"
+                >
+                  <i class="fa-solid fa-arrows-rotate"></i> Reset Total Jadwal
+                </button>
+              </div>
+            </div>
+
+            <div class="overflow-x-auto border border-slate-200 rounded-xl">
+              <table class="w-full text-left border-collapse min-w-[700px]">
+                <thead>
+                  <tr class="bg-slate-50 text-slate-700 text-sm font-semibold border-b border-slate-200">
+                    <th class="p-4">ID Req</th>
+                    <th class="p-4">Nama Murid</th>
+                    <th class="p-4">Rekomendasi Jadwal</th>
+                    <th class="p-4">Tgl Pengajuan</th>
+                    <th class="p-4">Status</th>
+                    <th class="p-4 text-center">Aksi Operasional</th>
+                  </tr>
+                </thead>
+                <tbody id="tabel-pengajuan-jadwal" class="text-sm divide-y divide-slate-100 text-slate-600">
+                  <tr>
+                    <td colspan="6" class="p-4 text-center text-slate-400"><i class="fa-solid fa-spinner fa-spin"></i> Memuat data pengajuan...</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </section>
+          <section id="content-manajemen" class="tab-content hidden bg-white p-6 lg:p-8 rounded-2xl shadow-sm border border-slate-100">
+            <h2 class="text-lg font-bold text-blue-800 mb-6 flex items-center gap-2"><i class="fa-solid fa-users-gear"></i> Manajemen Murid &amp; Akun</h2>
+
+            <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
+              <h3 class="text-xl font-bold text-slate-800 flex items-center gap-2"><i class="fa-solid fa-users text-blue-600"></i> Data Akun Murid</h3>
+              <button
+                id="btn-tambah-murid"
+                onclick="document.getElementById('btn-pendaftaran').click()"
+                class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition flex items-center gap-2"
+              >
+                <i class="fa-solid fa-plus"></i> Tambah Murid Baru
+              </button>
+            </div>
+            <!-- Tabel Data Murid -->
+            <div class="overflow-x-auto bg-white rounded-xl border border-slate-200">
+              <table class="w-full text-left border-collapse">
+                <thead>
+                  <tr class="bg-slate-50 border-b border-slate-200 text-slate-600 text-sm">
+                    <th class="p-4 font-semibold whitespace-nowrap">ID Murid</th>
+                    <th class="p-4 font-semibold whitespace-nowrap">Akun Login</th>
+                    <th class="p-4 font-semibold whitespace-nowrap">Status Akun</th>
+                    <th class="p-4 font-semibold whitespace-nowrap">Nama Lengkap</th>
+                    <th class="p-4 font-semibold whitespace-nowrap">No WhatsApp</th>
+                    <th class="p-4 font-semibold text-center whitespace-nowrap">Total Sesi</th>
+                    <th class="p-4 font-semibold text-center whitespace-nowrap">Aksi</th>
+                  </tr>
+                </thead>
+                <tbody id="tabel-akun-murid" class="text-sm text-slate-700 divide-y divide-slate-100">
+                  <!-- Diisi dinamis oleh JavaScript -->
+                </tbody>
+              </table>
+            </div>
+            <div class="my-8"></div>
+            <div class="bg-white p-6 lg:p-8 rounded-2xl shadow-sm border border-slate-100">
+              <h3 class="text-md font-bold text-slate-700 mb-4 flex items-center gap-2"><i class="fa-solid fa-users-gear"></i> Manajemen Status & Aktivasi Murid</h3>
+              <div class="overflow-x-auto border border-slate-200 rounded-xl">
+                <table class="w-full text-left border-collapse min-w-[700px]">
+                  <thead>
+                    <tr class="bg-slate-50 text-slate-700 text-sm font-semibold border-b border-slate-200">
+                      <th class="p-4">ID</th>
+                      <th class="p-4">Nama Murid</th>
+                      <th class="p-4">Kelas</th>
+                      <th class="p-4">Jadwal</th>
+                      <th class="p-4">Status</th>
+                      <th class="p-4">Bukti Bayar</th>
+                      <th class="p-4 text-center">Aksi Operasional</th>
+                    </tr>
+                  </thead>
+                  <tbody id="tabelMuridBody" class="text-sm divide-y divide-slate-100 text-slate-600"></tbody>
+                </table>
+              </div>
+            </div>
+          </section>
+          <!-- TAB SECTION MATERI PEMBELAJARAN -->
+          <section id="content-materi" class="tab-content hidden space-y-8">
+            <div class="bg-white p-6 lg:p-8 rounded-2xl shadow-sm border border-slate-100">
+              <h2 class="text-lg font-bold text-blue-800 mb-6 flex items-center gap-2"><i class="fa-solid fa-book-open"></i> Upload Materi & Tugas Ruang Belajar</h2>
+              <form id="form-materi" onsubmit="simpanMateriBelajar(event)" class="space-y-6">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div>
+                    <label class="block text-sm font-semibold mb-2 text-slate-600">Pilih Murid Penerima</label>
+                    <select
+                      id="materi-murid"
+                      class="w-full px-4 py-3 rounded-xl border border-slate-200 bg-slate-50 focus:bg-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition"
+                      required
+                    >
+                      <option value="">-- Pilih Murid --</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label class="block text-sm font-semibold mb-2 text-slate-600">Tanggal Penugasan</label>
+                    <input
+                      type="date"
+                      id="materi-tanggal"
+                      class="w-full px-4 py-3 rounded-xl border border-slate-200 bg-slate-50 focus:bg-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition"
+                      required
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <label class="block text-sm font-semibold mb-2 text-slate-600">Judul Materi Pembahasan</label>
+                  <input
+                    type="text"
+                    id="materi-judul"
+                    placeholder="Contoh: Aljabar Dasar & Variabel Sederhana"
+                    class="w-full px-4 py-3 rounded-xl border border-slate-200 bg-slate-50 focus:bg-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition"
+                    required
+                  />
+                </div>
+
+                <div>
+                  <label class="block text-sm font-semibold mb-2 text-slate-600">Rincian Deskripsi Pembahasan / Tugas</label>
+                  <textarea
+                    id="materi-deskripsi"
+                    rows="3"
+                    placeholder="Tuliskan petunjuk pengerjaan atau ringkasan materi..."
+                    class="w-full px-4 py-3 rounded-xl border border-slate-200 bg-slate-50 focus:bg-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition"
+                    required
+                  ></textarea>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div>
+                    <label class="block text-sm font-semibold mb-2 text-slate-600">Link Video Pembelajaran (YouTube)</label>
+                    <input
+                      type="url"
+                      id="materi-video"
+                      placeholder="https://youtube.com/..."
+                      class="w-full px-4 py-3 rounded-xl border border-slate-200 bg-slate-50 focus:bg-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition"
+                    />
+                  </div>
+                  <div>
+                    <label class="block text-sm font-semibold mb-2 text-slate-600">Link Latihan Soal Mandiri (Quizizz)</label>
+                    <input
+                      type="url"
+                      id="materi-quizizz"
+                      placeholder="https://quizizz.com/..."
+                      class="w-full px-4 py-3 rounded-xl border border-slate-200 bg-slate-50 focus:bg-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition"
+                    />
+                  </div>
+                </div>
+
+                <div class="flex justify-end">
+                  <button
+                    type="submit"
+                    id="btn-submit-materi"
+                    class="w-full md:w-auto px-8 py-3.5 bg-blue-600 text-white font-semibold rounded-xl shadow-md hover:bg-blue-700 transition flex items-center justify-center gap-2"
+                  >
+                    <i class="fa-solid fa-paper-plane"></i> Publish Materi Ke Wali Murid
+                  </button>
+                </div>
+              </form>
+            </div>
+
+            <!-- RIWAYAT PENUGASAN -->
+            <div class="bg-white p-6 lg:p-8 rounded-2xl shadow-sm border border-slate-100">
+              <h3 class="text-md font-bold text-slate-700 mb-4 flex items-center gap-2"><i class="fa-solid fa-clock-history"></i> Log Riwayat Distribusi Materi</h3>
+              <div class="overflow-x-auto border border-slate-200 rounded-xl">
+                <table class="w-full text-left border-collapse min-w-[800px]">
+                  <thead>
+                    <tr class="bg-slate-50 text-slate-700 text-sm font-semibold border-b border-slate-200">
+                      <th class="p-4">Tanggal</th>
+                      <th class="p-4">Nama Murid</th>
+                      <th class="p-4">Judul Materi</th>
+                      <th class="p-4">Video YT</th>
+                      <th class="p-4">Quizizz</th>
+                    </tr>
+                  </thead>
+                  <tbody id="tabel-materi-body" class="text-sm divide-y divide-slate-100 text-slate-600">
+                    <!-- Diisi otomatis via JS -->
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </section>
+        </div>
+      </main>
+    </div>
+    <!-- MODAL POP-UP EDIT MURID -->
+    <div id="modal-edit-murid" class="hidden fixed inset-0 bg-slate-900/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+      <div class="bg-white rounded-2xl shadow-xl border border-slate-100 w-full max-w-lg overflow-hidden animate-in fade-in zoom-in-95 duration-200">
+        <!-- Header -->
+        <div class="bg-slate-50 px-6 py-4 border-b border-slate-200 flex justify-between items-center">
+          <h3 class="font-bold text-slate-800 flex items-center gap-2"><i class="fa-solid fa-user-pen text-blue-600"></i> Edit Data Akun Murid</h3>
+          <button onclick="tutupModalEdit()" class="text-slate-400 hover:text-slate-600 transition text-lg">
+            <i class="fa-solid fa-xmark"></i>
+          </button>
+        </div>
+        <!-- Form -->
+        <form id="form-edit-murid" onsubmit="simpanEditMurid(event)" class="p-6 space-y-4">
+          <input type="hidden" id="edit-id" />
+
+          <div>
+            <label class="block text-xs font-semibold uppercase tracking-wider text-slate-500 mb-1">ID Murid</label>
+            <input type="text" id="edit-id-tampilan" class="w-full px-4 py-2.5 rounded-xl border border-slate-200 bg-slate-100 font-semibold text-slate-500 outline-none cursor-not-allowed" readonly />
+          </div>
+
+          <div>
+            <label class="block text-xs font-semibold uppercase tracking-wider text-slate-500 mb-1">Nama Lengkap Murid</label>
+            <input
+              type="text"
+              id="edit-nama"
+              class="w-full px-4 py-2.5 rounded-xl border border-slate-200 bg-slate-50 focus:bg-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition"
+              required
+            />
+          </div>
+
+          <div class="grid grid-cols-2 gap-4">
+            <div>
+              <label class="block text-xs font-semibold uppercase tracking-wider text-slate-500 mb-1">Nama Orang Tua</label>
+              <input
+                type="text"
+                id="edit-ortu"
+                class="w-full px-4 py-2.5 rounded-xl border border-slate-200 bg-slate-50 focus:bg-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition"
+                required
+              />
+            </div>
+            <div>
+              <label class="block text-xs font-semibold uppercase tracking-wider text-slate-500 mb-1">No. WhatsApp</label>
+              <input
+                type="text"
+                id="edit-wa"
+                class="w-full px-4 py-2.5 rounded-xl border border-slate-200 bg-slate-50 focus:bg-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition"
+                required
+              />
+            </div>
+          </div>
+
+          <div>
+            <label class="block text-xs font-semibold uppercase tracking-wider text-slate-500 mb-1">Paket Belajar</label>
+            <select
+              id="edit-paket"
+              class="w-full px-4 py-2.5 rounded-xl border border-slate-200 bg-slate-50 focus:bg-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition"
+              required
+            >
+              <option value="reguler_1_pertemuan">Reguler 1 Pertemuan</option>
+              <option value="reguler_2_pertemuan">Reguler 2 Pertemuan</option>
+              <option value="reguler_4_pertemuan">Reguler 4 Pertemuan</option>
+              <option value="reguler_8_pertemuan">Reguler 8 Pertemuan</option>
+              <option value="reguler_12_pertemuan">Reguler 12 Pertemuan</option>
+            </select>
+          </div>
+
+          <div>
+            <label class="block text-xs font-semibold uppercase tracking-wider text-slate-500 mb-1">Durasi Per Pertemuan</label>
+            <select
+              id="edit-durasi"
+              class="w-full px-4 py-2.5 rounded-xl border border-slate-200 bg-slate-50 focus:bg-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition"
+              required
+            >
+              <option value="60">60 Menit</option>
+              <option value="90">90 Menit</option>
+            </select>
+          </div>
+
+          <!-- Footer & Reset Operasional -->
+          <div class="pt-4 border-t border-slate-100 flex flex-col sm:flex-row justify-between items-center gap-3">
+            <button
+              type="button"
+              onclick="bukaFirebaseAuth()"
+              class="w-full sm:w-auto px-4 py-2 text-xs font-semibold text-amber-700 bg-amber-50 hover:bg-amber-100 rounded-xl transition flex items-center justify-center gap-1"
+            >
+              <i class="fa-solid fa-key"></i> Kelola Password
+            </button>
+            <div class="flex items-center gap-2 w-full sm:w-auto">
+              <button type="button" onclick="tutupModalEdit()" class="w-full sm:w-auto px-4 py-2 text-sm font-medium text-slate-600 hover:bg-slate-100 rounded-xl transition">Batal</button>
+              <button
+                type="submit"
+                id="btn-submit-edit"
+                class="w-full sm:w-auto px-5 py-2 text-sm font-semibold text-white bg-blue-600 hover:bg-blue-700 rounded-xl shadow-md transition flex items-center justify-center gap-1"
+              >
+                <i class="fa-solid fa-floppy-disk"></i> Simpan
+              </button>
+            </div>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <div id="modal-aktivasi-akun" class="hidden fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center z-[60] p-4">
+      <div class="bg-white rounded-2xl shadow-2xl border border-slate-100 w-full max-w-2xl max-h-[92vh] overflow-y-auto">
+        <div class="sticky top-0 z-10 bg-white px-6 py-4 border-b border-slate-200 flex justify-between items-center">
+          <div>
+            <h3 class="font-bold text-slate-800 flex items-center gap-2"><i class="fa-solid fa-user-shield text-blue-600"></i> Aktifkan &amp; Buat Akun</h3>
+            <p id="aktivasi-subtitle" class="text-xs text-slate-400 mt-1">Hubungkan akun secara aman berdasarkan UID.</p>
+          </div>
+          <button type="button" onclick="tutupModalAktivasi()" class="text-slate-400 hover:text-slate-600 transition text-lg" aria-label="Tutup"><i class="fa-solid fa-xmark"></i></button>
+        </div>
+
+        <form id="form-aktivasi-akun" onsubmit="prosesAktivasiAkun(event)" class="p-6 space-y-6">
+          <input type="hidden" id="aktivasi-id-murid" />
+
+          <section class="rounded-xl border border-slate-200 p-4 space-y-4">
+            <div>
+              <h4 class="font-bold text-sm text-slate-700">1. Akun Orang Tua</h4>
+              <p class="text-xs text-slate-400 mt-1">Jangan menggabungkan akun hanya karena namanya sama.</p>
+            </div>
+            <div class="grid sm:grid-cols-2 gap-3">
+              <label class="flex items-start gap-3 rounded-xl border border-slate-200 p-3 cursor-pointer hover:bg-slate-50">
+                <input type="radio" name="parent-mode" value="existing" class="mt-1" onchange="aturModeOrangTua()" />
+                <span><strong class="block text-sm text-slate-700">Gunakan akun lama</strong><small class="text-slate-400">Untuk orang tua yang sudah punya akun.</small></span>
+              </label>
+              <label class="flex items-start gap-3 rounded-xl border border-blue-200 bg-blue-50 p-3 cursor-pointer">
+                <input type="radio" name="parent-mode" value="new" class="mt-1" onchange="aturModeOrangTua()" checked />
+                <span><strong class="block text-sm text-blue-800">Buat akun baru</strong><small class="text-blue-500">Untuk orang tua yang belum terdaftar.</small></span>
+              </label>
+            </div>
+
+            <div id="parent-existing-fields" class="hidden">
+              <label class="block text-xs font-semibold text-slate-600 mb-2">Pilih berdasarkan username, nama, atau WhatsApp</label>
+              <select id="aktivasi-parent-existing" onchange="tampilkanDetailOrangTua()" class="w-full px-4 py-3 rounded-xl border border-slate-200 bg-slate-50 outline-none focus:ring-2 focus:ring-blue-500">
+                <option value="">Memuat akun orang tua...</option>
+              </select>
+              <p id="parent-existing-detail" class="text-xs text-slate-400 mt-2"></p>
+            </div>
+
+            <div id="parent-new-fields" class="grid sm:grid-cols-2 gap-4">
+              <label class="block text-xs font-semibold text-slate-600">Nama orang tua<input id="aktivasi-parent-name" class="mt-2 w-full px-4 py-3 rounded-xl border border-slate-200 bg-slate-50 outline-none focus:ring-2 focus:ring-blue-500" maxlength="120" /></label>
+              <label class="block text-xs font-semibold text-slate-600">WhatsApp<input id="aktivasi-parent-phone" class="mt-2 w-full px-4 py-3 rounded-xl border border-slate-200 bg-slate-50 outline-none focus:ring-2 focus:ring-blue-500" inputmode="numeric" maxlength="18" /></label>
+              <label class="block text-xs font-semibold text-slate-600">Email kontak (opsional)<input id="aktivasi-parent-email" class="mt-2 w-full px-4 py-3 rounded-xl border border-slate-200 bg-slate-50 outline-none focus:ring-2 focus:ring-blue-500" type="email" maxlength="160" /></label>
+              <label class="block text-xs font-semibold text-slate-600">Username orang tua<input id="aktivasi-parent-username" class="mt-2 w-full px-4 py-3 rounded-xl border border-slate-200 bg-slate-50 outline-none focus:ring-2 focus:ring-blue-500" maxlength="40" autocomplete="off" /></label>
+              <label class="block text-xs font-semibold text-slate-600 sm:col-span-2">Password sementara orang tua<input id="aktivasi-parent-password" class="mt-2 w-full px-4 py-3 rounded-xl border border-slate-200 bg-slate-50 outline-none focus:ring-2 focus:ring-blue-500" type="password" minlength="10" autocomplete="new-password" /><span class="block text-[11px] font-normal text-slate-400 mt-1">Minimal 10 karakter dan harus berbeda dari password murid.</span></label>
+            </div>
+          </section>
+
+          <section class="rounded-xl border border-slate-200 p-4 space-y-4">
+            <div>
+              <h4 class="font-bold text-sm text-slate-700">2. Akun Murid</h4>
+              <p class="text-xs text-slate-400 mt-1">Satu akun khusus untuk murid ini.</p>
+            </div>
+            <div class="grid sm:grid-cols-2 gap-4">
+              <label class="block text-xs font-semibold text-slate-600">Username murid<input id="aktivasi-student-username" class="mt-2 w-full px-4 py-3 rounded-xl border border-slate-200 bg-slate-50 outline-none focus:ring-2 focus:ring-blue-500" maxlength="40" autocomplete="off" required /></label>
+              <label class="block text-xs font-semibold text-slate-600">Password sementara murid<input id="aktivasi-student-password" class="mt-2 w-full px-4 py-3 rounded-xl border border-slate-200 bg-slate-50 outline-none focus:ring-2 focus:ring-blue-500" type="password" minlength="10" autocomplete="new-password" required /></label>
+            </div>
+          </section>
+
+          <p id="aktivasi-feedback" class="text-sm min-h-5" aria-live="polite"></p>
+          <div class="flex flex-col-reverse sm:flex-row justify-end gap-3">
+            <button type="button" onclick="tutupModalAktivasi()" class="px-5 py-2.5 rounded-xl text-sm font-semibold text-slate-600 bg-slate-100 hover:bg-slate-200">Batal</button>
+            <button id="btn-proses-aktivasi" type="submit" class="px-5 py-2.5 rounded-xl text-sm font-semibold text-white bg-blue-600 hover:bg-blue-700 shadow-md flex items-center justify-center gap-2">
+              <i class="fa-solid fa-user-check"></i> Buat Akun &amp; Aktifkan
+            </button>
+          </div>
+        </form>
+
+        <section id="aktivasi-success" class="hidden p-6 space-y-5">
+          <div class="rounded-xl bg-emerald-50 border border-emerald-200 p-4 text-emerald-800">
+            <h4 class="font-bold"><i class="fa-solid fa-circle-check mr-2"></i>Akun berhasil dibuat dan dihubungkan</h4>
+            <p class="text-xs mt-1">Kredensial ini hanya ditampilkan sekarang. Password tidak disimpan di Firestore.</p>
+          </div>
+          <div id="aktivasi-credentials" class="rounded-xl border border-slate-200 bg-slate-50 p-4 text-sm text-slate-700 whitespace-pre-line"></div>
+          <div class="flex flex-col sm:flex-row justify-end gap-3">
+            <button type="button" onclick="kirimKredensialAktivasi()" class="px-5 py-2.5 rounded-xl text-sm font-semibold text-white bg-emerald-600 hover:bg-emerald-700"><i class="fa-brands fa-whatsapp mr-1"></i> Kirim via WhatsApp</button>
+            <button type="button" onclick="tutupModalAktivasi()" class="px-5 py-2.5 rounded-xl text-sm font-semibold text-white bg-blue-600 hover:bg-blue-700">Selesai</button>
+          </div>
+        </section>
+      </div>
+    </div>
+    <script src="https://www.gstatic.com/firebasejs/12.16.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/12.16.0/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/12.16.0/firebase-firestore-compat.js"></script>
+    <script src="firebase-config.js"></script>
+    <script src="firebase-api.js"></script>
+    <script src="utils.js"></script>
+    <script src="notifikasi.js"></script>
+    <script>
+      const WEB_APP_URL = FIREBASE_API_URL;
+      const firebasePageReady = firebasePortal.guard(["admin"]);
+
+      async function keluarAdmin() {
+        await firebasePortal.logout();
+        window.location.href = "index.html";
+      }
+
+      function bukaFirebaseAuth() {
+        window.open("https://console.firebase.google.com/project/les-privat-kak-harris/authentication/users", "_blank", "noopener");
+      }
+
+      document.getElementById("input-tanggal").valueAsDate = new Date();
+
+      // ==========================================
+      // NOTIFIKASI BELL - FUNGSI (shared: notifikasi.js)
+      // ==========================================
+
+      async function muatNotifikasi() {
+        const listEl = document.getElementById("notif-list");
+        const badgeEl = document.getElementById("notif-badge");
+        const dismissed = getDismissedNotif();
+        try {
+          const respon = await fetch(`${WEB_APP_URL}?action=getNotifications&role=admin`);
+          const hasil = await respon.json();
+          if (hasil.status === "success") {
+            // Filter notifikasi yang belum di-dismiss
+            const aktif = hasil.data.filter((n) => !dismissed.includes(n.text));
+
+            // Update badge
+            if (aktif.length > 0) {
+              badgeEl.textContent = aktif.length > 9 ? "9+" : aktif.length;
+              badgeEl.classList.remove("hidden");
+            } else {
+              badgeEl.classList.add("hidden");
+            }
+            // Update list
+            if (aktif.length === 0) {
+              listEl.innerHTML = `<div class="notif-empty"><i class="fa-regular fa-bell text-2xl block mb-2"></i>Tidak ada notifikasi baru</div>`;
+              return;
+            }
+            listEl.innerHTML =
+              aktif
+                .map((n, i) => {
+                  const colors = ["bg-blue-50 text-blue-600", "bg-amber-50 text-amber-600", "bg-emerald-50 text-emerald-600", "bg-purple-50 text-purple-600"];
+                  const color = colors[i % colors.length];
+                  const tabAction = n.tab ? `bukaTab('${n.tab}')` : "";
+                  return `<div class="notif-item">
+                  <div onclick="${tabAction ? tabAction + "; dismissNotif('" + n.text.replace(/'/g, "\\'") + "')" : "dismissNotif('" + n.text.replace(/'/g, "\\'") + "')"}" class="flex items-start gap-3 flex-1 min-w-0">
+                    <div class="notif-item-icon ${color}"><i class="fa-solid fa-${n.icon}"></i></div>
+                    <div class="notif-item-text">${n.text}</div>
+                  </div>
+                  <button onclick="event.stopPropagation(); dismissNotif('${n.text.replace(/'/g, "\\'")}')" class="flex-shrink-0 w-6 h-6 rounded-full hover:bg-slate-100 text-slate-400 hover:text-slate-600 flex items-center justify-center text-xs transition" title="Tutup"><i class="fa-solid fa-xmark"></i></button>
+                </div>`;
+                })
+                .join("") +
+              `<div class="notif-item justify-center border-t border-slate-100">
+                <button onclick="dismissSemuaNotif()" class="text-xs text-slate-400 hover:text-slate-600 font-medium transition"><i class="fa-regular fa-circle-check mr-1"></i>Tandai semua sudah dibaca</button>
+              </div>`;
+          }
+        } catch (err) {
+          console.error("Notif error:", err);
+        }
+      }
+
+      function bukaTab(tabId) {
+        document.getElementById("notif-panel").classList.remove("active");
+        notifVisible = false;
+        const btn = document.getElementById("btn-" + tabId);
+        if (btn) btn.click();
+      }
+
+      // Muat notifikasi saat halaman dimuat & auto-refresh setiap 60 detik
+      setTimeout(muatNotifikasi, 1000);
+      setInterval(muatNotifikasi, 60000);
+
+      async function muatDropdownMurid() {
+        const selectMurid = document.getElementById("input-murid");
+        selectMurid.innerHTML = "<option value=''>-- Memuat Nama Murid... --</option>";
+        try {
+          const CACHE_KEY = "dataMurid";
+          const CACHE_TTL = 2 * 60 * 1000; // 2 menit
+          let hasil = cacheGet(CACHE_KEY);
+          if (!hasil) {
+            const respon = await fetch(`${WEB_APP_URL}?action=getMurid`);
+            hasil = await respon.json();
+            if (hasil.status === "success") cacheSet(CACHE_KEY, hasil, CACHE_TTL);
+          }
+          if (hasil.status === "success") {
+            selectMurid.innerHTML = "<option value=''>-- Pilih Murid --</option>";
+            hasil.data.forEach((murid) => {
+              if (murid.status === "Aktif") {
+                const option = document.createElement("option");
+                option.value = murid.id;
+                option.textContent = `${murid.nama} (Kelas ${murid.kelas})`;
+                selectMurid.appendChild(option);
+              }
+            });
+          } else {
+            selectMurid.innerHTML = "<option value=''>Gagal memuat data murid</option>";
+          }
+        } catch (error) {
+          selectMurid.innerHTML = "<option value=''>Gagal terhubung ke server</option>";
+        }
+      }
+
+      document.addEventListener("DOMContentLoaded", muatDropdownMurid);
+
+      document.getElementById("form-admin").addEventListener("submit", async function (e) {
+        e.preventDefault();
+        const btnSubmit = e.target.querySelector('button[type="submit"]');
+        const originalText = btnSubmit.innerHTML;
+        btnSubmit.innerHTML = "<i class='fa-solid fa-spinner fa-spin'></i> Memproses Data...";
+        btnSubmit.disabled = true;
+
+        const payload = {
+          action: "addAbsensi",
+          idMurid: document.getElementById("input-murid").value,
+          tanggal: document.getElementById("input-tanggal").value,
+          status: document.querySelector('input[name="status"]:checked').value,
+          materi: document.getElementById("input-materi").value,
+          catatan: document.getElementById("input-catatan").value,
+        };
+
+        try {
+          const respon = await fetch(WEB_APP_URL, {
+            method: "POST",
+            body: JSON.stringify(payload),
+          });
+          const hasil = await respon.json();
+          if (hasil.status === "success") {
+            showToast("Data absensi berhasil disimpan! ✅", "success");
+            document.getElementById("input-materi").value = "";
+            document.getElementById("input-catatan").value = "";
+
+            // Auto kirim WA laporan ke orang tua
+            const idMurid = payload.idMurid;
+            const tanggal = payload.tanggal;
+            const status = payload.status;
+            const materi = payload.materi;
+            const catatan = payload.catatan;
+            // Pakai setTimeout agar tidak delay toast
+            setTimeout(() => kirimLaporanPerkembangan(idMurid, tanggal, status, materi, catatan), 500);
+          } else {
+            showToast("Gagal: " + (hasil.message || "Unknown error"), "error");
+          }
+        } catch (error) {
+          showToast("Terjadi gangguan koneksi.", "error");
+        } finally {
+          btnSubmit.innerHTML = originalText;
+          btnSubmit.disabled = false;
+        }
+      });
+
+      const menuButtons = document.querySelectorAll(".menu-btn");
+      const tabContents = document.querySelectorAll(".tab-content");
+
+      menuButtons.forEach((button) => {
+        button.addEventListener("click", () => {
+          const targetTab = button.id.replace("btn-", "content-");
+          tabContents.forEach((content) => content.classList.add("hidden"));
+          menuButtons.forEach((btn) => {
+            btn.classList.remove("bg-blue-50", "text-blue-600", "font-semibold");
+            btn.classList.add("text-slate-600");
+          });
+
+          document.getElementById(targetTab).classList.remove("hidden");
+          button.classList.add("bg-blue-50", "text-blue-600", "font-semibold");
+          button.classList.remove("text-slate-600");
+
+          if (button.id === "btn-catatan") loadRiwayat();
+          if (button.id === "btn-keuangan") loadKeuangan();
+          if (button.id === "btn-pengajuan") muatPengajuanJadwal();
+          if (button.id === "btn-manajemen") {
+            muatAkunMurid();
+            muatDataMurid(); // Memanggil data untuk mengisi tabelMuridBody
+          }
+          if (button.id === "btn-materi") {
+            document.getElementById("materi-tanggal").valueAsDate = new Date();
+            loadMateriBelajarAdmin();
+          }
+        });
+      });
+
+      async function loadRiwayat() {
+        const tabelBody = document.getElementById("tabel-riwayat");
+        tabelBody.innerHTML = "<tr><td colspan='6' class='p-4 text-center text-slate-400'><i class='fa-solid fa-spinner fa-spin'></i> Mengambil data...</td></tr>";
+        try {
+          const respon = await fetch(`${WEB_APP_URL}?action=getAbsensi`);
+          const hasil = await respon.json();
+          if (hasil.status === "success") {
+            if (hasil.data.length === 0) {
+              tabelBody.innerHTML = "<tr><td colspan='6' class='p-4 text-center text-slate-400'>Belum ada riwayat absensi.</td></tr>";
+              return;
+            }
+            tabelBody.innerHTML = "";
+            hasil.data.forEach((item) => {
+              let badgeColor = item.status === "Hadir" ? "bg-green-50 text-green-600" : item.status === "Izin" ? "bg-amber-50 text-amber-600" : "bg-red-50 text-red-600";
+
+              const row = document.createElement("tr");
+              row.className = "hover:bg-slate-50 transition";
+              row.innerHTML = `
+                <td class="p-4 font-medium">${item.tanggal}</td>
+                <td class="p-4">${item.nama}</td>
+                <td class="p-4 text-slate-500 font-medium">${item.kelas}</td>
+                <td class="p-4"><span class="px-2.5 py-1 rounded-full text-xs font-semibold ${badgeColor}">${item.status}</span></td>
+                <td class="p-4 font-medium text-slate-700">${item.materi}</td>
+                <td class="p-4 text-slate-500 max-w-xs truncate" title="${item.catatan}">${item.catatan}</td>
+                <td class="p-4 text-center"></td>
+              `;
+
+              const buttonCell = row.querySelector("td:last-child");
+              const waButton = document.createElement("button");
+              waButton.type = "button";
+              waButton.className = "bg-green-500 hover:bg-green-600 text-white px-3 py-1.5 rounded-lg text-xs font-semibold transition";
+              waButton.innerHTML = `<i class="fa-brands fa-whatsapp"></i> Kirim WA`;
+              waButton.addEventListener("click", () => {
+                kirimLaporanPerkembangan(item.idMurid, item.tanggal, item.status, item.materi, item.catatan);
+              });
+
+              buttonCell.appendChild(waButton);
+              tabelBody.appendChild(row);
+            });
+          }
+        } catch (error) {
+          tabelBody.innerHTML = "<tr><td colspan='6' class='p-4 text-center text-red-500'>Gangguan koneksi.</td></tr>";
+        }
+      }
+
+      document.getElementById("keuangan-tanggal").valueAsDate = new Date();
+      // Ganti observer lama dengan yang ini agar mencakup materi-murid
+      const observer = new MutationObserver(() => {
+        document.getElementById("keuangan-murid").innerHTML = document.getElementById("input-murid").innerHTML;
+        document.getElementById("materi-murid").innerHTML = document.getElementById("input-murid").innerHTML;
+      });
+      observer.observe(document.getElementById("input-murid"), {
+        childList: true,
+      });
+
+      document.getElementById("form-keuangan").addEventListener("submit", async function (e) {
+        e.preventDefault();
+        const btnSubmit = e.target.querySelector('button[type="submit"]');
+        const originalText = btnSubmit.innerHTML;
+        btnSubmit.innerHTML = "<i class='fa-solid fa-spinner fa-spin'></i> Menyimpan...";
+        btnSubmit.disabled = true;
+
+        const payload = {
+          action: "addKeuangan",
+          idMurid: document.getElementById("keuangan-murid").value,
+          tanggal: document.getElementById("keuangan-tanggal").value,
+          nominal: document.getElementById("keuangan-nominal").value,
+          keterangan: document.getElementById("keuangan-keterangan").value,
+        };
+
+        try {
+          const respon = await fetch(WEB_APP_URL, {
+            method: "POST",
+            body: JSON.stringify(payload),
+          });
+          const hasil = await respon.json();
+          if (hasil.status === "success") {
+            showToast("Transaksi keuangan berhasil dicatat 💰", "success");
+            document.getElementById("form-keuangan").reset();
+            loadKeuangan();
+
+            // Auto kirim WA notifikasi pembayaran ke orang tua
+            setTimeout(() => {
+              kirimPesanKeuangan(payload.idMurid, payload.nominal, payload.keterangan, payload.tanggal);
+            }, 500);
+          }
+        } catch (error) {
+          showToast("Terjadi gangguan koneksi.", "error");
+        } finally {
+          btnSubmit.innerHTML = originalText;
+          btnSubmit.disabled = false;
+        }
+      });
+
+      async function loadKeuangan() {
+        const tabelBody = document.getElementById("tabel-keuangan");
+        tabelBody.innerHTML = `<tr><td colspan="6" class="p-4 text-center text-slate-400"><i class="fa-solid fa-spinner fa-spin"></i> Memuat data...</td></tr>`;
+        try {
+          const respon = await fetch(`${WEB_APP_URL}?action=getKeuangan`);
+          const hasil = await respon.json();
+          if (hasil.status === "success") {
+            if (hasil.data.length === 0) {
+              tabelBody.innerHTML = `<tr><td colspan="6" class="p-4 text-center text-slate-400">Belum ada riwayat transaksi.</td></tr>`;
+              return;
+            }
+            tabelBody.innerHTML = "";
+            hasil.data.forEach((item) => {
+              // Format tanggal dd-mm-yyyy
+              const tgl = item.tanggal && item.tanggal !== "-" ? item.tanggal.split("-").reverse().join("-") : item.tanggal;
+              const row = document.createElement("tr");
+              row.className = "hover:bg-slate-50 transition";
+              row.innerHTML = `
+          <td class="p-3 font-medium">${tgl}</td>
+          <td class="p-3">${item.nama}</td>
+          <td class="p-3 text-slate-500 font-medium">${item.kelas}</td>
+          <td class="p-3 text-green-600 font-semibold">Rp ${Number(item.nominal).toLocaleString("id-ID")}</td>
+          <td class="p-3 text-slate-500">${item.keterangan}</td>
+          <td class="p-3 text-center"></td>
+        `;
+              const btnCell = row.querySelector("td:last-child");
+              const waButton = document.createElement("button");
+              waButton.className = "bg-green-500 hover:bg-green-600 text-white px-3 py-1.5 rounded-lg text-xs font-semibold transition";
+              waButton.innerHTML = `<i class="fa-brands fa-whatsapp"></i> Kirim WA`;
+              waButton.addEventListener("click", () => {
+                kirimPesanKeuangan(item.idMurid, item.nominal, item.keterangan, item.tanggal);
+              });
+              btnCell.appendChild(waButton);
+              tabelBody.appendChild(row);
+            });
+          }
+        } catch (error) {
+          tabelBody.innerHTML = `<td><td colspan="6" class="p-4 text-center text-red-500">Gangguan koneksi.</td></tr>`;
+        }
+      }
+
+      async function muatDataMurid() {
+        const tbody = document.getElementById("tabelMuridBody");
+        tbody.innerHTML = "<tr><td colspan='6' class='p-4 text-center text-slate-400'><i class='fa-solid fa-spinner fa-spin'></i> Memuat data...</td></tr>";
+        try {
+          const response = await fetch(`${WEB_APP_URL}?action=getMurid`);
+          const json = await response.json();
+          if (json.status === "success") {
+            tbody.innerHTML = "";
+            if (json.data.length === 0) {
+              tbody.innerHTML = "<tr><td colspan='6' class='p-4 text-center text-slate-400'>Tidak ada data murid.</td></tr>";
+              return;
+            }
+            json.data.forEach((murid) => {
+              let tombolAksi = "";
+              let statusBadge = "";
+
+              if (murid.status === "Pending" || murid.status === "Kadaluwarsa") {
+                statusBadge = `<span class="px-2.5 py-1 rounded-full text-xs font-semibold bg-amber-50 text-amber-600">${murid.status}</span>`;
+                const tombolAktivasi =
+                  murid.authStatus === "aktif"
+                    ? `<button onclick="aktifkanPaketMurid('${murid.id}')" class="bg-green-600 hover:bg-green-700 text-white font-medium px-3 py-1.5 rounded-lg text-xs transition">Aktifkan Paket</button>`
+                    : `<button onclick="aktivasiMurid('${murid.id}')" class="bg-green-600 hover:bg-green-700 text-white font-medium px-3 py-1.5 rounded-lg text-xs transition">Aktifkan &amp; Buat Akun</button>`;
+                tombolAksi = `
+                  <div class="flex gap-2 justify-center">
+                    ${tombolAktivasi}
+                    <button onclick="rilisJadwalMurid('${murid.id}')" class="bg-amber-500 hover:bg-amber-600 text-white font-medium px-3 py-1.5 rounded-lg text-xs transition">Rilis Jadwal</button>
+                    <button onclick="hapusMurid('${murid.id}')" class="bg-red-50 hover:bg-red-100 text-red-600 font-medium px-3 py-1.5 rounded-lg text-xs transition">Hapus</button>
+                  </div>`;
+              } else {
+                statusBadge = `<span class="px-2.5 py-1 rounded-full text-xs font-semibold bg-green-50 text-green-600">✔ Aktif</span>`;
+                tombolAksi = `<div class="text-center text-slate-400 text-xs italic">Sudah Valid</div>`;
+              }
+              const buktiView = murid.bukti
+                ? `<a href="${murid.bukti}" target="_blank" class="text-blue-600 underline font-medium text-xs">Lihat Bukti</a>`
+                : `<span class="text-slate-400 text-xs">Belum Upload</span>`;
+              tbody.innerHTML += `
+                <tr class="hover:bg-slate-50 transition">
+                  <td class="p-4 font-semibold text-slate-800">${murid.id}</td>
+                  <td class="p-4 font-medium">${murid.nama}</td>
+                  <td class="p-4 text-slate-500">${murid.kelas} ${murid.jenjang}</td>
+                  <td class="p-4 text-slate-500">${murid.jadwal}</td>
+                  <td class="p-4">${statusBadge}</td>
+                  <td class="p-4">${buktiView}</td>
+                  <td class="p-4">${tombolAksi}</td>
+                </tr>`;
+            });
+          }
+        } catch (error) {
+          tbody.innerHTML = "<tr><td colspan='6' class='p-4 text-center text-red-500'>Gagal memuat data.</td></tr>";
+        }
+      }
+
+      async function daftarMurid(event) {
+        event.preventDefault();
+        const btn = event.target.querySelector('button[type="submit"]');
+        const orig = btn.innerHTML;
+        btn.innerHTML = "<i class='fa-solid fa-spinner fa-spin'></i> Mendaftarkan...";
+        btn.disabled = true;
+
+        const payload = {
+          action: "registerMurid",
+          nama: document.getElementById("pendaftarNama").value,
+          ortu: document.getElementById("pendaftarOrtu").value,
+          wa: document.getElementById("pendaftarWa").value,
+          jenjang: document.getElementById("pendaftarJenjang").value,
+          kelas: document.getElementById("pendaftarKelas").value,
+          paket: document.getElementById("pendaftarPaket").value,
+          durasi: document.getElementById("pendaftarDurasi").value,
+          jadwal: "", // Otomatis kosong, akan di-plot mandiri nanti oleh wali murid
+        };
+
+        try {
+          const response = await fetch(WEB_APP_URL, {
+            method: "POST",
+            body: JSON.stringify(payload),
+          });
+          const result = await response.json();
+          if (result.status === "success") {
+            showToast(`Data ${result.data.id} berhasil dibuat. Buka Manajemen Murid & Akun untuk aktivasi.`, "success");
+            document.getElementById("formDaftarMurid").reset();
+            muatDataMurid();
+            muatDropdownMurid();
+          }
+        } catch (error) {
+          alert("Gagal memproses pendaftaran.");
+        } finally {
+          btn.innerHTML = orig;
+          btn.disabled = false;
+        }
+      }
+
+      async function aktivasiMurid(id) {
+        let murid = cacheDataMurid.find((item) => String(item.id) === String(id));
+        if (!murid) {
+          const response = await fetch(`${WEB_APP_URL}?action=getMurid`);
+          const result = await response.json();
+          if (result.status === "success") {
+            cacheDataMurid = result.data;
+            murid = result.data.find((item) => String(item.id) === String(id));
+          }
+        }
+        if (!murid) {
+          showToast("Data murid tidak ditemukan.", "error");
+          return;
+        }
+        await bukaModalAktivasi(murid);
+      }
+
+      async function aktifkanPaketMurid(id) {
+        if (!confirm("Aktifkan kembali paket murid ini dan reset sesi terpakai?")) return;
+        try {
+          const response = await fetch(WEB_APP_URL, {
+            method: "POST",
+            body: JSON.stringify({ action: "aktivasiMurid", idMurid: id }),
+          });
+          const result = await response.json();
+          if (result.status !== "success") throw new Error(result.message || "Aktivasi gagal.");
+          showToast(result.message, "success");
+          muatDataMurid();
+          muatAkunMurid();
+          muatDropdownMurid();
+        } catch (error) {
+          showToast(error.message || "Gagal mengaktifkan paket.", "error");
+        }
+      }
+
+      async function hapusMurid(id) {
+        if (!confirm("Hapus data pendaftaran?")) return;
+        try {
+          const response = await fetch(WEB_APP_URL, {
+            method: "POST",
+            body: JSON.stringify({ action: "hapusMurid", idMurid: id }),
+          });
+          const result = await response.json();
+          if (result.status === "success") {
+            showToast(result.message, "success");
+            muatDataMurid();
+            muatDropdownMurid();
+          }
+        } catch (error) {
+          showToast("Gagal menghapus data.", "error");
+        }
+      }
+      async function muatPengajuanJadwal() {
+        const tbody = document.getElementById("tabel-pengajuan-jadwal");
+        tbody.innerHTML = `<tr><td colspan="6" class="p-4 text-center text-slate-400"><i class="fa-solid fa-spinner fa-spin"></i> Mengambil data dari Firestore...</td></tr>`;
+        try {
+          const res = await fetch(`${WEB_APP_URL}?action=getPengajuanJadwal`);
+          const hasil = await res.json();
+
+          if (hasil.status === "success") {
+            if (hasil.data.length === 0) {
+              tbody.innerHTML = `<tr><td colspan="6" class="p-4 text-center text-slate-400">Belum ada riwayat pengajuan jadwal baru.</td></tr>`;
+              return;
+            }
+
+            // 🔥 KELOMPOKKAN DATA berdasarkan ID Murid
+            const groups = {};
+            hasil.data.forEach((req) => {
+              const key = req.idMurid || req.namaTampilan;
+              if (!groups[key]) {
+                groups[key] = {
+                  idMurid: req.idMurid,
+                  namaTampilan: req.namaTampilan,
+                  jadwalList: [],
+                  idPengajuanList: [],
+                  statusSet: new Set(),
+                  tanggalList: [],
+                };
+              }
+              groups[key].jadwalList.push(req.jadwalTampilan);
+              groups[key].idPengajuanList.push(req.idPengajuan);
+              groups[key].statusSet.add(req.status);
+              groups[key].tanggalList.push(req.tanggal);
+            });
+
+            tbody.innerHTML = "";
+            Object.values(groups).forEach((group) => {
+              const idMuridAman = (group.idMurid || "").replace(/'/g, "\\'");
+              const jadwalGabung = group.jadwalList.join(" <span class='text-slate-300 mx-1'>|</span> ");
+              const jadwalFlat = group.jadwalList.join(" | ");
+              const jadwalAman = jadwalFlat.replace(/'/g, "\\'");
+              const idListStr = group.idPengajuanList.join(",");
+              const tanggalTampil = group.tanggalList[0];
+
+              // Tentukan status keseluruhan grup
+              let overallStatus = "Pending";
+              if (group.statusSet.size === 1) {
+                overallStatus = [...group.statusSet][0];
+              } else if (group.statusSet.has("Disetujui") && group.statusSet.has("Ditolak")) {
+                overallStatus = "Mixed";
+              }
+
+              let statusBadge, tombolAksi;
+
+              if (overallStatus === "Pending") {
+                statusBadge = `<span class="px-2.5 py-1 text-xs font-semibold rounded-full bg-amber-50 text-amber-600 border border-amber-200">Pending</span>`;
+                tombolAksi = `
+                  <div class="flex gap-2 justify-center">
+                    <button onclick="prosesKonfirmasiMulti('${idListStr}', 'Disetujui')" class="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-xs font-semibold transition">Setujui Semua</button>
+                    <button onclick="prosesKonfirmasiMulti('${idListStr}', 'Ditolak')" class="px-3 py-1.5 bg-rose-50 hover:bg-rose-100 text-rose-600 rounded-lg text-xs font-semibold transition">Tolak Semua</button>
+                    <button onclick="kirimNotifikasiPengajuan('${idMuridAman}', '${jadwalAman}', 'Pending')" class="px-3 py-1.5 bg-green-500 hover:bg-green-600 text-white rounded-lg text-xs font-semibold transition" title="Kirim notifikasi WA ke wali murid"><i class="fa-brands fa-whatsapp"></i></button>
+                  </div>`;
+              } else if (overallStatus === "Disetujui" || overallStatus === "Ditolak") {
+                const label = overallStatus === "Disetujui" ? "✔ Disetujui" : "❌ Ditolak";
+                const color = overallStatus === "Disetujui" ? "emerald" : "rose";
+                statusBadge = `<span class="px-2.5 py-1 text-xs font-semibold rounded-full bg-${color}-50 text-${color}-600 border border-${color}-100">${label}</span>`;
+                tombolAksi = `<div class="flex items-center justify-center gap-2">
+                  <span class="text-slate-400 text-xs italic">Selesai diproses</span>
+                  <button onclick="kirimNotifikasiPengajuan('${idMuridAman}', '${jadwalAman}', '${overallStatus}')" class="px-3 py-1.5 bg-green-500 hover:bg-green-600 text-white rounded-lg text-xs font-semibold transition" title="Kirim notifikasi WA ke wali murid"><i class="fa-brands fa-whatsapp"></i> Kirim WA</button>
+                </div>`;
+              } else {
+                // Mixed — ada yg disetujui & ditolak
+                statusBadge = `<span class="px-2.5 py-1 text-xs font-semibold rounded-full bg-slate-50 text-slate-600 border border-slate-200">Campuran</span>`;
+                tombolAksi = `<div class="text-center text-slate-400 text-xs italic">Ada yg disetujui & ditolak</div>`;
+              }
+
+              tbody.innerHTML += `
+                <tr class="hover:bg-slate-50 transition">
+                  <td class="p-4 font-mono font-bold text-slate-700 text-xs">${group.idPengajuanList.join(", ")}</td>
+                  <td class="p-4 font-medium text-slate-800">${group.namaTampilan}</td>
+                  <td class="p-4 font-semibold text-purple-600 text-xs leading-relaxed">${jadwalGabung}</td>
+                  <td class="p-4 text-slate-500">${tanggalTampil}</td>
+                  <td class="p-4">${statusBadge}</td>
+                  <td class="p-4">${tombolAksi}</td>
+                </tr>`;
+            });
+          }
+        } catch (err) {
+          tbody.innerHTML = `<tr><td colspan="6" class="p-4 text-center text-rose-500">Gangguan koneksi atau server bermasalah.</td></tr>`;
+        }
+      }
+
+      async function prosesKonfirmasi(idReq, statusTarget) {
+        try {
+          const res = await fetch(WEB_APP_URL, {
+            method: "POST",
+            body: JSON.stringify({
+              action: "konfirmasiJadwal",
+              idPengajuan: idReq,
+              status: statusTarget,
+            }),
+          });
+          return await res.json();
+        } catch (err) {
+          return { status: "error", message: err.message };
+        }
+      }
+
+      // 🔥 KONFIRMASI MULTIPLE ID SEKALIGUS
+      async function prosesKonfirmasiMulti(idListStr, statusTarget) {
+        const ids = idListStr
+          .split(",")
+          .map((s) => s.trim())
+          .filter(Boolean);
+        if (!confirm(`Apakah Kak Harris yakin ingin mengubah ${ids.length} pengajuan menjadi [${statusTarget}]?`)) return;
+
+        let sukses = 0,
+          gagal = 0;
+        for (const id of ids) {
+          const hasil = await prosesKonfirmasi(id, statusTarget);
+          if (hasil.status === "success") sukses++;
+          else gagal++;
+        }
+
+        showToast(`${sukses} pengajuan berhasil ${statusTarget.toLowerCase()}${gagal > 0 ? `, ${gagal} gagal.` : ""}`, gagal > 0 ? "warning" : "success");
+        muatPengajuanJadwal();
+      }
+
+      // ========================================================
+      // FUNGSI KIRIM NOTIFIKASI WA - PENGAJUAN JADWAL
+      // ========================================================
+      async function kirimNotifikasiPengajuan(idMurid, jadwalInfo, statusSaatIni) {
+        if (!idMurid || idMurid === "-") {
+          alert("ID Murid tidak tersedia.");
+          return;
+        }
+
+        try {
+          const respon = await fetch(`${WEB_APP_URL}?action=getMurid`);
+          const hasil = await respon.json();
+          if (hasil.status !== "success") {
+            alert("Gagal mengambil data murid.");
+            return;
+          }
+
+          // Cari murid berdasarkan ID Murid (lebih akurat dari nama)
+          const murid = hasil.data.find((m) => String(m.id).trim() === String(idMurid).trim());
+          if (!murid) {
+            alert(`Data murid dengan ID "${idMurid}" tidak ditemukan di database.`);
+            return;
+          }
+
+          let noWa = murid.wa ? String(murid.wa).trim() : "";
+          const namaOrtu = murid.ortu || "Wali Murid";
+
+          if (!noWa || noWa === "" || noWa === "-") {
+            alert("Nomor WhatsApp orang tua tidak tersedia.");
+            return;
+          }
+
+          // Format nomor WA
+          let phone = noWa.replace(/[^0-9]/g, "");
+          if (phone.startsWith("0")) phone = "62" + phone.slice(1);
+
+          const salam = getSalamByTime();
+
+          // Tentukan template pesan berdasarkan status
+          let judulStatus, pesanStatus;
+          if (statusSaatIni === "Disetujui") {
+            judulStatus = "✅ *Telah Disetujui*";
+            pesanStatus = "Kami dengan senang hati menginformasikan bahwa pengajuan jadwal belajar ananda telah *DISETUJUI*. Silakan masuk ke portal untuk melihat jadwal terbaru yang sudah dikunci.";
+          } else if (statusSaatIni === "Ditolak") {
+            judulStatus = "❌ *Ditolak*";
+            pesanStatus = "Mohon maaf, pengajuan jadwal belajar ananda belum dapat disetujui saat ini. Silakan hubungi admin untuk mendiskusikan jadwal alternatif.";
+          } else {
+            judulStatus = "⏳ *Sedang Diproses*";
+            pesanStatus = "Kami telah menerima pengajuan jadwal belajar ananda dan sedang dalam proses review oleh admin. Kami akan mengabari lagi setelah ada keputusan.";
+          }
+
+          const teks = `${salam}, Bapak/Ibu ${namaOrtu}.
+
+Kami informasikan mengenai pengajuan jadwal belajar untuk ananda *${murid.nama}*.
+
+📋 *Detail Pengajuan:*
+• Jadwal yang diajukan: ${jadwalInfo}
+• Status: ${judulStatus}
+
+${pesanStatus}
+
+Jika ada pertanyaan, jangan ragu untuk menghubungi kami.
+
+Salam,
+Kak Harris - Les Privat Berkualitas untuk Semua Jenjang`;
+
+          const popup = window.open("about:blank", "_blank");
+          if (!popup) {
+            alert("Silakan izinkan pop-up browser untuk mengirim pesan WhatsApp.");
+            return;
+          }
+          popup.location.href = `https://wa.me/${phone}?text=${encodeURIComponent(teks)}`;
+        } catch (err) {
+          console.error(err);
+          alert("Terjadi gangguan koneksi: " + err.message);
+        }
+      }
+
+      // ========================================================
+      // FUNGSI ADMIN: HAPUS SEMUA PENGAJUAN JADWAL (ANTI-CORS)
+      // ========================================================
+      async function hapusSemuaPengajuan() {
+        const konfirmasi1 = confirm("⚠️ PERINGATAN BERSAMA!\nApakah Kak Harris yakin ingin menghapus SEMUA data pengajuan masuk?");
+        if (!konfirmasi1) return;
+
+        const konfirmasi2 = confirm("Tindakan ini akan mengosongkan database pengajuan dan TIDAK DAPAT dibatalkan. Lanjutkan?");
+        if (!konfirmasi2) return;
+
+        try {
+          const res = await fetch(WEB_APP_URL, {
+            method: "POST",
+            body: JSON.stringify({ action: "hapusSemuaPengajuan" }),
+          });
+          const hasil = await res.json();
+
+          if (hasil.status === "success") {
+            showToast(hasil.message, "success");
+          } else {
+            showToast("Gagal: " + (hasil.message || "Server error"), "error");
+          }
+
+          muatPengajuanJadwal();
+        } catch (err) {
+          console.error(err);
+          showToast("Gagal mengirim perintah ke server. Periksa koneksi internet.", "error");
+        }
+      }
+
+      // RESET TOTAL: Hapus pengajuan + kosongkan slot jadwal (Murid tetap aman)
+      async function resetSemuaJadwal() {
+        const konfirmasi1 = confirm(
+          "⚠️ PERINGATAN!\nTindakan ini akan:\n1. Menghapus SEMUA pengajuan jadwal\n2. Mengosongkan SEMUA slot jadwal (semua jadi Tersedia)\n\nData murid TIDAK akan berubah.\n\nLanjutkan?",
+        );
+        if (!konfirmasi1) return;
+
+        const konfirmasi2 = confirm("Konfirmasi akhir: Reset total jadwal? Data murid tetap aman.");
+        if (!konfirmasi2) return;
+
+        try {
+          const res = await fetch(WEB_APP_URL, {
+            method: "POST",
+            body: JSON.stringify({ action: "resetSemuaJadwal" }),
+          });
+          const hasil = await res.json();
+          alert(hasil.message || "✅ Reset selesai!");
+          muatPengajuanJadwal();
+        } catch (err) {
+          console.error(err);
+          alert("❌ Gagal mereset jadwal. Periksa koneksi.");
+        }
+      }
+
+      // VARIABEL GLOBAL UNTUK MENYIMPAN DATA CACHE MURID
+      let cacheDataMurid = [];
+
+      // MODIFIKASI FUNGSI MUAT AKUN: Simpan respon hasil ke cache global
+      async function muatAkunMurid() {
+        const tbody = document.getElementById("tabel-akun-murid");
+        tbody.innerHTML = `<tr><td colspan="7" class="p-4 text-center text-slate-400"><i class="fa-solid fa-spinner fa-spin"></i> Mengambil data akun...</td></tr>`;
+
+        try {
+          const respon = await fetch(`${WEB_APP_URL}?action=getMurid`);
+          const hasil = await respon.json();
+
+          if (hasil.status === "success") {
+            cacheDataMurid = hasil.data; // <--- Simpan ke cache untuk keperluan edit
+            if (hasil.data.length === 0) {
+              tbody.innerHTML = `<tr><td colspan="7" class="p-4 text-center text-slate-400">Belum ada data murid terdaftar.</td></tr>`;
+              return;
+            }
+
+            tbody.innerHTML = "";
+            hasil.data.forEach((murid) => {
+              const match = murid.paket ? murid.paket.match(/\d+/) : null;
+              const totalSesi = match ? parseInt(match[0]) : 4;
+              const sesiBerjalan = murid.sesiTerpakai || 0;
+
+              const badgeWarna = sesiBerjalan >= totalSesi ? "bg-red-100 text-red-700" : "bg-blue-100 text-blue-700";
+
+              tbody.innerHTML += `
+                <tr class="hover:bg-slate-50 transition">
+                  <td class="p-4 font-semibold text-slate-800">${murid.id}</td>
+                  <td class="p-4 text-slate-600 font-medium">
+                    <span class="block text-xs"><i class="fa-solid fa-user-group text-slate-300 mr-1"></i>${murid.parentUsername || murid.username || "-"}</span>
+                    <span class="block text-xs mt-1"><i class="fa-solid fa-graduation-cap text-slate-300 mr-1"></i>${murid.studentUsername || "-"}</span>
+                  </td>
+                  <td class="p-4 text-slate-500">${murid.authStatus === "aktif" ? "Terhubung" : "Belum dibuat"}</td>
+                  <td class="p-4 font-medium text-slate-900">${murid.nama}</td>
+                  <td class="p-4 text-slate-600">${murid.wa || "-"}</td>
+                  <td class="p-4 text-center">
+                    <span class="${badgeWarna} px-2 py-1 rounded-md text-xs font-semibold">${sesiBerjalan}/${totalSesi} Sesi</span>
+                  </td>
+                  <td class="p-4">
+                    <div class="flex items-center justify-center gap-2">
+                      <button onclick="kirimAkunMedsos('${murid.wa}', '${murid.ortu || ""}', '${murid.nama}', '${murid.parentUsername || murid.username || "-"}', '${murid.studentUsername || "-"}')" class="w-8 h-8 rounded-lg bg-green-50 text-green-600 hover:bg-green-100 flex items-center justify-center transition" title="Kirim petunjuk akun via WA">
+                        <i class="fa-brands fa-whatsapp"></i>
+                      </button>
+                      
+                      <button onclick="editAkunMurid('${murid.id}')" class="w-8 h-8 rounded-lg bg-blue-50 text-blue-600 hover:bg-blue-100 flex items-center justify-center transition" title="Edit">
+                        <i class="fa-solid fa-pen"></i>
+                      </button>
+                    </div>
+                  </td>
+                </tr>`;
+            });
+          } else {
+            tbody.innerHTML = `<tr><td colspan="7" class="p-4 text-center text-red-500">Gagal memuat data dari server.</td></tr>`;
+          }
+        } catch (error) {
+          tbody.innerHTML = `<tr><td colspan="7" class="p-4 text-center text-red-500">Gangguan koneksi internet.</td></tr>`;
+        }
+      }
+
+      let cacheAkunOrangTua = [];
+      let kredensialAktivasi = null;
+
+      function saranUsername(value, prefix = "") {
+        const slug = String(value || "")
+          .normalize("NFD")
+          .replace(/[\u0300-\u036f]/g, "")
+          .toLowerCase()
+          .replace(/[^a-z0-9]+/g, "-")
+          .replace(/^-+|-+$/g, "")
+          .slice(0, 28);
+        return `${prefix}${slug || "akun"}`;
+      }
+
+      function modeOrangTua() {
+        return document.querySelector('input[name="parent-mode"]:checked')?.value || "new";
+      }
+
+      function aturModeOrangTua() {
+        const existing = modeOrangTua() === "existing";
+        document.getElementById("parent-existing-fields").classList.toggle("hidden", !existing);
+        document.getElementById("parent-new-fields").classList.toggle("hidden", existing);
+        ["aktivasi-parent-name", "aktivasi-parent-phone", "aktivasi-parent-username", "aktivasi-parent-password"].forEach((id) => {
+          document.getElementById(id).required = !existing;
+        });
+        document.getElementById("aktivasi-parent-existing").required = existing;
+      }
+
+      function tampilkanDetailOrangTua() {
+        const uid = document.getElementById("aktivasi-parent-existing").value;
+        const account = cacheAkunOrangTua.find((item) => item.uid === uid);
+        document.getElementById("parent-existing-detail").textContent = account
+          ? `${account.nama} • @${account.username} • WA ${account.telepon || "-"} • ${account.muridIds.length} anak terhubung`
+          : "";
+      }
+
+      async function muatAkunOrangTua() {
+        const select = document.getElementById("aktivasi-parent-existing");
+        select.innerHTML = '<option value="">Memuat akun orang tua...</option>';
+        try {
+          cacheAkunOrangTua = (await firebasePortal.getParentAccounts()).filter((item) => item.aktif);
+          select.innerHTML =
+            '<option value="">-- Pilih akun orang tua --</option>' +
+            cacheAkunOrangTua
+              .map(
+                (item) =>
+                  `<option value="${escapeHtml(item.uid)}">${escapeHtml(item.nama)} — @${escapeHtml(item.username)}${item.telepon ? ` — ${escapeHtml(item.telepon)}` : ""}</option>`,
+              )
+              .join("");
+        } catch (error) {
+          select.innerHTML = '<option value="">Gagal memuat akun orang tua</option>';
+          document.getElementById("aktivasi-feedback").textContent = error.message;
+          document.getElementById("aktivasi-feedback").className = "text-sm min-h-5 text-red-600";
+        }
+      }
+
+      async function bukaModalAktivasi(murid) {
+        const form = document.getElementById("form-aktivasi-akun");
+        form.reset();
+        document.querySelector('input[name="parent-mode"][value="new"]').checked = true;
+        document.getElementById("aktivasi-id-murid").value = murid.id;
+        document.getElementById("aktivasi-subtitle").textContent = `${murid.nama} • ${murid.id} • ${murid.jenjang} Kelas ${murid.kelas}`;
+        document.getElementById("aktivasi-parent-name").value = murid.ortu || "";
+        document.getElementById("aktivasi-parent-phone").value = murid.wa || "";
+        document.getElementById("aktivasi-parent-username").value = saranUsername(murid.nama, "ortu-");
+        document.getElementById("aktivasi-student-username").value = saranUsername(murid.nama);
+        document.getElementById("aktivasi-feedback").textContent = "";
+        document.getElementById("aktivasi-feedback").className = "text-sm min-h-5";
+        document.getElementById("form-aktivasi-akun").classList.remove("hidden");
+        document.getElementById("aktivasi-success").classList.add("hidden");
+        document.getElementById("modal-aktivasi-akun").classList.remove("hidden");
+        kredensialAktivasi = null;
+        aturModeOrangTua();
+        await muatAkunOrangTua();
+      }
+
+      function tutupModalAktivasi() {
+        document.getElementById("modal-aktivasi-akun").classList.add("hidden");
+        document.getElementById("form-aktivasi-akun").reset();
+        document.getElementById("aktivasi-credentials").textContent = "";
+        kredensialAktivasi = null;
+        muatAkunMurid();
+        muatDataMurid();
+        muatDropdownMurid();
+      }
+
+      async function prosesAktivasiAkun(event) {
+        event.preventDefault();
+        const button = document.getElementById("btn-proses-aktivasi");
+        const feedback = document.getElementById("aktivasi-feedback");
+        const original = button.innerHTML;
+        const parentMode = modeOrangTua();
+        const payload = {
+          idMurid: document.getElementById("aktivasi-id-murid").value,
+          parentMode,
+          parentUid: document.getElementById("aktivasi-parent-existing").value,
+          parentName: document.getElementById("aktivasi-parent-name").value,
+          parentPhone: document.getElementById("aktivasi-parent-phone").value,
+          parentEmail: document.getElementById("aktivasi-parent-email").value,
+          parentUsername: document.getElementById("aktivasi-parent-username").value,
+          parentPassword: document.getElementById("aktivasi-parent-password").value,
+          studentUsername: document.getElementById("aktivasi-student-username").value,
+          studentPassword: document.getElementById("aktivasi-student-password").value,
+        };
+        feedback.textContent = "";
+        button.disabled = true;
+        button.innerHTML = '<i class="fa-solid fa-circle-notch fa-spin"></i> Membuat akun...';
+        try {
+          const result = await firebasePortal.provisionStudentAccounts(payload);
+          const existingParent = cacheAkunOrangTua.find((item) => item.uid === payload.parentUid);
+          const phone = parentMode === "existing" ? existingParent?.telepon || "" : payload.parentPhone;
+          kredensialAktivasi = {
+            ...result,
+            phone,
+            parentPassword: parentMode === "new" ? payload.parentPassword : "",
+            studentPassword: payload.studentPassword,
+          };
+          const parentLine =
+            parentMode === "new"
+              ? `AKUN ORANG TUA\nUsername: ${result.parentUsername}\nPassword sementara: ${payload.parentPassword}\n\n`
+              : `AKUN ORANG TUA\nGunakan akun lama: ${result.parentUsername}\n\n`;
+          document.getElementById("aktivasi-credentials").textContent =
+            `${parentLine}AKUN MURID (${result.studentName})\nUsername: ${result.studentUsername}\nPassword sementara: ${payload.studentPassword}`;
+          document.getElementById("form-aktivasi-akun").classList.add("hidden");
+          document.getElementById("aktivasi-success").classList.remove("hidden");
+        } catch (error) {
+          const message = /email-already-in-use/i.test(error.code || error.message)
+            ? "Username sudah ada di Firebase Authentication. Gunakan username lain."
+            : error.message || "Pembuatan akun gagal.";
+          feedback.textContent = message;
+          feedback.className = "text-sm min-h-5 text-red-600";
+        } finally {
+          button.disabled = false;
+          button.innerHTML = original;
+        }
+      }
+
+      function kirimKredensialAktivasi() {
+        if (!kredensialAktivasi) return;
+        let phone = String(kredensialAktivasi.phone || "").replace(/\D/g, "");
+        if (phone.startsWith("0")) phone = `62${phone.slice(1)}`;
+        if (!phone) {
+          showToast("Nomor WhatsApp orang tua tidak tersedia.", "error");
+          return;
+        }
+        const parentAccount = kredensialAktivasi.parentCreated
+          ? `Akun Orang Tua\nUsername: ${kredensialAktivasi.parentUsername}\nPassword sementara: ${kredensialAktivasi.parentPassword}`
+          : `Akun Orang Tua\nGunakan akun lama: ${kredensialAktivasi.parentUsername}`;
+        const message = `Halo Bapak/Ibu ${kredensialAktivasi.parentName}.
+
+Berikut akun portal Les Privat Kak Harris:
+
+${parentAccount}
+
+Akun Murid (${kredensialAktivasi.studentName})
+Username: ${kredensialAktivasi.studentUsername}
+Password sementara: ${kredensialAktivasi.studentPassword}
+
+Silakan ganti password setelah login. Jangan bagikan data akun ini kepada orang lain.`;
+        window.open(`https://wa.me/${phone}?text=${encodeURIComponent(message)}`, "_blank", "noopener");
+      }
+
+      // 1. FUNGSI UNTUK MEMBUKA MODAL & ISI DATA SEBELUMNYA
+      function editAkunMurid(id) {
+        const murid = cacheDataMurid.find((m) => String(m.id).trim() === String(id).trim());
+        if (!murid) {
+          alert("Data murid tidak ditemukan!");
+          return;
+        }
+
+        // Isi form modal dengan data yang ada
+        document.getElementById("edit-id").value = murid.id;
+        document.getElementById("edit-id-tampilan").value = murid.id;
+        document.getElementById("edit-nama").value = murid.nama;
+        document.getElementById("edit-ortu").value = murid.ortu || "";
+        document.getElementById("edit-wa").value = murid.wa || "";
+
+        // Map value paket
+        if (murid.paket) {
+          document.getElementById("edit-paket").value = murid.paket;
+        }
+
+        // Isi durasi (default 60 jika tidak ada)
+        document.getElementById("edit-durasi").value = murid.durasi || "60";
+
+        // Munculkan Modal
+        document.getElementById("modal-edit-murid").classList.remove("hidden");
+      }
+
+      function tutupModalEdit() {
+        document.getElementById("modal-edit-murid").classList.add("hidden");
+        document.getElementById("form-edit-murid").reset();
+      }
+
+      // 2. SIMPAN PERUBAHAN KE FIRESTORE
+      async function simpanEditMurid(e) {
+        e.preventDefault();
+        const btnSubmit = document.getElementById("btn-submit-edit");
+        const teksAsli = btnSubmit.innerHTML;
+
+        btnSubmit.innerHTML = "<i class='fa-solid fa-spinner fa-spin'></i> Menyimpan...";
+        btnSubmit.disabled = true;
+
+        const payload = {
+          action: "editMurid",
+          idMurid: document.getElementById("edit-id").value,
+          nama: document.getElementById("edit-nama").value,
+          ortu: document.getElementById("edit-ortu").value,
+          wa: document.getElementById("edit-wa").value,
+          paket: document.getElementById("edit-paket").value,
+          durasi: document.getElementById("edit-durasi").value,
+        };
+
+        try {
+          const respon = await fetch(WEB_APP_URL, {
+            method: "POST",
+            body: JSON.stringify(payload),
+          });
+          const hasil = await respon.json();
+          if (hasil.status === "success") {
+            alert(hasil.message);
+            tutupModalEdit();
+            muatAkunMurid(); // Reload tabel utama
+            muatDataMurid(); // Reload tabel aktivasi
+          } else {
+            alert("Gagal memperbarui data: " + hasil.message);
+          }
+        } catch (error) {
+          alert("Terjadi gangguan koneksi ke server.");
+        } finally {
+          btnSubmit.innerHTML = teksAsli;
+          btnSubmit.disabled = false;
+        }
+      }
+
+      // Password dikelola oleh Firebase Authentication, bukan disimpan di Firestore.
+
+      async function loadMateriBelajarAdmin() {
+        const tbody = document.getElementById("tabel-materi-body");
+        tbody.innerHTML = "<tr><td colspan='5' class='p-4 text-center text-slate-400'><i class='fa-solid fa-spinner fa-spin'></i> Memuat data log materi...</td></tr>";
+        try {
+          const respon = await fetch(`${WEB_APP_URL}?action=getAllMateri`);
+          const hasil = await respon.json();
+          if (hasil.status === "success") {
+            if (hasil.data.length === 0) {
+              tbody.innerHTML = "<tr><td colspan='5' class='p-4 text-center text-slate-400'>Belum ada materi yang di-publish.</td></tr>";
+              return;
+            }
+            tbody.innerHTML = "";
+            hasil.data.forEach((item) => {
+              // Pemrosesan Multi-Link YouTube (Split dengan karakter '|')
+              let linkYT = "<span class='text-slate-400'>-</span>";
+              if (item.linkVideo && item.linkVideo.trim() !== "") {
+                const arrYT = item.linkVideo.split("|");
+                linkYT = arrYT
+                  .map(
+                    (lnk, idx) => `
+            <a href="${lnk.trim()}" target="_blank" class="text-red-600 font-semibold hover:underline block mb-1">
+              <i class="fa-brands fa-youtube"></i> Video ${idx + 1}
+            </a>
+          `,
+                  )
+                  .join("");
+              }
+
+              // Pemrosesan Multi-Link Quizizz (Split dengan karakter '|')
+              let linkQZ = "<span class='text-slate-400'>-</span>";
+              if (item.linkQuizizz && item.linkQuizizz.trim() !== "") {
+                const arrQZ = item.linkQuizizz.split("|");
+                linkQZ = arrQZ
+                  .map(
+                    (lnk, idx) => `
+            <a href="${lnk.trim()}" target="_blank" class="text-purple-600 font-semibold hover:underline block mb-1">
+              <i class="fa-solid fa-gamepad"></i> Kuis ${idx + 1}
+            </a>
+          `,
+                  )
+                  .join("");
+              }
+
+              tbody.innerHTML += `
+          <tr class="hover:bg-slate-50 transition">
+            <td class="p-4 font-medium">${item.tanggal}</td>
+            <td class="p-4 font-semibold text-slate-800">${item.namaMurid}</td>
+            <td class="p-4 font-medium text-slate-700">${item.judul}</td>
+            <td class="p-4">${linkYT}</td>
+            <td class="p-4">${linkQZ}</td>
+          </tr>`;
+            });
+          }
+        } catch (error) {
+          tbody.innerHTML = "<tr><td colspan='5' class='p-4 text-center text-red-500'>Gagal terhubung ke server.</td></tr>";
+        }
+      }
+
+      async function simpanMateriBelajar(e) {
+        e.preventDefault();
+        const btnSubmit = document.getElementById("btn-submit-materi");
+        const teksAsli = btnSubmit.innerHTML;
+
+        btnSubmit.innerHTML = "<i class='fa-solid fa-spinner fa-spin'></i> Memproses Berkas...";
+        btnSubmit.disabled = true;
+
+        const payload = {
+          action: "addMateri",
+          idMurid: document.getElementById("materi-murid").value,
+          tanggal: document.getElementById("materi-tanggal").value,
+          judul: document.getElementById("materi-judul").value,
+          deskripsi: document.getElementById("materi-deskripsi").value,
+          linkVideo: document.getElementById("materi-video").value,
+          linkQuizizz: document.getElementById("materi-quizizz").value,
+        };
+
+        try {
+          const respon = await fetch(WEB_APP_URL, {
+            method: "POST",
+            body: JSON.stringify(payload),
+          });
+          const hasil = await respon.json();
+          if (hasil.status === "success") {
+            alert(hasil.message);
+            document.getElementById("form-materi").reset();
+            document.getElementById("materi-tanggal").valueAsDate = new Date();
+            loadMateriBelajarAdmin();
+          } else {
+            alert("Gagal: " + hasil.message);
+          }
+        } catch (error) {
+          alert("Terjadi gangguan jaringan.");
+        } finally {
+          btnSubmit.innerHTML = teksAsli;
+          btnSubmit.disabled = false;
+        }
+      }
+
+      // Fungsi untuk mendapatkan salam berdasarkan jam lokal
+      function getSalamByTime() {
+        const jam = new Date().getHours();
+        if (jam >= 5 && jam < 11) return "Selamat pagi";
+        if (jam >= 11 && jam < 15) return "Selamat siang";
+        if (jam >= 15 && jam < 18) return "Selamat sore";
+        return "Selamat malam";
+      }
+
+      function kirimAkunMedsos(noWa, namaOrtu, namaMurid, usernameOrtu, usernameMurid) {
+        if (!noWa || noWa === "-") {
+          alert("Nomor WhatsApp tidak valid atau kosong!");
+          return;
+        }
+
+        // Standardisasi nomor WA ke format internasional (62)
+        let phone = noWa.replace(/[^0-9]/g, "");
+        if (phone.startsWith("0")) {
+          phone = "62" + phone.slice(1);
+        }
+
+        // Dapatkan salam dinamis
+        const salam = getSalamByTime();
+
+        // Template pesan yang lebih manusiawi
+        const teks = `${salam}, Bapak/Ibu ${namaOrtu || "Wali Murid"}.
+
+Terima kasih telah mempercayakan pendidikan ananda ${namaMurid} kepada Les Privat kami. Berikut adalah data akun untuk mengakses portal orang tua/wali:
+
+*Link Portal*: ${window.location.origin}
+*Username Orang Tua* : ${usernameOrtu}
+*Username Murid*      : ${usernameMurid}
+*Password*            : dikirim terpisah oleh admin
+
+Dengan akun ini, Bapak/Ibu dapat:
+- Memantau jadwal belajar
+- Melihat absensi & catatan perkembangan
+- Mengunduh materi & tugas
+- Mengajukan perubahan jadwal
+
+Mohon simpan informasi ini dengan baik. Jika ada kendala, silakan hubungi admin.
+
+Salam hangat,
+Kak Harris - Les Privat Berkualitas untuk Semua Jenjang`;
+
+        // Redirect ke WhatsApp
+        const url = `https://wa.me/${phone}?text=${encodeURIComponent(teks)}`;
+        window.open(url, "_blank");
+      }
+
+      // Fungsi kirim laporan perkembangan via WhatsApp
+      async function kirimLaporanPerkembangan(idMurid, tanggal, status, materi, catatan) {
+        // Validasi ID Murid
+        if (!idMurid) {
+          alert("ID Murid tidak ditemukan. Periksa data absensi.");
+          return;
+        }
+
+        try {
+          const respon = await fetch(`${WEB_APP_URL}?action=getMurid`);
+          const hasil = await respon.json();
+          if (hasil.status !== "success") {
+            alert("Gagal mengambil data murid.");
+            return;
+          }
+
+          const murid = hasil.data.find((m) => String(m.id).trim() === String(idMurid).trim());
+          if (!murid) {
+            alert(`Data murid dengan ID ${idMurid} tidak ditemukan.`);
+            return;
+          }
+
+          // 🔥 PERBAIKAN: Pastikan noWa diubah ke string dan tidak null
+          let noWa = murid.wa ? String(murid.wa).trim() : "";
+          const namaOrtu = murid.ortu || "Wali Murid";
+          const namaMurid = murid.nama;
+
+          if (!noWa || noWa === "" || noWa === "-") {
+            alert("Nomor WhatsApp orang tua tidak tersedia atau kosong.");
+            return;
+          }
+
+          // Format nomor WA (hilangkan semua non-digit, ganti 0 di awal jadi 62)
+          let phone = noWa.replace(/[^0-9]/g, "");
+          if (phone.startsWith("0")) {
+            phone = "62" + phone.slice(1);
+          }
+
+          // Salam dinamis
+          const jam = new Date().getHours();
+          let salam = "Selamat pagi";
+          if (jam >= 11 && jam < 15) salam = "Selamat siang";
+          else if (jam >= 15 && jam < 18) salam = "Selamat sore";
+          else if (jam >= 18 || jam < 5) salam = "Selamat malam";
+
+          // Template pesan
+          const teks = `${salam}, Bapak/Ibu ${namaOrtu}.
+
+Berikut adalah laporan belajar dari ananda ${namaMurid} pada tanggal ${tanggal}:
+
+Ananda hari ini *${status}*. Materi yang kita bahas hari ini adalah *${materi}*. Berdasarkan catatan dari kami, ${catatan}
+
+Terima kasih atas perhatiannya. Mari dukung terus semangat belajar putra/putri kami.
+
+Salam,
+Kak Harris - Les Privat Berkualitas untuk Semua Jenjang`;
+
+          const popup = window.open("about:blank", "_blank");
+          if (!popup) {
+            alert("Silakan izinkan pop-up browser atau gunakan tautan WA langsung agar pesan dapat dikirim.");
+            return;
+          }
+
+          const url = `https://wa.me/${phone}?text=${encodeURIComponent(teks)}`;
+          popup.location.href = url;
+        } catch (err) {
+          console.error(err);
+          alert("Terjadi gangguan koneksi: " + err.message);
+        }
+      }
+
+      async function kirimPesanKeuangan(idMurid, nominal, keterangan, tanggal) {
+        if (!idMurid) {
+          alert("ID Murid tidak ditemukan.");
+          return;
+        }
+
+        try {
+          const respon = await fetch(`${WEB_APP_URL}?action=getMurid`);
+          const hasil = await respon.json();
+          if (hasil.status !== "success") {
+            alert("Gagal mengambil data murid.");
+            return;
+          }
+
+          const murid = hasil.data.find((m) => String(m.id).trim() === String(idMurid).trim());
+          if (!murid) {
+            alert(`Data murid dengan ID ${idMurid} tidak ditemukan.`);
+            return;
+          }
+
+          let noWa = murid.wa ? String(murid.wa).trim() : "";
+          const namaOrtu = murid.ortu || "Wali Murid";
+          const namaMurid = murid.nama;
+
+          if (!noWa || noWa === "" || noWa === "-") {
+            alert("Nomor WhatsApp orang tua tidak tersedia.");
+            return;
+          }
+
+          let phone = noWa.replace(/[^0-9]/g, "");
+          if (phone.startsWith("0")) phone = "62" + phone.slice(1);
+
+          const jam = new Date().getHours();
+          let salam = "Selamat pagi";
+          if (jam >= 11 && jam < 15) salam = "Selamat siang";
+          else if (jam >= 15 && jam < 18) salam = "Selamat sore";
+          else if (jam >= 18 || jam < 5) salam = "Selamat malam";
+
+          const nominalFormatted = new Intl.NumberFormat("id-ID", {
+            style: "currency",
+            currency: "IDR",
+            minimumFractionDigits: 0,
+          }).format(nominal);
+
+          // Format tanggal dd-mm-yyyy
+          const tglFormat = tanggal && tanggal !== "-" ? tanggal.split("-").reverse().join("-") : tanggal;
+
+          const teks = `${salam}, Bapak/Ibu ${namaOrtu}.
+
+Kami informasikan pembayaran atas nama ananda _${namaMurid}_ telah tercatat dengan rincian:
+
+- Tanggal : ${tglFormat}
+- Jumlah  : ${nominalFormatted}
+- Keterangan : ${keterangan}
+
+Terima kasih atas kepercayaan dan kerjasamanya. Jika ada kesalahan, silakan hubungi admin segera.
+
+Salam,
+Kak Harris | Les Privat Matematika Online`;
+
+          const popup = window.open("about:blank", "_blank");
+          if (!popup) {
+            alert("Silakan izinkan pop-up browser untuk mengirim pesan WhatsApp.");
+            return;
+          }
+          popup.location.href = `https://wa.me/${phone}?text=${encodeURIComponent(teks)}`;
+        } catch (err) {
+          console.error(err);
+          alert("Terjadi gangguan koneksi: " + err.message);
+        }
+      }
+    </script>
+  </body>
+</html>

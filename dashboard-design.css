@@ -1,0 +1,680 @@
+@import url("https://fonts.googleapis.com/css2?family=Manrope:wght@600;700;800&family=Source+Sans+3:wght@400;500;600;700&display=swap");
+
+:root {
+  --dash-navy: #102a43;
+  --dash-navy-deep: #0b2034;
+  --dash-blue: #2563eb;
+  --dash-blue-soft: #eaf1ff;
+  --dash-yellow: #f5b942;
+  --dash-bg: #f5f6f2;
+  --dash-paper: #ffffff;
+  --dash-ink: #172033;
+  --dash-muted: #64748b;
+  --dash-line: #dfe4ea;
+  --dash-success: #16845b;
+  --dash-warning: #b7791f;
+  --dash-danger: #c2414b;
+  --dash-radius: 10px;
+  --dash-shadow: 0 8px 24px rgba(16, 42, 67, 0.06);
+}
+
+.dashboard-admin,
+.dashboard-ortu {
+  background: var(--dash-bg) !important;
+  color: var(--dash-muted) !important;
+  font-family: "Source Sans 3", sans-serif !important;
+  font-size: 16px;
+  line-height: 1.5;
+}
+
+.dashboard-admin h1,
+.dashboard-admin h2,
+.dashboard-admin h3,
+.dashboard-ortu h1,
+.dashboard-ortu h2,
+.dashboard-ortu h3,
+.dashboard-admin aside > div:first-child,
+.dashboard-ortu #sidebar > div:first-child > div:nth-child(2) {
+  color: var(--dash-ink);
+  font-family: "Manrope", sans-serif;
+  letter-spacing: -0.02em;
+}
+
+.dashboard-admin *,
+.dashboard-ortu * {
+  scrollbar-color: #b8c2cc transparent;
+  scrollbar-width: thin;
+}
+
+/* Shared controls */
+.dashboard-admin input:not([type="radio"]):not([type="checkbox"]):not([type="file"]),
+.dashboard-admin select,
+.dashboard-admin textarea,
+.dashboard-ortu input:not([type="radio"]):not([type="checkbox"]):not([type="file"]),
+.dashboard-ortu select,
+.dashboard-ortu textarea {
+  background: #fbfcfa !important;
+  border-color: var(--dash-line) !important;
+  border-radius: 8px !important;
+  color: var(--dash-ink) !important;
+  font-family: "Source Sans 3", sans-serif;
+  min-height: 44px;
+  transition:
+    border-color 0.18s ease,
+    box-shadow 0.18s ease,
+    background-color 0.18s ease;
+}
+
+.dashboard-admin textarea,
+.dashboard-ortu textarea {
+  min-height: 108px;
+}
+
+.dashboard-admin input:focus,
+.dashboard-admin select:focus,
+.dashboard-admin textarea:focus,
+.dashboard-ortu input:focus,
+.dashboard-ortu select:focus,
+.dashboard-ortu textarea:focus {
+  background: #fff !important;
+  border-color: var(--dash-blue) !important;
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.12) !important;
+  outline: none !important;
+}
+
+.dashboard-admin label,
+.dashboard-ortu label {
+  color: #526174;
+}
+
+.dashboard-admin button,
+.dashboard-admin a,
+.dashboard-ortu button,
+.dashboard-ortu a {
+  border-radius: 8px !important;
+}
+
+.dashboard-admin button[class*="bg-blue-600"],
+.dashboard-admin button[class*="bg-purple-600"],
+.dashboard-ortu button[class*="bg-blue-600"],
+.dashboard-ortu button[class*="bg-purple-600"] {
+  background: var(--dash-blue) !important;
+  box-shadow: none !important;
+}
+
+.dashboard-admin button[class*="bg-blue-600"]:hover,
+.dashboard-admin button[class*="bg-purple-600"]:hover,
+.dashboard-ortu button[class*="bg-blue-600"]:hover,
+.dashboard-ortu button[class*="bg-purple-600"]:hover {
+  background: #1d4ed8 !important;
+}
+
+.dashboard-admin button[class*="bg-red"],
+.dashboard-ortu button[class*="bg-red"] {
+  box-shadow: none !important;
+}
+
+.dashboard-admin .rounded-2xl,
+.dashboard-ortu .rounded-2xl {
+  border-radius: var(--dash-radius) !important;
+}
+
+.dashboard-admin .rounded-xl,
+.dashboard-ortu .rounded-xl {
+  border-radius: 8px !important;
+}
+
+.dashboard-admin .shadow-sm,
+.dashboard-admin .shadow-md,
+.dashboard-ortu .shadow-sm,
+.dashboard-ortu .shadow-md {
+  box-shadow: none !important;
+}
+
+.dashboard-admin section.bg-white,
+.dashboard-admin div.bg-white.rounded-2xl,
+.dashboard-ortu div.bg-white.rounded-2xl,
+.dashboard-ortu section.bg-white {
+  border-color: var(--dash-line) !important;
+  box-shadow: var(--dash-shadow) !important;
+}
+
+/* Admin shell */
+.dashboard-admin > div {
+  align-items: stretch;
+}
+
+.dashboard-admin > div > aside {
+  background: var(--dash-navy) !important;
+  border: 0 !important;
+  color: #d9e5ee;
+  min-height: 100vh;
+  padding: 24px 18px !important;
+  position: sticky;
+  top: 0;
+}
+
+.dashboard-admin > div > aside > div:first-child {
+  border-bottom: 1px solid rgba(255, 255, 255, 0.12);
+  margin: 0 6px;
+  padding: 0 2px 20px;
+}
+
+.dashboard-admin > div > aside > div:first-child > div {
+  color: #fff !important;
+  font-size: 18px !important;
+  font-weight: 800;
+}
+
+.dashboard-admin > div > aside nav {
+  gap: 5px !important;
+}
+
+.dashboard-admin .menu-btn,
+.dashboard-admin > div > aside nav > a {
+  background: transparent !important;
+  color: #c5d4df !important;
+  font-family: "Source Sans 3", sans-serif;
+  font-size: 15px;
+  font-weight: 600;
+  min-height: 44px;
+  padding: 10px 12px !important;
+  position: relative;
+}
+
+.dashboard-admin .menu-btn i,
+.dashboard-admin > div > aside nav > a i {
+  color: #8fa7b9;
+  font-size: 15px !important;
+  width: 20px;
+}
+
+.dashboard-admin .menu-btn:hover {
+  background: rgba(255, 255, 255, 0.07) !important;
+  color: #fff !important;
+}
+
+.dashboard-admin .menu-btn.bg-blue-50 {
+  background: #fff !important;
+  color: var(--dash-navy) !important;
+}
+
+.dashboard-admin .menu-btn.bg-blue-50::before {
+  background: var(--dash-yellow);
+  border-radius: 0 4px 4px 0;
+  content: "";
+  height: 22px;
+  left: -18px;
+  position: absolute;
+  top: 11px;
+  width: 4px;
+}
+
+.dashboard-admin .menu-btn.bg-blue-50 i {
+  color: var(--dash-blue) !important;
+}
+
+.dashboard-admin > div > aside nav > a {
+  border-top: 1px solid rgba(255, 255, 255, 0.12);
+  color: #f0b9bd !important;
+  margin-top: 22px !important;
+  padding-top: 18px !important;
+}
+
+.dashboard-admin > div > aside nav > a:hover {
+  background: rgba(194, 65, 75, 0.13) !important;
+  color: #fff !important;
+}
+
+.dashboard-admin > div > main {
+  min-width: 0;
+  padding: 32px clamp(22px, 4vw, 56px) 56px !important;
+}
+
+.dashboard-admin > div > main > header {
+  border-bottom: 1px solid var(--dash-line);
+  margin-bottom: 26px !important;
+  padding-bottom: 22px;
+}
+
+.dashboard-admin > div > main > header h1 {
+  color: var(--dash-ink) !important;
+  font-size: clamp(24px, 2.5vw, 32px) !important;
+  font-weight: 800;
+}
+
+.dashboard-admin > div > main > header p {
+  color: var(--dash-muted) !important;
+  font-size: 15px;
+}
+
+.dashboard-admin .tab-content {
+  padding: clamp(20px, 3vw, 32px) !important;
+}
+
+.dashboard-admin .tab-content > h2,
+.dashboard-admin .tab-content > div > h2 {
+  border-bottom: 1px solid var(--dash-line);
+  color: var(--dash-navy) !important;
+  font-size: 17px !important;
+  padding-bottom: 16px;
+}
+
+.dashboard-admin .tab-content h2 i,
+.dashboard-admin .tab-content h3 i {
+  color: var(--dash-blue) !important;
+}
+
+.dashboard-admin .tab-content form {
+  max-width: 1080px;
+}
+
+.dashboard-admin .peer:checked + label {
+  background: var(--dash-blue-soft) !important;
+  border-color: var(--dash-blue) !important;
+  color: var(--dash-blue) !important;
+  box-shadow: inset 0 0 0 1px var(--dash-blue);
+}
+
+/* Tables */
+.dashboard-admin .overflow-x-auto,
+.dashboard-ortu .overflow-x-auto {
+  border-color: var(--dash-line) !important;
+  border-radius: 8px !important;
+}
+
+.dashboard-admin table,
+.dashboard-ortu table {
+  background: #fff;
+  font-variant-numeric: tabular-nums;
+}
+
+.dashboard-admin thead tr,
+.dashboard-ortu thead tr {
+  background: #eef1f3 !important;
+  border-color: var(--dash-line) !important;
+  color: #425466 !important;
+  font-size: 12px !important;
+  letter-spacing: 0.045em;
+  text-transform: uppercase;
+}
+
+.dashboard-admin th,
+.dashboard-ortu th {
+  font-weight: 700 !important;
+  padding: 12px 14px !important;
+  white-space: nowrap;
+}
+
+.dashboard-admin td,
+.dashboard-ortu td {
+  border-color: #edf0f2;
+  color: #526174;
+  padding: 13px 14px !important;
+  vertical-align: top;
+}
+
+.dashboard-admin tbody tr:hover,
+.dashboard-ortu tbody tr:hover {
+  background: #fafbf9;
+}
+
+/* Notifications and modals */
+.dashboard-admin .notif-btn > button,
+.dashboard-ortu .notif-btn > button,
+.dashboard-ortu #main-content > div > div:first-child button {
+  background: #fff !important;
+  border-color: var(--dash-line) !important;
+  color: var(--dash-navy) !important;
+}
+
+.dashboard-admin .notif-panel,
+.dashboard-ortu .notif-panel {
+  border: 1px solid var(--dash-line);
+  border-radius: 10px !important;
+  box-shadow: 0 18px 48px rgba(16, 42, 67, 0.16) !important;
+}
+
+.dashboard-admin [id^="modal-"] > div,
+.dashboard-ortu [id^="modal-"] > div {
+  border-radius: 10px !important;
+  box-shadow: 0 22px 64px rgba(10, 27, 44, 0.24) !important;
+}
+
+.dashboard-admin [id^="modal-"] > div > div:first-child,
+.dashboard-ortu [id^="modal-"] > div > div:first-child {
+  background: #f3f5f3 !important;
+  border-color: var(--dash-line) !important;
+}
+
+/* Parent portal shell */
+.dashboard-ortu #sidebar {
+  background: var(--dash-navy) !important;
+  border: 0 !important;
+  color: #c5d4df;
+  padding: 22px 16px !important;
+}
+
+.dashboard-ortu #sidebar > div:first-child > div:nth-child(2) {
+  border-color: rgba(255, 255, 255, 0.12) !important;
+  color: #fff !important;
+  font-size: 18px !important;
+  margin: 0 4px 18px !important;
+  padding: 0 4px 18px !important;
+}
+
+.dashboard-ortu #sidebar li {
+  background: transparent !important;
+  color: #c5d4df !important;
+  font-size: 15px !important;
+  min-height: 44px;
+  padding: 10px 12px !important;
+  position: relative;
+}
+
+.dashboard-ortu #sidebar li i {
+  color: #8fa7b9 !important;
+}
+
+.dashboard-ortu #sidebar li:hover {
+  background: rgba(255, 255, 255, 0.07) !important;
+  color: #fff !important;
+}
+
+.dashboard-ortu #sidebar li.bg-blue-50 {
+  background: #fff !important;
+  color: var(--dash-navy) !important;
+}
+
+.dashboard-ortu #sidebar li.bg-blue-50::before {
+  background: var(--dash-yellow);
+  border-radius: 0 4px 4px 0;
+  content: "";
+  height: 22px;
+  left: -16px;
+  position: absolute;
+  top: 11px;
+  width: 4px;
+}
+
+.dashboard-ortu #sidebar li.bg-blue-50 i {
+  color: var(--dash-blue) !important;
+}
+
+.dashboard-ortu #sidebar > div:last-child > div {
+  border-color: rgba(255, 255, 255, 0.12) !important;
+  color: #f0b9bd !important;
+}
+
+.dashboard-ortu #sidebar > div:last-child > div:hover {
+  background: rgba(194, 65, 75, 0.13) !important;
+  color: #fff !important;
+}
+
+.dashboard-ortu #main-content {
+  align-items: stretch !important;
+}
+
+.dashboard-ortu #main-content > div {
+  margin: 0 auto;
+}
+
+.dashboard-ortu #main-content > div > div:first-child {
+  border-bottom: 1px solid var(--dash-line);
+  padding-bottom: 16px;
+}
+
+.dashboard-ortu #main-content > div > div:first-child > div:first-child > span {
+  color: var(--dash-ink) !important;
+  font-family: "Manrope", sans-serif;
+  font-weight: 800;
+}
+
+.dashboard-ortu #view-utama > div:first-child {
+  background: var(--dash-navy) !important;
+  border: 0 !important;
+  box-shadow: var(--dash-shadow) !important;
+  color: #fff;
+}
+
+.dashboard-ortu #view-utama > div:first-child h1 {
+  color: #fff !important;
+}
+
+.dashboard-ortu #view-utama > div:first-child p {
+  color: #c6d5e0 !important;
+}
+
+.dashboard-ortu #view-utama > div:first-child > div:last-child {
+  background: #fff !important;
+  border-color: transparent !important;
+}
+
+.dashboard-ortu #view-utama > div:first-child > div:last-child p:first-child {
+  color: var(--dash-muted) !important;
+}
+
+.dashboard-ortu #view-utama > div:first-child > div:last-child p:last-child {
+  color: var(--dash-navy) !important;
+}
+
+.dashboard-ortu #view-utama > div:nth-child(2) {
+  padding: 0 !important;
+  overflow: hidden;
+}
+
+.dashboard-ortu #view-utama > div:nth-child(2) > div:first-child {
+  background: #f3f5f3;
+  border-bottom: 1px solid var(--dash-line);
+  gap: 0 !important;
+  padding: 0 18px;
+}
+
+.dashboard-ortu #view-utama > div:nth-child(2) > div:first-child button {
+  border-bottom-width: 3px !important;
+  border-radius: 0 !important;
+  min-height: 48px;
+}
+
+.dashboard-ortu #view-utama > div:nth-child(2) > div:first-child button.border-blue-600 {
+  border-color: var(--dash-yellow) !important;
+  color: var(--dash-navy) !important;
+}
+
+.dashboard-ortu #sec-absen,
+.dashboard-ortu #sec-bayar,
+.dashboard-ortu #sec-jadwal {
+  padding: 22px;
+}
+
+.dashboard-ortu #sec-jadwal > div:first-of-type,
+.dashboard-ortu #sec-bayar > div:first-of-type,
+.dashboard-ortu .jadwal-row {
+  background: #f7f8f6 !important;
+  border-color: var(--dash-line) !important;
+}
+
+.dashboard-ortu #view-utama > .grid {
+  align-items: start;
+}
+
+.dashboard-ortu #view-utama > .grid > div:last-child > div {
+  box-shadow: none !important;
+}
+
+.dashboard-ortu #view-utama > .grid > div:last-child h3 {
+  color: var(--dash-navy) !important;
+}
+
+.dashboard-ortu #ruang-belajar-list,
+.dashboard-ortu #ruang-belajar-detail,
+.dashboard-ortu #view-profil > div {
+  padding: clamp(20px, 3vw, 32px) !important;
+}
+
+.dashboard-ortu #materi-container > div {
+  border-color: var(--dash-line) !important;
+  border-radius: 8px !important;
+  box-shadow: none !important;
+}
+
+.dashboard-ortu #profil-avatar {
+  background: var(--dash-navy) !important;
+  border-color: var(--dash-yellow) !important;
+  border-radius: 10px !important;
+}
+
+.dashboard-ortu #view-profil .bg-slate-50 {
+  background: #f3f5f3 !important;
+}
+
+.dashboard-ortu #profil-jadwal-container > * {
+  border-radius: 8px !important;
+}
+
+/* Responsive treatment */
+@media (min-width: 1024px) {
+  .dashboard-admin > div > aside {
+    height: 100vh;
+    width: 270px !important;
+  }
+
+  .dashboard-admin > div > main {
+    max-width: calc(100vw - 270px);
+  }
+}
+
+@media (max-width: 1023px) {
+  .dashboard-admin > div > aside {
+    min-height: auto;
+    position: static;
+  }
+
+  .dashboard-admin > div > aside nav {
+    display: grid !important;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .dashboard-admin > div > aside nav > a {
+    margin-top: 0 !important;
+  }
+
+  .dashboard-admin .menu-btn.bg-blue-50::before {
+    height: 4px;
+    left: 12px;
+    top: auto;
+    width: 28px;
+    bottom: -1px;
+  }
+}
+
+@media (max-width: 767px) {
+  .dashboard-admin {
+    font-size: 15px;
+  }
+
+  .dashboard-admin > div > aside {
+    padding: 18px 14px !important;
+  }
+
+  .dashboard-admin > div > aside > div:first-child {
+    padding-bottom: 14px;
+  }
+
+  .dashboard-admin > div > aside nav {
+    display: flex !important;
+    flex-direction: row !important;
+    gap: 7px !important;
+    margin: 0 -14px;
+    overflow-x: auto;
+    padding: 2px 14px 8px;
+    scroll-snap-type: x proximity;
+  }
+
+  .dashboard-admin .menu-btn,
+  .dashboard-admin > div > aside nav > a {
+    flex: 0 0 auto;
+    min-height: 40px;
+    padding: 8px 11px !important;
+    scroll-snap-align: start;
+    width: auto !important;
+  }
+
+  .dashboard-admin > div > aside nav > a {
+    border: 0;
+    margin: 0 !important;
+    padding-top: 8px !important;
+  }
+
+  .dashboard-admin > div > main {
+    padding: 22px 14px 42px !important;
+  }
+
+  .dashboard-admin > div > main > header {
+    gap: 12px;
+  }
+
+  .dashboard-admin > div > main > header h1 {
+    font-size: 22px !important;
+  }
+
+  .dashboard-admin .tab-content {
+    padding: 18px 14px !important;
+  }
+
+  .dashboard-admin form .gap-6 {
+    gap: 16px !important;
+  }
+
+  .dashboard-admin button[type="submit"],
+  .dashboard-ortu button[type="submit"] {
+    width: 100% !important;
+  }
+
+  .dashboard-ortu #main-content {
+    padding: 14px !important;
+  }
+
+  .dashboard-ortu #main-content > div {
+    gap: 16px !important;
+  }
+
+  .dashboard-ortu #view-utama > div:first-child {
+    padding: 20px !important;
+  }
+
+  .dashboard-ortu #sec-absen,
+  .dashboard-ortu #sec-bayar,
+  .dashboard-ortu #sec-jadwal {
+    padding: 16px 12px;
+  }
+
+  .dashboard-ortu #view-utama > div:nth-child(2) > div:first-child {
+    overflow-x: auto;
+    padding: 0 8px;
+  }
+
+  .dashboard-ortu #view-utama > div:nth-child(2) > div:first-child button {
+    flex: 0 0 auto;
+    white-space: nowrap;
+  }
+
+  .dashboard-ortu #ruang-belajar-list,
+  .dashboard-ortu #ruang-belajar-detail,
+  .dashboard-ortu #view-profil > div {
+    padding: 18px 14px !important;
+  }
+
+  .dashboard-ortu #view-profil .flex.justify-between {
+    align-items: flex-start;
+    gap: 12px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .dashboard-admin *,
+  .dashboard-ortu * {
+    scroll-behavior: auto !important;
+    transition-duration: 0.01ms !important;
+  }
+}

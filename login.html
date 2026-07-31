@@ -1,0 +1,106 @@
+<!doctype html>
+<html lang="id">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Login Wali Murid | Les Privat Kak Harris</title>
+    <meta name="description" content="Login portal wali murid dan admin Les Privat Kak Harris." />
+    <link rel="stylesheet" href="public-design.css" />
+  </head>
+  <body class="login-page">
+    <aside class="login-side">
+      <a href="index.html" class="public-brand">
+        <span class="brand-mark">H</span>
+        <span class="brand-copy"><strong>Les Privat Kak Harris</strong><small>Matematika SD &amp; SMP</small></span>
+      </a>
+      <div class="login-side-copy">
+        <h1>Belajar lebih terpantau, tanpa menambah ribet.</h1>
+        <p>Portal ini digunakan untuk melihat jadwal, kehadiran, materi, perkembangan belajar, dan informasi pembayaran siswa.</p>
+      </div>
+      <p class="login-side-note">Akses khusus wali murid dan pengelola.</p>
+    </aside>
+
+    <main class="login-main">
+      <div class="login-box">
+        <span class="eyebrow">Portal anggota</span>
+        <h2>Masuk ke dashboard</h2>
+        <p class="login-intro">Gunakan username atau email dan password yang diberikan oleh admin.</p>
+
+        <form class="login-form" onsubmit="event.preventDefault(); prosesLogin();">
+          <div class="field-group">
+            <label for="username-input">Username</label>
+            <input type="text" id="username-input" name="username" autocomplete="username" placeholder="Contoh: kezia123" />
+          </div>
+          <div class="field-group">
+            <label for="pin-input">Password</label>
+            <input type="password" id="pin-input" name="password" autocomplete="current-password" placeholder="Masukkan password" />
+          </div>
+          <button id="btn-login" class="login-submit" type="submit">
+            <span id="btn-login-text">Masuk</span>
+            <span id="btn-login-spinner" class="is-hidden" aria-hidden="true"> · Memuat</span>
+          </button>
+          <p id="login-error" class="login-error is-hidden" role="alert">Username/email atau password salah.</p>
+        </form>
+
+        <a href="index.html" class="login-back">← Kembali ke beranda</a>
+      </div>
+    </main>
+
+    <script src="https://www.gstatic.com/firebasejs/12.16.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/12.16.0/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/12.16.0/firebase-firestore-compat.js"></script>
+    <script src="firebase-config.js"></script>
+    <script src="firebase-api.js"></script>
+    <script>
+
+      async function prosesLogin() {
+        const usernameInput = document.getElementById("username-input");
+        const pinInput = document.getElementById("pin-input");
+        const errorMsg = document.getElementById("login-error");
+        const btnLogin = document.getElementById("btn-login");
+        const btnText = document.getElementById("btn-login-text");
+        const btnSpinner = document.getElementById("btn-login-spinner");
+        const usernameMasuk = usernameInput.value.trim();
+        const passwordMasuk = pinInput.value;
+
+        usernameInput.classList.remove("field-error");
+        pinInput.classList.remove("field-error");
+        errorMsg.classList.add("is-hidden");
+
+        if (!usernameMasuk || !passwordMasuk) {
+          if (!usernameMasuk) usernameInput.classList.add("field-error");
+          if (!passwordMasuk) pinInput.classList.add("field-error");
+          errorMsg.textContent = "Username dan password harus diisi.";
+          errorMsg.classList.remove("is-hidden");
+          return;
+        }
+
+        btnLogin.disabled = true;
+        btnText.textContent = "Memproses";
+        btnSpinner.classList.remove("is-hidden");
+
+        try {
+          errorMsg.textContent = "Username/email atau password salah. Silakan coba lagi.";
+          const { profile } = await firebasePortal.login(usernameMasuk, passwordMasuk);
+          const requested = new URLSearchParams(location.search).get("next");
+          const destinations = {
+            admin: "dashboard.html",
+            orangtua: "ortu-dashboard.html",
+            murid: "murid-dashboard.html",
+          };
+          const destination = destinations[profile.role];
+          const safeNext = requested === destination ? requested : destination;
+          window.location.href = safeNext;
+        } catch (error) {
+          console.error(error);
+          errorMsg.textContent = error.message || "Login gagal. Coba lagi nanti.";
+          errorMsg.classList.remove("is-hidden");
+        } finally {
+          btnLogin.disabled = false;
+          btnText.textContent = "Masuk";
+          btnSpinner.classList.add("is-hidden");
+        }
+      }
+    </script>
+  </body>
+</html>

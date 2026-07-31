@@ -1,0 +1,120 @@
+<!doctype html>
+<html lang="id">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="theme-color" content="#102a43" />
+    <title>Hitung Tanpa Batas - Game Belajar</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@600;700;800&family=Source+Sans+3:wght@400;600;700&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="games.css" />
+  </head>
+  <body>
+    <main class="game-shell play-shell">
+      <header class="game-topbar">
+        <a class="game-brand" href="games.html">
+          <span class="brand-mark" aria-hidden="true">×</span>
+          <span>Hitung Tanpa Batas</span>
+        </a>
+        <a class="back-link" href="games.html"><span aria-hidden="true">←</span><span>Semua Game</span></a>
+      </header>
+
+      <section class="play-header">
+        <p class="eyebrow">Latihan berhitung</p>
+        <h1>Hitung Tanpa Batas</h1>
+        <p>Pilih jenis operasi dan tingkat kesulitan. Permainan berhenti saat kamu memilih selesai.</p>
+      </section>
+
+      <section id="setup-panel" class="play-panel">
+        <form id="game-setup">
+          <div class="setup-grid">
+            <fieldset class="option-group">
+              <legend>Pilih operasi</legend>
+              <div class="option-list">
+                <label class="option-button"><input type="radio" name="operation" value="addition" checked /><span>Penjumlahan</span></label>
+                <label class="option-button"><input type="radio" name="operation" value="subtraction" /><span>Pengurangan</span></label>
+                <label class="option-button"><input type="radio" name="operation" value="multiplication" /><span>Perkalian</span></label>
+                <label class="option-button"><input type="radio" name="operation" value="division" /><span>Pembagian</span></label>
+                <label class="option-button"><input type="radio" name="operation" value="mixed" /><span>Operasi Campuran</span></label>
+              </div>
+            </fieldset>
+
+            <fieldset class="option-group">
+              <legend>Pilih level</legend>
+              <div class="option-list">
+                <label class="option-button"><input type="radio" name="level" value="easy" checked /><span>Mudah · bilangan kecil</span></label>
+                <label class="option-button"><input type="radio" name="level" value="medium" /><span>Sedang · tantangan naik</span></label>
+                <label class="option-button"><input type="radio" name="level" value="hard" /><span>Sulit · operasi lebih kompleks</span></label>
+              </div>
+            </fieldset>
+          </div>
+          <div class="setup-actions">
+            <a class="secondary-button" href="games.html">Batal</a>
+            <button id="start-button" class="primary-button" type="submit" disabled>Menyiapkan... <span aria-hidden="true">→</span></button>
+          </div>
+          <p id="setup-status" class="setup-status" role="status" aria-live="polite">Memeriksa akun murid...</p>
+        </form>
+      </section>
+
+      <section id="game-panel" class="play-panel hidden" aria-live="polite">
+        <div class="score-strip">
+          <div class="score-item"><span>Skor</span><strong id="score">0</strong></div>
+          <div class="score-item"><span>Benar</span><strong id="correct-count">0</strong></div>
+          <div class="score-item"><span>Salah</span><strong id="wrong-count">0</strong></div>
+          <div class="score-item"><span>Streak</span><strong id="streak">0</strong></div>
+        </div>
+
+        <div class="question-area">
+          <div id="question-number" class="question-label">Soal 1</div>
+          <div id="question" class="question">0 + 0</div>
+          <label for="answer" class="question-label">Jawabanmu</label>
+          <input id="answer" class="answer-input" type="text" inputmode="none" autocomplete="off" readonly aria-readonly="true" aria-describedby="feedback" />
+          <div id="feedback" class="feedback"></div>
+
+          <div id="keypad" class="keypad" aria-label="Papan angka">
+            <button class="key" type="button" data-key="1">1</button>
+            <button class="key" type="button" data-key="2">2</button>
+            <button class="key" type="button" data-key="3">3</button>
+            <button class="key" type="button" data-key="4">4</button>
+            <button class="key" type="button" data-key="5">5</button>
+            <button class="key" type="button" data-key="6">6</button>
+            <button class="key" type="button" data-key="7">7</button>
+            <button class="key" type="button" data-key="8">8</button>
+            <button class="key" type="button" data-key="9">9</button>
+            <button class="key" type="button" data-key="backspace" aria-label="Hapus satu angka">⌫</button>
+            <button class="key" type="button" data-key="0">0</button>
+            <button class="key key-check" type="button" data-key="check" aria-label="Periksa jawaban">✓</button>
+          </div>
+        </div>
+
+        <div class="play-actions">
+          <button id="skip-button" class="secondary-button" type="button">Lewati Soal</button>
+          <button id="end-button" class="danger-button" type="button">Akhiri Permainan</button>
+        </div>
+      </section>
+
+      <section id="summary-panel" class="summary-panel hidden">
+        <div class="summary-mark" aria-hidden="true">✓</div>
+        <h2>Latihan selesai</h2>
+        <p>Hasil permainan sudah disimpan di perangkat ini.</p>
+        <div class="summary-grid">
+          <div class="summary-cell"><strong id="summary-score">0</strong><span>Skor</span></div>
+          <div class="summary-cell"><strong id="summary-correct">0</strong><span>Benar</span></div>
+          <div class="summary-cell"><strong id="summary-wrong">0</strong><span>Salah</span></div>
+          <div class="summary-cell"><strong id="summary-streak">0</strong><span>Streak terbaik</span></div>
+        </div>
+        <div class="summary-actions">
+          <button id="replay-button" class="primary-button" type="button">Main Lagi</button>
+          <a class="secondary-button" href="games.html">Kembali ke Semua Game</a>
+        </div>
+      </section>
+    </main>
+    <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore-compat.js"></script>
+    <script src="firebase-config.js"></script>
+    <script src="firebase-api.js"></script>
+    <script src="hitung-tanpa-batas.js"></script>
+  </body>
+</html>

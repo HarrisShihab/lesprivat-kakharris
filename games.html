@@ -1,0 +1,88 @@
+<!doctype html>
+<html lang="id">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="theme-color" content="#102a43" />
+    <title>Game Belajar - Les Privat Kak Harris</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@600;700;800&family=Source+Sans+3:wght@400;600;700&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="games.css" />
+  </head>
+  <body>
+    <main class="game-shell">
+      <header class="game-topbar">
+        <a class="game-brand" href="games.html" aria-label="Game Belajar">
+          <span class="brand-mark" aria-hidden="true">×</span>
+          <span>Game Belajar</span>
+        </a>
+        <a class="back-link" href="murid-dashboard.html">
+          <span aria-hidden="true">←</span>
+          <span>Kembali ke Dashboard</span>
+        </a>
+      </header>
+
+      <section class="games-hero">
+        <div class="hero-copy">
+          <p class="eyebrow">Latihan mandiri</p>
+          <h1>Asah kemampuan lewat permainan.</h1>
+          <p>Pilih game, tentukan tantangannya, lalu belajar dengan ritme sendiri. Tidak ada batas waktu dan tidak ada tekanan.</p>
+        </div>
+        <div class="stats-panel" aria-label="Ringkasan permainan">
+          <div class="stat-cell"><strong id="best-score">0</strong><span>Skor terbaik</span></div>
+          <div class="stat-cell"><strong id="best-streak">0</strong><span>Streak terbaik</span></div>
+          <div class="stat-cell"><strong id="total-answered">0</strong><span>Soal dikerjakan</span></div>
+          <div class="stat-cell"><strong id="games-played">0</strong><span>Permainan selesai</span></div>
+        </div>
+      </section>
+
+      <div class="section-heading">
+        <div>
+          <h2>Pilih permainan</h2>
+          <p>Koleksi game akan bertambah tanpa mengubah menu dashboard.</p>
+        </div>
+      </div>
+
+      <section class="game-grid">
+        <article class="game-card">
+          <div class="game-visual" aria-hidden="true">8 × 7</div>
+          <div class="game-copy">
+            <h3>Hitung Tanpa Batas</h3>
+            <p>Latihan penjumlahan, pengurangan, perkalian, pembagian, dan operasi campuran tanpa batas soal.</p>
+            <div class="game-meta">
+              <span class="tag">Mudah–Sulit</span>
+              <span class="tag">Tanpa timer</span>
+              <span class="tag">Skor lokal</span>
+            </div>
+            <a class="primary-button" href="hitung-tanpa-batas.html">Mainkan <span aria-hidden="true">→</span></a>
+          </div>
+        </article>
+
+        <article class="game-card">
+          <div class="game-visual shop-card-visual" aria-hidden="true">
+            <span class="shop-awning"></span>
+            <span class="shop-window">Rp</span>
+            <span class="shop-counter"></span>
+          </div>
+          <div class="game-copy">
+            <h3>Toko Matematika</h3>
+            <p>Jadilah kasir: hitung total belanja, uang kembalian, jumlah barang, dan diskon pelanggan.</p>
+            <div class="game-meta">
+              <span class="tag">Mudah–Sulit</span>
+              <span class="tag">Uang &amp; diskon</span>
+              <span class="tag" id="shop-best-tag">Skor lokal</span>
+            </div>
+            <a class="primary-button" href="toko-matematika.html">Buka Toko <span aria-hidden="true">→</span></a>
+          </div>
+        </article>
+      </section>
+    </main>
+    <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore-compat.js"></script>
+    <script src="firebase-config.js"></script>
+    <script src="firebase-api.js"></script>
+    <script src="games.js"></script>
+  </body>
+</html>

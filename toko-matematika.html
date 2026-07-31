@@ -1,0 +1,175 @@
+<!doctype html>
+<html lang="id">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="theme-color" content="#102a43" />
+    <title>Toko Matematika - Game Belajar</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@600;700;800&family=Source+Sans+3:wght@400;600;700&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="games.css" />
+    <link rel="stylesheet" href="toko-matematika.css" />
+  </head>
+  <body class="shop-page">
+    <main class="game-shell shop-shell">
+      <header class="game-topbar">
+        <a class="game-brand" href="games.html">
+          <span class="brand-mark shop-brand-mark" aria-hidden="true">Rp</span>
+          <span>Toko Matematika</span>
+        </a>
+        <a class="back-link" href="games.html"><span aria-hidden="true">←</span><span>Semua Game</span></a>
+      </header>
+
+      <section class="shop-intro">
+        <div>
+          <p class="eyebrow">Simulasi kasir</p>
+          <h1>Layani pelanggan dengan hitungan yang tepat.</h1>
+          <p>Hitung total belanja, uang kembalian, jumlah barang, dan diskon. Setiap transaksi benar menambah koin dan reputasi toko.</p>
+        </div>
+        <div class="storefront" aria-hidden="true">
+          <div class="store-sign">TOKO HARRIS</div>
+          <div class="store-awning"></div>
+          <div class="store-window">
+            <span class="window-item">✏️</span>
+            <span class="window-item">📘</span>
+            <span class="window-item">🍎</span>
+          </div>
+          <div class="store-door"><span>Buka</span></div>
+        </div>
+      </section>
+
+      <section id="setup-panel" class="play-panel shop-setup">
+        <form id="shop-setup-form">
+          <div class="setup-grid">
+            <fieldset class="option-group">
+              <legend>Pilih level toko</legend>
+              <div class="option-list">
+                <label class="option-button">
+                  <input type="radio" name="level" value="easy" checked />
+                  <span><b>Mudah</b><small>Total 1–3 barang</small></span>
+                </label>
+                <label class="option-button">
+                  <input type="radio" name="level" value="medium" />
+                  <span><b>Sedang</b><small>Jumlah barang &amp; kembalian</small></span>
+                </label>
+                <label class="option-button">
+                  <input type="radio" name="level" value="hard" />
+                  <span><b>Sulit</b><small>Diskon &amp; transaksi besar</small></span>
+                </label>
+              </div>
+            </fieldset>
+
+            <div class="shop-rules">
+              <h2>Cara bermain</h2>
+              <ol>
+                <li>Perhatikan barang dan harga di meja kasir.</li>
+                <li>Baca pertanyaan dari pelanggan.</li>
+                <li>Ketik jawaban tanpa tanda titik atau “Rp”.</li>
+                <li>Layani sebanyak mungkin pelanggan.</li>
+              </ol>
+              <p>Tanpa timer. Toko tutup hanya saat kamu memilih selesai.</p>
+            </div>
+          </div>
+          <div class="setup-actions">
+            <a class="secondary-button" href="games.html">Batal</a>
+            <button id="start-button" class="primary-button shop-start-button" type="submit" disabled>Menyiapkan... <span aria-hidden="true">→</span></button>
+          </div>
+          <p id="setup-status" class="setup-status" role="status" aria-live="polite">Memeriksa akun murid...</p>
+        </form>
+      </section>
+
+      <section id="game-panel" class="hidden" aria-live="polite">
+        <div class="shop-status">
+          <div><span>Skor</span><strong id="score">0</strong></div>
+          <div><span>Koin</span><strong id="coins">0</strong></div>
+          <div><span>Dilayani</span><strong id="served">0</strong></div>
+          <div><span>Streak</span><strong id="streak">0</strong></div>
+          <div class="reputation-wrap">
+            <span>Reputasi</span>
+            <div class="reputation-track"><i id="reputation-bar"></i></div>
+          </div>
+        </div>
+
+        <div class="shop-scene">
+          <div id="customer" class="customer" aria-label="Pelanggan">
+            <div class="customer-hair"></div>
+            <div class="customer-face">
+              <i class="eye eye-left"></i>
+              <i class="eye eye-right"></i>
+              <i id="customer-mouth" class="customer-mouth"></i>
+            </div>
+            <div class="customer-body"></div>
+            <div id="speech-bubble" class="speech-bubble">Halo! Saya mau belanja.</div>
+          </div>
+
+          <div class="checkout">
+            <div class="checkout-heading">
+              <span id="transaction-number">Pelanggan 1</span>
+              <strong id="task-label">Hitung total</strong>
+            </div>
+            <div id="product-list" class="product-list"></div>
+            <div class="register">
+              <div class="register-screen"><span>Total tertera</span><strong id="register-total">?</strong></div>
+              <div class="scanner-light"></div>
+            </div>
+          </div>
+        </div>
+
+        <section class="cashier-panel">
+          <p id="question" class="shop-question">Berapa total belanja pelanggan?</p>
+          <div id="question-note" class="question-note"></div>
+          <label for="answer" class="question-label">Jawabanmu</label>
+          <div class="money-input-wrap">
+            <span>Rp</span>
+            <input id="answer" class="answer-input shop-answer" type="text" inputmode="none" autocomplete="off" readonly aria-readonly="true" aria-describedby="feedback" />
+          </div>
+          <div id="formatted-answer" class="formatted-answer">Rp0</div>
+          <div id="feedback" class="feedback"></div>
+
+          <div id="keypad" class="keypad shop-keypad" aria-label="Papan angka">
+            <button class="key" type="button" data-key="1">1</button>
+            <button class="key" type="button" data-key="2">2</button>
+            <button class="key" type="button" data-key="3">3</button>
+            <button class="key" type="button" data-key="4">4</button>
+            <button class="key" type="button" data-key="5">5</button>
+            <button class="key" type="button" data-key="6">6</button>
+            <button class="key" type="button" data-key="7">7</button>
+            <button class="key" type="button" data-key="8">8</button>
+            <button class="key" type="button" data-key="9">9</button>
+            <button class="key" type="button" data-key="backspace" aria-label="Hapus satu angka">⌫</button>
+            <button class="key" type="button" data-key="0">0</button>
+            <button class="key key-check" type="button" data-key="check" aria-label="Periksa jawaban">✓</button>
+          </div>
+          <div class="play-actions">
+            <button id="skip-button" class="secondary-button" type="button">Lewati Transaksi</button>
+            <button id="end-button" class="danger-button" type="button">Tutup Toko</button>
+          </div>
+        </section>
+      </section>
+
+      <section id="summary-panel" class="summary-panel shop-summary hidden">
+        <div class="summary-mark" aria-hidden="true">Rp</div>
+        <h2>Toko sudah tutup</h2>
+        <p>Hasil transaksi sudah disimpan di perangkat ini.</p>
+        <div class="summary-grid">
+          <div class="summary-cell"><strong id="summary-score">0</strong><span>Skor</span></div>
+          <div class="summary-cell"><strong id="summary-coins">0</strong><span>Koin</span></div>
+          <div class="summary-cell"><strong id="summary-served">0</strong><span>Dilayani</span></div>
+          <div class="summary-cell"><strong id="summary-streak">0</strong><span>Streak terbaik</span></div>
+        </div>
+        <p id="summary-message" class="summary-message"></p>
+        <div class="summary-actions">
+          <button id="replay-button" class="primary-button" type="button">Buka Lagi</button>
+          <a class="secondary-button" href="games.html">Kembali ke Semua Game</a>
+        </div>
+      </section>
+    </main>
+    <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore-compat.js"></script>
+    <script src="firebase-config.js"></script>
+    <script src="firebase-api.js"></script>
+    <script src="toko-matematika.js"></script>
+  </body>
+</html>

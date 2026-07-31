@@ -1,0 +1,28 @@
+Versi Firebase — 27 Juli 2026
+
+Selesai:
+- Website tetap kompatibel dengan deployment Netlify.
+- Login dipindahkan ke Firebase Authentication.
+- Database utama dipindahkan ke Cloud Firestore.
+- Role: admin, orangtua, dan murid.
+- Firestore Security Rules membatasi akses berdasarkan UID, role, dan muridIds.
+- Endpoint Google Apps Script lama sudah dilepas dari frontend.
+- PIN lama tidak digunakan atau dimigrasikan.
+- Foto dan bukti pembayaran tidak diunggah melalui website.
+- Bukti pembayaran diarahkan ke WhatsApp.
+- Jadwal publik dipisahkan dari data jadwal privat.
+- Tersedia alat migrasi XLSX dan provisioning akun.
+- Rules telah diuji untuk akses admin, orang tua, murid, dan publik.
+- Konfigurasi Web App Firebase sudah diisi di firebase-config.js.
+
+Belum dilakukan karena memerlukan akses pemilik proyek:
+- Mengaktifkan Email/Password serta authorized domain di Firebase Console.
+- Mengunduh XLSX Google Sheets dan Service Account.
+- Mengisi accounts.json.
+- Menjalankan migrasi data.
+- Deploy Firestore Rules.
+- Uji akun nyata.
+- Deploy ke Netlify.
+- Menonaktifkan deployment Google Apps Script lama setelah sistem baru lolos uji.
+
+Lihat PANDUAN-MIGRASI-FIREBASE.md.

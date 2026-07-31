@@ -1,0 +1,493 @@
+/* ==========================================================================
+   1. ATURAN DASAR & UTAMA
+   ========================================================================== */
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  background-color: #f8fafc;
+  color: #334155;
+  font-family: "Poppins", sans-serif;
+  line-height: 1.6;
+  overflow-x: hidden;
+}
+
+.container {
+  max-width: 95%;
+  margin: 40px auto;
+  padding: 0 20px;
+}
+
+.text-center {
+  text-align: center;
+}
+
+/* Pembungkus Utama */
+.app-layout {
+  display: flex;
+  min-height: 100vh;
+  position: relative;
+}
+
+/* ==========================================================================
+   2. SIDEBAR STYLE
+   ========================================================================== */
+.sidebar {
+  background-color: #ffffff;
+  width: 280px;
+  min-width: 280px;
+  height: 100vh;
+  position: fixed;
+  top: 0;
+  left: -280px; /* Sembunyi di kiri (Mobile) */
+  z-index: 1000;
+  padding: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  border-right: 1px solid #e2e8f0;
+  transition: left 0.3s ease;
+}
+
+.sidebar.active {
+  left: 0; /* Muncul (Mobile) */
+}
+
+.sidebar-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.sidebar-brand {
+  font-size: 1.3rem;
+  font-weight: 700;
+  color: #1e40af;
+  letter-spacing: -0.05em;
+}
+
+/* Tombol Silang Sembunyikan Sidebar */
+.btn-sidebar-close {
+  background: none;
+  border: none;
+  font-size: 1.2rem;
+  color: #64748b;
+  cursor: pointer;
+  padding: 4px;
+}
+
+.sidebar-menu {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  list-style: none;
+}
+
+.menu-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 16px;
+  color: #475569;
+  font-weight: 500;
+  font-size: 0.95rem;
+  text-decoration: none;
+  border-radius: 8px;
+  transition: all 0.2s ease;
+}
+
+.menu-item i {
+  font-size: 1.1rem;
+  color: #64748b;
+  width: 20px;
+  text-align: center;
+}
+
+.menu-item:hover {
+  background-color: #f1f5f9;
+  color: #1e40af;
+}
+
+.menu-item:hover i {
+  color: #1e40af;
+}
+
+.menu-item.active {
+  background-color: #eff6ff;
+  color: #2563eb;
+  font-weight: 600;
+}
+
+.menu-item.active i {
+  color: #2563eb;
+}
+
+/* ==========================================================================
+   3. KONTEN UTAMA & KOMPONEN
+   ========================================================================== */
+.main-content {
+  flex: 1;
+  background-color: #f8fafc;
+  position: relative;
+  min-width: 0;
+  transition: padding-left 0.3s ease;
+  padding: 30px;
+}
+
+/* Tombol Hamburger */
+.btn-hamburger {
+  position: absolute;
+  top: 20px;
+  left: 20px;
+  z-index: 99;
+  background-color: rgba(255, 255, 255, 0.95);
+  color: #1e40af;
+  border: 1px solid #e2e8f0;
+  width: 42px;
+  height: 42px;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+  font-size: 1.2rem;
+  transition: all 0.2s ease;
+}
+
+.btn-hamburger:hover {
+  background-color: #ffffff;
+  color: #2563eb;
+  transform: scale(1.05);
+}
+
+/* Hero Section */
+.hero-section {
+  background: linear-gradient(135deg, #1e40af, #3b82f6);
+  color: #ffffff;
+  padding: 75px 5% 60px 5%;
+  text-align: center;
+  position: relative;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+  border-radius: 12px;
+  margin-bottom: 30px;
+}
+
+.hero-title {
+  font-size: 2.5rem;
+  font-weight: 700;
+  margin-bottom: 8px;
+  letter-spacing: -0.025em;
+}
+
+.hero-subtitle {
+  font-size: 1.1rem;
+  opacity: 0.9;
+  max-width: 500px;
+  margin: 0 auto;
+}
+
+.btn-login {
+  position: absolute;
+  top: 20px;
+  right: 20px;
+  background-color: #ffffff;
+  color: #1e40af;
+  padding: 8px 16px;
+  border-radius: 8px;
+  font-size: 0.875rem;
+  font-weight: 600;
+  text-decoration: none;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  transition: all 0.2s ease;
+}
+
+/* Cards & Grid */
+.card {
+  background-color: #ffffff;
+  padding: 28px;
+  border-radius: 16px;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+  margin-bottom: 30px;
+}
+
+.section-title {
+  font-size: 1.25rem;
+  color: #1e40af;
+  font-weight: 600;
+  margin-bottom: 20px;
+}
+
+.card-desc {
+  color: #64748b;
+  margin-bottom: 20px;
+}
+
+.jadwal-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 20px;
+}
+
+.day-card {
+  background-color: #f8fafc;
+  border-radius: 12px;
+  padding: 16px;
+  border: 1px solid #e2e8f0;
+}
+
+.day-title {
+  font-size: 1.1rem;
+  color: #1e293b;
+  font-weight: 600;
+  margin-bottom: 12px;
+  border-bottom: 2px solid #3b82f6;
+  padding-bottom: 4px;
+}
+
+.slots-container {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.slot-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background-color: #ffffff;
+  padding: 10px 12px;
+  border-radius: 8px;
+  border: 1px solid #f1f5f9;
+}
+
+.slot-time {
+  font-size: 0.85rem;
+  color: #475569;
+  font-weight: 500;
+}
+
+.slot-info {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.slot-class {
+  font-size: 0.75rem;
+  color: #1e40af;
+  font-weight: 600;
+}
+
+/* Badge & Utility */
+.badge-mini {
+  padding: 4px 10px;
+  border-radius: 6px;
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+
+.badge-available {
+  background-color: #16a34a;
+  color: #ffffff;
+}
+
+.badge-filled {
+  background-color: #fee2e2;
+  color: #b91c1c;
+}
+
+.btn-whatsapp {
+  display: inline-block;
+  background-color: #22c55e;
+  color: #ffffff;
+  font-weight: 500;
+  padding: 12px 32px;
+  border-radius: 12px;
+  text-decoration: none;
+  box-shadow: 0 4px 14px rgba(34, 197, 94, 0.4);
+  transition: all 0.2s ease;
+}
+
+.btn-whatsapp:hover {
+  background-color: #16a34a;
+  transform: translateY(-2px);
+}
+
+.loading-text,
+.status-empty,
+.status-error,
+.no-slot {
+  text-align: center;
+  color: #94a3b8;
+  padding: 10px 0;
+  font-style: italic;
+}
+
+/* ==========================================================================
+   4. RESPONSIVE DESIGN (MEDIA QUERIES)
+   ========================================================================== */
+
+/* Tablet (Grid Berubah Jadi 3 Kolom) */
+@media (min-width: 768px) {
+  .jadwal-grid {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+/* Desktop (Layar Lebar >= 1024px) */
+@media (min-width: 1024px) {
+  .sidebar {
+    position: fixed;
+    left: 0; /* Menetap di kiri */
+  }
+
+  .main-content {
+    padding-left: 280px; /* Beri jarak agar tidak tertutup sidebar */
+  }
+
+  /* Logika Sembunyi Desktop saat Class .active Diterapkan */
+  .sidebar.active {
+    left: -280px;
+  }
+
+  .sidebar.active ~ .main-content {
+    padding-left: 0;
+  }
+
+  /* Tombol silang tetap aktif dan terlihat di desktop */
+  .btn-sidebar-close {
+    display: block;
+  }
+}
+
+/* ==========================================================================
+   5. NOTIFIKASI BELL (Dashboard Admin & Orang Tua)
+   ========================================================================== */
+.notif-btn {
+  position: relative;
+}
+.notif-badge {
+  position: absolute;
+  top: -4px;
+  right: -4px;
+  min-width: 18px;
+  height: 18px;
+  font-size: 10px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 9999px;
+  background: #ef4444;
+  color: white;
+  border: 2px solid white;
+  line-height: 1;
+  padding: 0 4px;
+}
+.notif-panel {
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  width: 340px;
+  max-height: 400px;
+  overflow-y: auto;
+  background: white;
+  border-radius: 16px;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.12);
+  border: 1px solid #e2e8f0;
+  z-index: 100;
+  opacity: 0;
+  visibility: hidden;
+  transform: translateY(-8px);
+  transition: all 0.2s ease;
+}
+.notif-panel.active {
+  opacity: 1;
+  visibility: visible;
+  transform: translateY(0);
+}
+.notif-panel-header {
+  padding: 14px 18px;
+  border-bottom: 1px solid #e2e8f0;
+  font-weight: 700;
+  font-size: 14px;
+  color: #1e293b;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+.notif-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 12px 18px;
+  border-bottom: 1px solid #f1f5f9;
+  cursor: pointer;
+  transition: background 0.15s;
+  font-size: 13px;
+}
+.notif-item:hover {
+  background: #f8fafc;
+}
+.notif-item:last-child {
+  border-bottom: none;
+}
+.notif-item-icon {
+  width: 32px;
+  height: 32px;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  font-size: 14px;
+}
+.notif-item-text {
+  color: #334155;
+  line-height: 1.4;
+  flex: 1;
+}
+.notif-empty {
+  padding: 30px 18px;
+  text-align: center;
+  color: #94a3b8;
+  font-size: 13px;
+}
+
+/* ==========================================================================
+   6. JADWAL INDEX - Jam operasional & statistik
+   ========================================================================== */
+.day-hours {
+  font-size: 0.75rem;
+  color: #64748b;
+  margin-bottom: 8px;
+  font-weight: 500;
+}
+.day-stats {
+  display: flex;
+  gap: 6px;
+  margin-bottom: 10px;
+}
+.stat-badge {
+  font-size: 0.65rem;
+  font-weight: 600;
+  padding: 2px 8px;
+  border-radius: 4px;
+}
+.stat-tersedia {
+  background-color: #dcfce7;
+  color: #15803d;
+}
+.stat-terisi {
+  background-color: #fee2e2;
+  color: #b91c1c;
+}
+.stat-kosong {
+  background-color: #f1f5f9;
+  color: #94a3b8;
+}

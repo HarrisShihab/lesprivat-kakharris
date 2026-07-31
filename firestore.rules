@@ -1,0 +1,91 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function signedIn() {
+      return request.auth != null;
+    }
+
+    function myUser() {
+      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data;
+    }
+
+    function active() {
+      return signedIn() && myUser().aktif == true;
+    }
+
+    function roleIs(role) {
+      return active() && myUser().role == role;
+    }
+
+    function admin() {
+      return roleIs("admin");
+    }
+
+    function ownsStudent(muridId) {
+      return active()
+        && myUser().role in ["orangtua", "murid"]
+        && muridId in myUser().muridIds;
+    }
+
+    match /users/{uid} {
+      allow read: if admin() || (signedIn() && request.auth.uid == uid);
+      allow create, delete: if admin();
+      allow update: if admin()
+        || (signedIn()
+          && request.auth.uid == uid
+          && active()
+          && request.resource.data.diff(resource.data).affectedKeys()
+            .hasOnly(["nama", "emailKontak", "telepon", "updatedAt"]));
+    }
+
+    match /murid/{muridId} {
+      allow read: if admin() || ownsStudent(muridId);
+      allow create, update, delete: if admin();
+    }
+
+    match /absensi/{docId} {
+      allow read: if admin() || ownsStudent(resource.data.idMurid);
+      allow create, update, delete: if admin();
+    }
+
+    match /keuangan/{docId} {
+      allow read: if admin()
+        || (roleIs("orangtua") && ownsStudent(resource.data.idMurid));
+      allow create, update, delete: if admin();
+    }
+
+    match /materi/{docId} {
+      allow read: if admin() || ownsStudent(resource.data.idMurid);
+      allow create, update, delete: if admin();
+    }
+
+    match /jadwal/{docId} {
+      allow read: if admin() || ownsStudent(resource.data.idMurid);
+      allow create, update, delete: if admin();
+    }
+
+    match /jadwalPublik/{docId} {
+      allow read: if true;
+      allow create, update, delete: if admin();
+    }
+
+    match /pengajuanJadwal/{docId} {
+      allow read: if admin()
+        || (roleIs("orangtua") && ownsStudent(resource.data.idMurid));
+      allow create: if roleIs("orangtua")
+        && request.resource.data.createdBy == request.auth.uid
+        && ownsStudent(request.resource.data.idMurid)
+        && request.resource.data.status == "Pending";
+      allow update, delete: if admin();
+    }
+
+    match /system/{docId} {
+      allow read, write: if admin();
+    }
+
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}
