@@ -1400,6 +1400,7 @@
               const jadwalFlat = group.jadwalList.join(" | ");
               const jadwalAman = jadwalFlat.replace(/'/g, "\\'");
               const idListStr = group.idPengajuanList.join(",");
+              const idPengajuanAman = (group.idPengajuanList[0] || "").replace(/'/g, "\\'");
               const tanggalTampil = group.tanggalList[0];
 
               // Tentukan status keseluruhan grup
@@ -1420,14 +1421,21 @@
                     <button onclick="prosesKonfirmasiMulti('${idListStr}', 'Ditolak')" class="px-3 py-1.5 bg-rose-50 hover:bg-rose-100 text-rose-600 rounded-lg text-xs font-semibold transition">Tolak Semua</button>
                     <button onclick="kirimNotifikasiPengajuan('${idMuridAman}', '${jadwalAman}', 'Pending')" class="px-3 py-1.5 bg-green-500 hover:bg-green-600 text-white rounded-lg text-xs font-semibold transition" title="Kirim notifikasi WA ke wali murid"><i class="fa-brands fa-whatsapp"></i></button>
                   </div>`;
-              } else if (overallStatus === "Disetujui" || overallStatus === "Ditolak") {
-                const label = overallStatus === "Disetujui" ? "✔ Disetujui" : "❌ Ditolak";
-                const color = overallStatus === "Disetujui" ? "emerald" : "rose";
-                statusBadge = `<span class="px-2.5 py-1 text-xs font-semibold rounded-full bg-${color}-50 text-${color}-600 border border-${color}-100">${label}</span>`;
+              } else if (overallStatus === "Disetujui") {
+                statusBadge = `<span class="px-2.5 py-1 text-xs font-semibold rounded-full bg-emerald-50 text-emerald-600 border border-emerald-100">✔ Disetujui</span>`;
+                tombolAksi = `<div class="flex items-center justify-center gap-2 flex-wrap">
+                  <button onclick="kirimNotifikasiPengajuan('${idMuridAman}', '${jadwalAman}', 'Disetujui')" class="px-3 py-1.5 bg-green-500 hover:bg-green-600 text-white rounded-lg text-xs font-semibold transition" title="Kirim notifikasi WA ke wali murid"><i class="fa-brands fa-whatsapp"></i> Kirim WA</button>
+                  <button onclick="hapusJadwal('${idPengajuanAman}', '${jadwalAman}')" class="px-3 py-1.5 bg-rose-600 hover:bg-rose-700 text-white rounded-lg text-xs font-semibold transition" title="Hapus jadwal ini saja"><i class="fa-solid fa-trash-can"></i> Hapus Jadwal</button>
+                </div>`;
+              } else if (overallStatus === "Ditolak") {
+                statusBadge = `<span class="px-2.5 py-1 text-xs font-semibold rounded-full bg-rose-50 text-rose-600 border border-rose-100">❌ Ditolak</span>`;
                 tombolAksi = `<div class="flex items-center justify-center gap-2">
                   <span class="text-slate-400 text-xs italic">Selesai diproses</span>
-                  <button onclick="kirimNotifikasiPengajuan('${idMuridAman}', '${jadwalAman}', '${overallStatus}')" class="px-3 py-1.5 bg-green-500 hover:bg-green-600 text-white rounded-lg text-xs font-semibold transition" title="Kirim notifikasi WA ke wali murid"><i class="fa-brands fa-whatsapp"></i> Kirim WA</button>
+                  <button onclick="kirimNotifikasiPengajuan('${idMuridAman}', '${jadwalAman}', 'Ditolak')" class="px-3 py-1.5 bg-green-500 hover:bg-green-600 text-white rounded-lg text-xs font-semibold transition" title="Kirim notifikasi WA ke wali murid"><i class="fa-brands fa-whatsapp"></i> Kirim WA</button>
                 </div>`;
+              } else if (overallStatus === "Dibatalkan") {
+                statusBadge = `<span class="px-2.5 py-1 text-xs font-semibold rounded-full bg-slate-100 text-slate-600 border border-slate-200">Dibatalkan</span>`;
+                tombolAksi = `<div class="text-center text-slate-400 text-xs italic">Jadwal telah dihapus</div>`;
               } else if (overallStatus === "Kedaluwarsa") {
                 statusBadge = `<span class="px-2.5 py-1 text-xs font-semibold rounded-full bg-slate-50 text-slate-600 border border-slate-200">Kedaluwarsa</span>`;
                 tombolAksi = `<div class="text-center text-slate-400 text-xs italic">Minta orang tua mengajukan ulang</div>`;
@@ -1491,6 +1499,23 @@
 
         showToast(`${sukses} pengajuan berhasil ${statusTarget.toLowerCase()}${gagal > 0 ? `, ${gagal} gagal: ${pesanGagal}` : ""}`, gagal > 0 ? "warning" : "success");
         muatPengajuanJadwal();
+      }
+
+      async function hapusJadwal(idPengajuan, jadwalInfo) {
+        if (!confirm(`Hapus jadwal ${jadwalInfo}?\n\nHanya jadwal ini yang akan dihapus. Riwayat pengajuannya tetap disimpan sebagai Dibatalkan.`)) return;
+
+        try {
+          const res = await fetch(WEB_APP_URL, {
+            method: "POST",
+            body: JSON.stringify({ action: "hapusJadwal", idPengajuan }),
+          });
+          const hasil = await res.json();
+          if (hasil.status !== "success") throw new Error(hasil.message || "Jadwal gagal dihapus.");
+          showToast(hasil.message, "success");
+          await muatPengajuanJadwal();
+        } catch (error) {
+          showToast(error.message || "Jadwal gagal dihapus.", "error");
+        }
       }
 
       // ========================================================

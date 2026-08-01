@@ -1154,6 +1154,7 @@
         if (status === "Disetujui") {
           transaction.set(scheduleRef, {
             id: scheduleRef.id,
+            idPengajuan: ref.id,
             hari: row.hari,
             jamMulai: row.jamMulai,
             jamSelesai: row.jamSelesai,
@@ -1163,6 +1164,7 @@
           });
           transaction.set(publicRef, {
             id: scheduleRef.id,
+            idPengajuan: ref.id,
             hari: row.hari,
             jamMulai: row.jamMulai,
             jamSelesai: row.jamSelesai,
@@ -1173,6 +1175,59 @@
         }
       });
       return OK(undefined, `Pengajuan jadwal ${status.toLowerCase()}.`);
+    }
+    if (action === "hapusJadwal") {
+      const profile = await requireProfile(["admin"]);
+      const idPengajuan = idValue(payload.idPengajuan);
+      const requestRef = db.collection("pengajuanJadwal").doc(idPengajuan);
+      const [requestSnap, schedulesSnap, slotsSnap] = await Promise.all([
+        requestRef.get(),
+        db.collection("jadwal").get(),
+        db.collection("slotJadwal").get(),
+      ]);
+      if (!requestSnap.exists) throw new Error("Riwayat pengajuan tidak ditemukan.");
+
+      const requestRow = requestSnap.data();
+      if (requestRow.status !== "Disetujui") {
+        throw new Error(requestRow.status === "Dibatalkan" ? "Jadwal ini sudah dibatalkan." : "Hanya jadwal yang sudah disetujui yang dapat dihapus.");
+      }
+
+      const matchingSchedules = schedulesSnap.docs.filter((doc) => {
+        const row = doc.data();
+        if (row.status === "Dihapus") return false;
+        if (row.idPengajuan) return row.idPengajuan === idPengajuan;
+        return (
+          row.idMurid === requestRow.idMurid &&
+          row.hari === requestRow.hari &&
+          row.jamMulai === requestRow.jamMulai &&
+          row.jamSelesai === requestRow.jamSelesai
+        );
+      });
+      if (matchingSchedules.length !== 1) {
+        throw new Error(matchingSchedules.length ? "Ditemukan lebih dari satu jadwal yang cocok. Penghapusan dihentikan agar jadwal lain tetap aman." : "Jadwal aktif yang terhubung dengan pengajuan ini tidak ditemukan.");
+      }
+
+      const scheduleDoc = matchingSchedules[0];
+      const publicRef = db.collection("jadwalPublik").doc(scheduleDoc.id);
+      const matchingSlots = slotsSnap.docs.filter((doc) => doc.data().scheduleId === scheduleDoc.id);
+      await db.runTransaction(async (transaction) => {
+        const freshRequest = await transaction.get(requestRef);
+        const freshSchedule = await transaction.get(scheduleDoc.ref);
+        if (!freshRequest.exists || freshRequest.data().status !== "Disetujui") throw new Error("Status pengajuan sudah berubah. Muat ulang halaman.");
+        if (!freshSchedule.exists || freshSchedule.data().status === "Dihapus") throw new Error("Jadwal ini sudah tidak aktif.");
+
+        transaction.delete(scheduleDoc.ref);
+        transaction.delete(publicRef);
+        matchingSlots.forEach((slotDoc) => transaction.delete(slotDoc.ref));
+        transaction.update(requestRef, {
+          status: "Dibatalkan",
+          dibatalkanOleh: profile.uid,
+          dibatalkanPada: serverTime(),
+          scheduleId: scheduleDoc.id,
+          updatedAt: serverTime(),
+        });
+      });
+      return OK(undefined, "Jadwal berhasil dihapus. Slot sudah tersedia kembali dan riwayat ditandai Dibatalkan.");
     }
     if (action === "hapusSemuaPengajuan") {
       await requireProfile(["admin"]);
