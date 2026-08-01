@@ -1422,41 +1422,50 @@
         }));
         return { ...selection, ref, quotaRef, quotaSlot, tokenRefs };
       });
-      await db.runTransaction(async (transaction) => {
-        const quotaSnaps = await Promise.all(entries.map(({ quotaRef }) => transaction.get(quotaRef)));
-        const allTokenRefs = entries.flatMap((entry) => entry.tokenRefs);
-        const tokenSnaps = await Promise.all(allTokenRefs.map(({ ref: tokenRef }) => transaction.get(tokenRef)));
-        if (quotaSnaps.some((quotaSnap) => quotaSnap.exists && (quotaSnap.data().status === "Aktif" || pendingIsActive(quotaSnap.data())))) {
-          throw new Error("Kuota jadwal baru saja dipakai pengajuan lain. Muat ulang halaman.");
-        }
-        if (tokenSnaps.some((tokenSnap) => tokenSnap.exists && tokenBlocksSlot(tokenSnap.data()))) {
-          throw new Error("Slot baru saja diajukan orang tua lain. Silakan pilih jam lain.");
-        }
+      let submittedCount = 0;
+      for (const entry of entries) {
+        try {
+          await db.runTransaction(async (transaction) => {
+            const quotaSnap = await transaction.get(entry.quotaRef);
+            const tokenSnaps = await Promise.all(entry.tokenRefs.map(({ ref: tokenRef }) => transaction.get(tokenRef)));
+            if (quotaSnap.exists && (quotaSnap.data().status === "Aktif" || pendingIsActive(quotaSnap.data()))) {
+              throw new Error("Kuota jadwal baru saja dipakai pengajuan lain. Muat ulang halaman.");
+            }
+            if (tokenSnaps.some((tokenSnap) => tokenSnap.exists && tokenBlocksSlot(tokenSnap.data()))) {
+              throw new Error("Slot baru saja diajukan orang tua lain. Silakan pilih jam lain.");
+            }
 
-        entries.forEach(({ ref, quotaRef, quotaSlot, tokenRefs, hari, jamMulai, jamSelesai }) => {
-          transaction.set(ref, {
-            idPengajuan: ref.id,
-            idMurid,
-            hari,
-            jamMulai,
-            jamSelesai,
-            durasi,
-            jadwalTampilan: `${hari}, ${jamMulai} - ${jamSelesai} (${durasi} menit)`,
-            tanggal: today(),
-            status: "Pending",
-            createdBy: profile.uid,
-            createdAt: serverTime(),
-            expiresAt,
-            quotaSlot,
-            quotaSlotKey: String(quotaSlot),
-            quotaId: quotaRef.id,
+            const { ref, quotaRef, quotaSlot, tokenRefs, hari, jamMulai, jamSelesai } = entry;
+            transaction.set(ref, {
+              idPengajuan: ref.id,
+              idMurid,
+              hari,
+              jamMulai,
+              jamSelesai,
+              durasi,
+              jadwalTampilan: `${hari}, ${jamMulai} - ${jamSelesai} (${durasi} menit)`,
+              tanggal: today(),
+              status: "Pending",
+              createdBy: profile.uid,
+              createdAt: serverTime(),
+              expiresAt,
+              quotaSlot,
+              quotaSlotKey: String(quotaSlot),
+              quotaId: quotaRef.id,
+            });
+            transaction.set(quotaRef, { idMurid, slot: quotaSlot, slotKey: String(quotaSlot), requestId: ref.id, status: "Pending", expiresAt, createdAt: serverTime() });
+            tokenRefs.forEach(({ minute, ref: tokenRef }) => {
+              transaction.set(tokenRef, { hari, menit: minute, requestId: ref.id, status: "Pending", expiresAt, createdAt: serverTime() });
+            });
           });
-          transaction.set(quotaRef, { idMurid, slot: quotaSlot, slotKey: String(quotaSlot), requestId: ref.id, status: "Pending", expiresAt, createdAt: serverTime() });
-          tokenRefs.forEach(({ minute, ref: tokenRef }) => {
-            transaction.set(tokenRef, { hari, menit: minute, requestId: ref.id, status: "Pending", expiresAt, createdAt: serverTime() });
-          });
-        });
-      });
+          submittedCount += 1;
+        } catch (error) {
+          if (submittedCount > 0) {
+            throw new Error(`${submittedCount} jadwal berhasil dikirim, tetapi jadwal berikutnya gagal: ${error.message || "slot tidak lagi tersedia"}`);
+          }
+          throw error;
+        }
+      }
       return OK(undefined, `${entries.length} pengajuan jadwal berhasil dikirim dan slot ditahan selama 24 jam.`);
     }
     throw new Error("Aksi tidak dikenali.");
