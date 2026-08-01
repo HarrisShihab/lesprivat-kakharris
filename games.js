@@ -51,4 +51,8 @@
   if (shopBestTag && shopBest > 0) {
     shopBestTag.textContent = `Rekor ${shopBest} poin`;
   }
+
+  const patternBest = stats.perGame?.detektifPola?.bestScore || 0;
+  const patternBestTag = document.getElementById("pattern-best-tag");
+  if (patternBestTag && patternBest > 0) patternBestTag.textContent = `Rekor ${patternBest} poin`;
 })();
