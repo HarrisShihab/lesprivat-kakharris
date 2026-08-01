@@ -196,6 +196,65 @@
     return true;
   }
 
+  function readFileAsBase64(file) {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(String(reader.result || "").split(",")[1] || "");
+      reader.onerror = () => reject(new Error("File tidak dapat dibaca."));
+      reader.readAsDataURL(file);
+    });
+  }
+
+  async function uploadPaymentProof(values) {
+    init();
+    const profile = await requireProfile(["orangtua"]);
+    const endpoint = String(window.PAYMENT_UPLOAD_WEB_APP_URL || "").trim();
+    if (!/^https:\/\/script\.google\.com\/macros\/s\/[A-Za-z0-9_-]+\/exec$/.test(endpoint)) {
+      throw new Error("Layanan upload belum diaktifkan oleh admin. Gunakan WhatsApp untuk sementara.");
+    }
+    const file = values?.file;
+    const allowedTypes = ["image/jpeg", "image/png", "image/webp", "application/pdf"];
+    if (!(file instanceof File)) throw new Error("Pilih file bukti pembayaran.");
+    if (!allowedTypes.includes(file.type)) throw new Error("Format file harus JPG, PNG, WebP, atau PDF.");
+    if (file.size <= 0 || file.size > 5 * 1024 * 1024) throw new Error("Ukuran file maksimal 5 MB.");
+    const nominal = Number(values?.nominal);
+    if (!Number.isInteger(nominal) || nominal < 1000 || nominal > 100000000) throw new Error("Nominal pembayaran tidak valid.");
+    const idMurid = idValue(values?.idMurid);
+    const owned = await ownedStudentIds(profile);
+    if (!owned.includes(idMurid)) throw new Error("Akun tidak terhubung dengan murid yang dipilih.");
+    const keterangan = plain(values?.keterangan, 300);
+    if (!keterangan) throw new Error("Keterangan pembayaran wajib diisi.");
+
+    const idToken = await auth.currentUser.getIdToken(true);
+    const base64 = await readFileAsBase64(file);
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 60000);
+    try {
+      const response = await nativeFetch(endpoint, {
+        method: "POST",
+        headers: { "Content-Type": "text/plain;charset=utf-8" },
+        body: JSON.stringify({
+          action: "uploadBuktiPembayaran",
+          idToken,
+          idMurid,
+          nominal,
+          keterangan,
+          file: { name: file.name, mimeType: file.type, size: file.size, base64 },
+        }),
+        signal: controller.signal,
+        redirect: "follow",
+      });
+      const result = await response.json();
+      if (result.status !== "success") throw new Error(result.message || "Bukti pembayaran gagal dikirim.");
+      return result;
+    } catch (error) {
+      if (error.name === "AbortError") throw new Error("Upload terlalu lama. Periksa koneksi lalu coba lagi.");
+      throw error;
+    } finally {
+      clearTimeout(timeout);
+    }
+  }
+
   async function guard(roles) {
     try {
       const profile = await requireProfile(roles);
@@ -497,6 +556,35 @@
       }));
   }
 
+  async function getBuktiPembayaran() {
+    const profile = await requireProfile(["admin", "orangtua"]);
+    let rows;
+    if (profile.role === "admin") {
+      rows = await allDocs("buktiPembayaran");
+    } else {
+      const ids = await ownedStudentIds(profile);
+      const snapshots = await Promise.all(
+        ids.map((idMurid) => db.collection("buktiPembayaran").where("idMurid", "==", idMurid).get()),
+      );
+      rows = snapshots.flatMap((snap) => snap.docs.map((doc) => ({ _docId: doc.id, ...doc.data() })));
+    }
+    const students = new Map((await getMurid()).map((student) => [student.id, student]));
+    return rows
+      .sort((a, b) => String(b.createdAt?.toDate?.() || b.tanggalUpload || "").localeCompare(String(a.createdAt?.toDate?.() || a.tanggalUpload || "")))
+      .map((row) => ({
+        id: row._docId,
+        idMurid: row.idMurid,
+        nama: students.get(row.idMurid)?.nama || row.idMurid,
+        kelas: students.get(row.idMurid)?.kelas || "-",
+        tanggalUpload: row.tanggalUpload || "-",
+        nominal: Number(row.nominal) || 0,
+        keterangan: row.keterangan || "",
+        status: row.status || "Menunggu konfirmasi",
+        alasanPenolakan: row.alasanPenolakan || "",
+        fileUrl: profile.role === "admin" && row.fileId ? `https://drive.google.com/file/d/${encodeURIComponent(row.fileId)}/view` : "",
+      }));
+  }
+
   async function getPublicSchedule() {
     const rows = await allDocs("jadwalPublik");
     return rows
@@ -581,8 +669,11 @@
       const pending = requests.filter((row) => row.status === "Pending").length;
       const students = await allDocs("murid");
       const pendingStudents = students.filter((row) => row.status === "Pending").length;
+      const paymentProofs = await allDocs("buktiPembayaran");
+      const pendingProofs = paymentProofs.filter((row) => row.status === "Menunggu konfirmasi").length;
       if (pending) list.push({ icon: "clock-rotate-left", text: `${pending} pengajuan jadwal baru`, tab: "pengajuan" });
       if (pendingStudents) list.push({ icon: "user-plus", text: `${pendingStudents} pendaftaran baru menunggu`, tab: "manajemen" });
+      if (pendingProofs) list.push({ icon: "file-shield", text: `${pendingProofs} bukti pembayaran menunggu konfirmasi`, tab: "keuangan" });
     } else {
       const ids = await ownedStudentIds(profile);
       const lessons = await rowsForStudents("materi", ids);
@@ -594,6 +685,15 @@
         const requests = await rowsForStudents("pengajuanJadwal", ids);
         const decided = requests.filter((row) => ["Disetujui", "Ditolak"].includes(row.status)).at(-1);
         if (decided) list.push({ icon: decided.status === "Disetujui" ? "check-circle" : "times-circle", text: `Pengajuan jadwal ${decided.status.toLowerCase()}`, tab: "" });
+        const proofSnaps = await Promise.all(
+          ids.map((idMurid) => db.collection("buktiPembayaran").where("idMurid", "==", idMurid).get()),
+        );
+        const decidedProof = proofSnaps
+          .flatMap((snap) => snap.docs.map((doc) => doc.data()))
+          .filter((row) => ["Diterima", "Ditolak"].includes(row.status))
+          .sort((a, b) => String(a.tanggalUpload || "").localeCompare(String(b.tanggalUpload || "")))
+          .at(-1);
+        if (decidedProof) list.push({ icon: decidedProof.status === "Diterima" ? "circle-check" : "circle-xmark", text: `Bukti pembayaran ${decidedProof.status.toLowerCase()}`, tab: "" });
       }
     }
     return list;
@@ -635,6 +735,43 @@
         createdAt: serverTime(),
       });
       return OK(undefined, "Keuangan berhasil disimpan.");
+    }
+    if (action === "konfirmasiBuktiPembayaran") {
+      const profile = await requireProfile(["admin"]);
+      const buktiId = idValue(payload.buktiId);
+      const keputusan = plain(payload.keputusan, 20);
+      const alasan = plain(payload.alasan, 300);
+      if (!["Diterima", "Ditolak"].includes(keputusan)) throw new Error("Keputusan tidak valid.");
+      if (keputusan === "Ditolak" && !alasan) throw new Error("Alasan penolakan wajib diisi.");
+
+      const buktiRef = db.collection("buktiPembayaran").doc(buktiId);
+      await db.runTransaction(async (tx) => {
+        const snap = await tx.get(buktiRef);
+        if (!snap.exists) throw new Error("Bukti pembayaran tidak ditemukan.");
+        const bukti = snap.data();
+        if (bukti.status !== "Menunggu konfirmasi") throw new Error("Bukti ini sudah diproses.");
+
+        const update = {
+          status: keputusan,
+          alasanPenolakan: keputusan === "Ditolak" ? alasan : "",
+          diperiksaOleh: profile.uid,
+          diperiksaPada: serverTime(),
+        };
+        if (keputusan === "Diterima") {
+          const transaksiRef = db.collection("keuangan").doc();
+          tx.set(transaksiRef, {
+            idMurid: bukti.idMurid,
+            tanggal: bukti.tanggalUpload || today(),
+            nominal: Number(bukti.nominal) || 0,
+            keterangan: bukti.keterangan || "Pembayaran terkonfirmasi",
+            sourceBuktiId: buktiId,
+            createdAt: serverTime(),
+          });
+          update.transaksiId = transaksiRef.id;
+        }
+        tx.update(buktiRef, update);
+      });
+      return OK(undefined, keputusan === "Diterima" ? "Bukti diterima dan transaksi berhasil dicatat." : "Bukti pembayaran ditolak.");
     }
     if (action === "registerMurid") {
       await requireProfile(["admin"]);
@@ -788,6 +925,7 @@
     if (action === "getMurid") return OK(await getMurid());
     if (action === "getAbsensi") return OK(await getAbsensi());
     if (action === "getKeuangan") return OK(await getKeuangan());
+    if (action === "getBuktiPembayaran") return OK(await getBuktiPembayaran());
     if (action === "getPengajuanJadwal") return OK(await getPengajuan());
     if (action === "getAllMateri") return OK(await getMateri(true));
     if (action === "getRuangBelajar") return OK(await getMateri(false));
@@ -873,6 +1011,7 @@
     provisionStudentAccounts,
     updateAccountProfile,
     changePassword,
+    uploadPaymentProof,
     usernameToEmail,
     isConfigured: () => !notConfigured,
   };

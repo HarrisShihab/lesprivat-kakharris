@@ -55,6 +55,15 @@ service cloud.firestore {
       allow create, update, delete: if admin();
     }
 
+    match /buktiPembayaran/{docId} {
+      allow read: if admin()
+        || (roleIs("orangtua") && ownsStudent(resource.data.idMurid));
+      // Upload dari browser ditolak. Dokumen dibuat oleh Apps Script memakai
+      // kredensial pemilik proyek setelah Firebase ID Token diverifikasi.
+      allow create: if admin();
+      allow update, delete: if admin();
+    }
+
     match /materi/{docId} {
       allow read: if admin() || ownsStudent(resource.data.idMurid);
       allow create, update, delete: if admin();

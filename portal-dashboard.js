@@ -12,6 +12,8 @@
     finance: [],
     allAttendance: [],
     allFinance: [],
+    paymentProofs: [],
+    allPaymentProofs: [],
     materials: [],
   };
 
@@ -122,6 +124,7 @@
     text("summary-sessions", sessionSummary(student));
     text("summary-schedule", student.jadwal);
     text("schedule-duration", `${student.durasi || 60} menit`);
+    text("payment-student-name", student.nama);
 
     text("profile-parent-name", state.profile.nama || student.ortu);
     text("profile-username", state.profile.username);
@@ -191,11 +194,13 @@
     state.student = selected;
     state.finance = state.allFinance.filter((row) => String(row.idMurid) === String(selected.id));
     state.attendance = state.allAttendance.filter((row) => String(row.idMurid) === String(selected.id));
+    state.paymentProofs = state.allPaymentProofs.filter((row) => String(row.idMurid) === String(selected.id));
     localStorage.setItem("parentSelectedStudentId", selected.id);
     localStorage.setItem("dataMurid", JSON.stringify(selected));
     fillParentDashboard();
     renderFinance();
     renderAttendance();
+    renderPaymentProofs();
     if ($("schedule-form")) {
       $("schedule-form").reset();
       text("schedule-duration", `${selected.durasi || 60} menit`);
@@ -236,6 +241,34 @@
   function statusBadge(status) {
     const color = status === "Hadir" ? "text-emerald-600 bg-emerald-50" : status === "Izin" ? "text-amber-600 bg-amber-50" : "text-slate-600 bg-slate-100";
     return `<span class="inline-flex px-2 py-1 rounded-md text-[10px] font-bold ${color}">${escapeHtml(status)}</span>`;
+  }
+
+  function paymentStatusBadge(status) {
+    const styles = {
+      "Menunggu konfirmasi": "text-amber-700 bg-amber-50",
+      Diterima: "text-emerald-700 bg-emerald-50",
+      Ditolak: "text-red-700 bg-red-50",
+    };
+    return `<span class="inline-flex px-2 py-1 rounded-md text-[10px] font-bold ${styles[status] || "text-slate-600 bg-slate-100"}">${escapeHtml(status)}</span>`;
+  }
+
+  function renderPaymentProofs() {
+    const body = $("payment-proof-body");
+    if (!body) return;
+    if (!state.paymentProofs.length) {
+      body.innerHTML = '<tr><td colspan="4" class="empty-cell">Belum ada bukti yang dikirim.</td></tr>';
+      return;
+    }
+    body.innerHTML = state.paymentProofs
+      .map(
+        (row) => `<tr>
+          <td>${escapeHtml(row.tanggalUpload)}</td>
+          <td class="font-semibold text-slate-700">${formatMoney(row.nominal)}</td>
+          <td>${paymentStatusBadge(row.status)}${row.alasanPenolakan ? `<p class="text-[10px] text-red-600 mt-1">${escapeHtml(row.alasanPenolakan)}</p>` : ""}</td>
+          <td>${escapeHtml(row.keterangan || "-")}</td>
+        </tr>`,
+      )
+      .join("");
   }
 
   function renderAttendance() {
@@ -347,8 +380,37 @@
   }
 
   async function loadParentData() {
-    [state.allFinance, state.allAttendance] = await Promise.all([apiGet("getKeuangan"), apiGet("getAbsensi")]);
+    [state.allFinance, state.allAttendance, state.allPaymentProofs] = await Promise.all([
+      apiGet("getKeuangan"),
+      apiGet("getAbsensi"),
+      apiGet("getBuktiPembayaran"),
+    ]);
     selectParentStudent(state.student.id);
+  }
+
+  async function submitPaymentProof(event) {
+    event.preventDefault();
+    const button = $("payment-submit");
+    feedback("payment-feedback");
+    setButtonBusy(button, true, "Mengunggah...");
+    try {
+      const file = $("payment-file").files[0];
+      await firebasePortal.uploadPaymentProof({
+        idMurid: state.student.id,
+        nominal: Number($("payment-amount").value),
+        keterangan: $("payment-description").value,
+        file,
+      });
+      event.target.reset();
+      feedback("payment-feedback", "Bukti berhasil dikirim dan sedang menunggu konfirmasi admin.", "success");
+      state.allPaymentProofs = await apiGet("getBuktiPembayaran");
+      state.paymentProofs = state.allPaymentProofs.filter((row) => String(row.idMurid) === String(state.student.id));
+      renderPaymentProofs();
+    } catch (error) {
+      feedback("payment-feedback", error.message || "Bukti gagal diunggah.", "error");
+    } finally {
+      setButtonBusy(button, false);
+    }
   }
 
   async function loadStudentData() {
@@ -464,6 +526,7 @@
     $("password-form")?.addEventListener("submit", submitPassword);
     $("schedule-day")?.addEventListener("change", loadScheduleSlots);
     $("schedule-form")?.addEventListener("submit", submitSchedule);
+    $("payment-proof-form")?.addEventListener("submit", submitPaymentProof);
     $("child-picker")?.addEventListener("change", (event) => selectParentStudent(event.target.value));
     $("material-back")?.addEventListener("click", () => {
       $("material-detail")?.classList.add("hidden");

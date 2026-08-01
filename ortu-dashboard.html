@@ -79,7 +79,36 @@
               <section class="content-card lg:col-span-2">
                 <div class="section-title">
                   <div><h3>Riwayat Pembayaran</h3><p>Catatan transaksi dan administrasi les.</p></div>
-                  <a href="https://wa.me/6282129553368" target="_blank" rel="noopener" class="small-action bg-emerald-600 text-white"><i class="fa-brands fa-whatsapp"></i> Kirim Bukti</a>
+                  <a href="https://wa.me/6282129553368" target="_blank" rel="noopener" class="small-action bg-emerald-600 text-white"><i class="fa-brands fa-whatsapp"></i> Kirim via WA</a>
+                </div>
+                <form id="payment-proof-form" class="mb-6 rounded-xl border border-blue-100 bg-blue-50/60 p-4 space-y-4">
+                  <div>
+                    <h4 class="text-sm font-bold text-slate-800">Unggah Bukti Pembayaran</h4>
+                    <p class="text-xs text-slate-500 mt-1">Untuk <strong id="payment-student-name" class="text-blue-700">-</strong>. File disimpan privat dan menunggu konfirmasi admin.</p>
+                  </div>
+                  <div class="grid sm:grid-cols-2 gap-4">
+                    <label class="field-label">Nominal pembayaran
+                      <input id="payment-amount" class="field-input" type="number" inputmode="numeric" min="1000" max="100000000" step="1000" placeholder="Contoh: 350000" required />
+                    </label>
+                    <label class="field-label">Keterangan
+                      <input id="payment-description" class="field-input" maxlength="300" placeholder="Contoh: Paket SMP 4 pertemuan" required />
+                    </label>
+                  </div>
+                  <label class="field-label">File bukti
+                    <input id="payment-file" class="field-input file-input" type="file" accept="image/jpeg,image/png,image/webp,application/pdf" required />
+                    <span class="field-hint">JPG, PNG, WebP, atau PDF. Maksimal 5 MB.</span>
+                  </label>
+                  <button id="payment-submit" class="primary-action" type="submit"><i class="fa-solid fa-cloud-arrow-up"></i> Unggah Bukti</button>
+                  <p id="payment-feedback" class="form-feedback" aria-live="polite"></p>
+                </form>
+                <div class="mb-6">
+                  <h4 class="text-xs font-bold uppercase tracking-wide text-slate-500 mb-3">Status Bukti yang Dikirim</h4>
+                  <div class="table-wrap">
+                    <table>
+                      <thead><tr><th>Tanggal</th><th>Nominal</th><th>Status</th><th>Keterangan</th></tr></thead>
+                      <tbody id="payment-proof-body"><tr><td colspan="4" class="empty-cell">Memuat data...</td></tr></tbody>
+                    </table>
+                  </div>
                 </div>
                 <div class="table-wrap">
                   <table>
@@ -159,6 +188,7 @@
     <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore-compat.js"></script>
     <script src="firebase-config.js"></script>
+    <script src="payment-upload-config.js"></script>
     <script src="firebase-api.js"></script>
     <script src="portal-dashboard.js"></script>
   </body>
