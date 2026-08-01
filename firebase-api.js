@@ -1294,18 +1294,16 @@
     }
     if (action === "hapusSemuaPengajuan") {
       await requireProfile(["admin"]);
-      const [requests, slots, quotas] = await Promise.all([
-        db.collection("pengajuanJadwal").get(),
-        db.collection("slotJadwal").get(),
-        db.collection("kuotaJadwal").get(),
-      ]);
-      const refs = [...requests.docs, ...slots.docs.filter((doc) => doc.data().status === "Pending"), ...quotas.docs.filter((doc) => doc.data().status === "Pending")];
+      const requests = await db.collection("pengajuanJadwal").get();
+      const removableStatuses = new Set(["Ditolak", "Dibatalkan"]);
+      const refs = requests.docs.filter((doc) => removableStatuses.has(String(doc.data().status || "").trim()));
       for (let i = 0; i < refs.length; i += 450) {
         const batch = db.batch();
         refs.slice(i, i + 450).forEach((doc) => batch.delete(doc.ref));
         await batch.commit();
       }
-      return OK(undefined, "Semua pengajuan berhasil dibersihkan.");
+      if (!refs.length) return OK({ deleted: 0 }, "Tidak ada riwayat Ditolak atau Dibatalkan yang perlu dihapus.");
+      return OK({ deleted: refs.length }, `${refs.length} riwayat pengajuan Ditolak/Dibatalkan berhasil dihapus.`);
     }
     if (action === "resetSemuaJadwal") {
       await requireProfile(["admin"]);

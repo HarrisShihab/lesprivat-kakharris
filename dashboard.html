@@ -412,8 +412,9 @@
                 <button
                   onclick="hapusSemuaPengajuan()"
                   class="px-4 py-2 bg-rose-600 hover:bg-rose-700 text-white rounded-xl text-xs font-semibold flex items-center justify-center gap-2 transition shadow-sm"
+                  title="Hapus riwayat pengajuan yang Ditolak atau Dibatalkan"
                 >
-                  <i class="fa-solid fa-trash-can"></i> Hapus Pengajuan
+                  <i class="fa-solid fa-trash-can"></i> Hapus Riwayat
                 </button>
                 <button
                   onclick="resetSemuaJadwal()"
@@ -1597,13 +1598,15 @@ Kak Harris - Les Privat Berkualitas untuk Semua Jenjang`;
       }
 
       // ========================================================
-      // FUNGSI ADMIN: HAPUS SEMUA PENGAJUAN JADWAL (ANTI-CORS)
+      // FUNGSI ADMIN: HAPUS RIWAYAT PENGAJUAN DITOLAK/DIBATALKAN
       // ========================================================
       async function hapusSemuaPengajuan() {
-        const konfirmasi1 = confirm("⚠️ PERINGATAN BERSAMA!\nApakah Kak Harris yakin ingin menghapus SEMUA data pengajuan masuk?");
+        const konfirmasi1 = confirm(
+          "Hapus semua riwayat pengajuan berstatus Ditolak dan Dibatalkan?\n\nPengajuan Pending dan Disetujui tidak akan terhapus.",
+        );
         if (!konfirmasi1) return;
 
-        const konfirmasi2 = confirm("Tindakan ini akan mengosongkan database pengajuan dan TIDAK DAPAT dibatalkan. Lanjutkan?");
+        const konfirmasi2 = confirm("Riwayat yang sudah dihapus tidak dapat dikembalikan. Lanjutkan?");
         if (!konfirmasi2) return;
 
         try {
