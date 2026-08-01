@@ -278,63 +278,83 @@
           .replaceAll("'", "&#039;");
       }
 
-      async function ambilJadwal() {
+      function renderJadwal(data) {
         const container = document.getElementById("jadwal-container");
+
+        if (!Array.isArray(data) || data.length === 0) {
+          container.innerHTML = "<p class='status-empty'>Belum ada jadwal.</p>";
+          return;
+        }
+
+        const infoHari = {
+          Senin: "13:00 – 17:30",
+          Selasa: "13:00 – 17:30",
+          Rabu: "13:00 – 17:30",
+          Kamis: "13:00 – 17:30",
+          Jumat: "13:00 – 17:30",
+          Sabtu: "09:00 – 17:30",
+        };
+        const kelompokJadwal = Object.fromEntries(Object.keys(infoHari).map((hari) => [hari, []]));
+        data.forEach((jadwal) => {
+          if (kelompokJadwal[jadwal.hari]) kelompokJadwal[jadwal.hari].push(jadwal);
+        });
+
+        let html = "<div class='jadwal-grid'>";
+        Object.keys(infoHari).forEach((hari) => {
+          const sesi = kelompokJadwal[hari];
+          const terisi = sesi.filter((item) => item.terisi).length;
+          html += `<article class="day-card"><h3 class="day-title">${hari}</h3><p class="day-hours">${infoHari[hari]}</p><div class="day-stats">${terisi ? `<span class="stat-badge">${terisi} slot terisi</span>` : ""}</div><div class="slots-container">`;
+          if (!sesi.length) {
+            html += "<p class='no-slot'>Belum ada jadwal di hari ini</p>";
+          } else {
+            sesi.forEach((item) => {
+              const isTerisi = item.terisi === true;
+              const kelas = isTerisi ? `<span class="slot-class">Kelas ${escapeHtml(item.kelas || "belum diatur")}</span>` : "";
+              html += `<div class="slot-item"><div class="slot-info"><span class="slot-time">${escapeHtml(formatJam(item.jamMulai))} – ${escapeHtml(formatJam(item.jamSelesai))}</span>${kelas}</div><span class="badge-mini ${isTerisi ? "badge-filled" : "badge-available"}">${isTerisi ? "Terisi" : "Tersedia"}</span></div>`;
+            });
+          }
+          html += "</div></article>";
+        });
+        container.innerHTML = html + "</div>";
+      }
+
+      function mulaiJadwalRealtime() {
+        const container = document.getElementById("jadwal-container");
+
         try {
-          const CACHE_KEY = "jadwal-publik-firebase-v1";
-          const CACHE_TTL = 5 * 60 * 1000;
-          let data = cacheGet(CACHE_KEY);
+          if (!firebase.apps.length) firebase.initializeApp(window.FIREBASE_CONFIG);
+          const unsubscribe = firebase
+            .firestore()
+            .collection("jadwalPublik")
+            .onSnapshot(
+              (snapshot) => {
+                const data = snapshot.docs
+                  .map((doc) => ({ id: doc.id, ...doc.data() }))
+                  .filter((jadwal) => jadwal.status !== "Dihapus")
+                  .map((jadwal) => ({
+                    id: jadwal.id,
+                    hari: jadwal.hari,
+                    jamMulai: jadwal.jamMulai,
+                    jamSelesai: jadwal.jamSelesai,
+                    terisi: Boolean(jadwal.terisi),
+                    kelas: jadwal.terisi ? jadwal.kelas || "belum diatur" : "",
+                  }));
+                renderJadwal(data);
+              },
+              (error) => {
+                console.error("Jadwal realtime gagal dimuat:", error);
+                container.innerHTML = "<p class='status-error'>Jadwal gagal dimuat. Silakan coba lagi atau hubungi melalui WhatsApp.</p>";
+              },
+            );
 
-          if (!data) {
-            const respon = await fetch(`${WEB_APP_URL}?action=getJadwalPublik`);
-            const hasil = await respon.json();
-            if (!respon.ok || hasil.status !== "success") throw new Error(hasil.message || "Data jadwal gagal dimuat");
-            data = hasil.data;
-            cacheSet(CACHE_KEY, data, CACHE_TTL);
-          }
-
-          if (!Array.isArray(data) || data.length === 0) {
-            container.innerHTML = "<p class='status-empty'>Belum ada jadwal.</p>";
-            return;
-          }
-
-          const infoHari = {
-            Senin: "13:00 – 17:30",
-            Selasa: "13:00 – 17:30",
-            Rabu: "13:00 – 17:30",
-            Kamis: "13:00 – 17:30",
-            Jumat: "13:00 – 17:30",
-            Sabtu: "09:00 – 17:30",
-          };
-          const kelompokJadwal = Object.fromEntries(Object.keys(infoHari).map((hari) => [hari, []]));
-          data.forEach((jadwal) => {
-            if (kelompokJadwal[jadwal.hari]) kelompokJadwal[jadwal.hari].push(jadwal);
-          });
-
-          let html = "<div class='jadwal-grid'>";
-          Object.keys(infoHari).forEach((hari) => {
-            const sesi = kelompokJadwal[hari];
-            const terisi = sesi.filter((item) => item.terisi).length;
-            html += `<article class="day-card"><h3 class="day-title">${hari}</h3><p class="day-hours">${infoHari[hari]}</p><div class="day-stats">${terisi ? `<span class="stat-badge">${terisi} slot terisi</span>` : ""}</div><div class="slots-container">`;
-            if (!sesi.length) {
-              html += "<p class='no-slot'>Belum ada jadwal di hari ini</p>";
-            } else {
-              sesi.forEach((item) => {
-                const isTerisi = item.terisi === true;
-                const kelas = isTerisi ? `<span class="slot-class">Kelas ${escapeHtml(item.kelas || "belum diatur")}</span>` : "";
-                html += `<div class="slot-item"><div class="slot-info"><span class="slot-time">${escapeHtml(formatJam(item.jamMulai))} – ${escapeHtml(formatJam(item.jamSelesai))}</span>${kelas}</div><span class="badge-mini ${isTerisi ? "badge-filled" : "badge-available"}">${isTerisi ? "Terisi" : "Tersedia"}</span></div>`;
-              });
-            }
-            html += "</div></article>";
-          });
-          container.innerHTML = html + "</div>";
+          window.addEventListener("pagehide", unsubscribe, { once: true });
         } catch (error) {
-          console.error(error);
+          console.error("Jadwal realtime gagal dimulai:", error);
           container.innerHTML = "<p class='status-error'>Jadwal gagal dimuat. Silakan coba lagi atau hubungi melalui WhatsApp.</p>";
         }
       }
 
-      ambilJadwal();
+      mulaiJadwalRealtime();
     </script>
   </body>
 </html>
