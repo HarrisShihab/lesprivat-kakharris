@@ -754,6 +754,43 @@
     return row.tanggal === today();
   }
 
+  function scheduleQuotaForPackage(packageValue) {
+    const sessions = Number(String(packageValue || "").match(/(?:^|_)(\d+)(?:_|$)/)?.[1] || 0);
+    if (sessions >= 12) return 3;
+    if (sessions >= 8) return 2;
+    return 1;
+  }
+
+  async function scheduleQuotaUsage(idMurid, studentData) {
+    const [scheduleRows, requestRows] = await Promise.all([rowsForStudents("jadwal", [idMurid]), rowsForStudents("pengajuanJadwal", [idMurid])]);
+    const activeRows = scheduleRows.filter((row) => row.status !== "Dihapus");
+    const pendingRows = requestRows.filter((row) => pendingIsActive(row));
+    const maximum = scheduleQuotaForPackage(studentData?.paket);
+    return {
+      maximum,
+      activeRows,
+      pendingRows,
+      used: activeRows.length + pendingRows.length,
+    };
+  }
+
+  async function getScheduleQuota(idMurid, profile) {
+    const allowed = await ownedStudentIds(profile);
+    if (allowed !== null && !allowed.includes(idMurid)) throw new Error("Tidak berhak melihat kuota jadwal murid ini.");
+    const student = await db.collection("murid").doc(idMurid).get();
+    if (!student.exists || ["Dihapus", "Nonaktif"].includes(student.data()?.status)) throw new Error("Murid tidak ditemukan atau sedang nonaktif.");
+    const usage = await scheduleQuotaUsage(idMurid, student.data());
+    return {
+      maksimal: usage.maximum,
+      aktif: usage.activeRows.length,
+      pending: usage.pendingRows.length,
+      terpakai: usage.used,
+      tersedia: Math.max(usage.maximum - usage.used, 0),
+      bisaMengajukan: usage.used < usage.maximum,
+      hariTerpakai: [...new Set([...usage.activeRows, ...usage.pendingRows].map((row) => row.hari).filter(Boolean))],
+    };
+  }
+
   function validateScheduleSelection(hari, jamMulai, duration) {
     if (!SCHEDULE_DAYS.includes(hari) || ![60, 90].includes(duration)) throw new Error("Jadwal tidak valid.");
     const start = timeToMinutes(jamMulai);
@@ -1118,15 +1155,30 @@
       const duration = Number(initialRow.durasi);
       const { start, finish } = validateScheduleSelection(initialRow.hari, initialRow.jamMulai, duration);
       if (endTime(initialRow.jamMulai, duration) !== initialRow.jamSelesai) throw new Error("Rentang waktu pengajuan tidak konsisten.");
-      const [student, publicRows] = await Promise.all([db.collection("murid").doc(initialRow.idMurid).get(), allDocs("jadwalPublik")]);
+      const [student, publicRows, studentSchedules] = await Promise.all([
+        db.collection("murid").doc(initialRow.idMurid).get(),
+        allDocs("jadwalPublik"),
+        rowsForStudents("jadwal", [initialRow.idMurid]),
+      ]);
       if (!student.exists || ["Dihapus", "Nonaktif"].includes(student.data()?.status)) throw new Error("Murid tidak ditemukan atau sedang nonaktif.");
       if (String(student.data()?.durasi || "60") !== String(duration)) throw new Error("Durasi pengajuan tidak lagi sesuai dengan paket murid.");
+      const maximumSchedules = scheduleQuotaForPackage(student.data()?.paket);
+      if (status === "Disetujui" && (!Number.isInteger(initialRow.quotaSlot) || initialRow.quotaSlot < 1 || initialRow.quotaSlot > maximumSchedules)) {
+        throw new Error("Kuota jadwal paket murid sudah berubah. Pengajuan ini tidak dapat disetujui.");
+      }
+      if (status === "Disetujui" && studentSchedules.filter((row) => row.status !== "Dihapus").length >= maximumSchedules) {
+        throw new Error(`Kuota jadwal paket ini sudah penuh (maksimal ${maximumSchedules} jadwal).`);
+      }
+      if (status === "Disetujui" && studentSchedules.some((row) => row.status !== "Dihapus" && row.hari === initialRow.hari)) {
+        throw new Error("Murid sudah memiliki jadwal aktif pada hari yang sama. Pilih hari berbeda.");
+      }
       if (status === "Disetujui" && publicRows.some((row) => row.hari === initialRow.hari && row.terisi && row.status !== "Dihapus" && conflictsWithSchedule(start, finish, row))) {
         throw new Error("Jadwal sudah terisi atau tidak memiliki jeda 15 menit. Pilih jadwal lain.");
       }
 
       const scheduleRef = db.collection("jadwal").doc();
       const publicRef = db.collection("jadwalPublik").doc(scheduleRef.id);
+      const quotaRef = Number.isInteger(initialRow.quotaSlot) ? db.collection("kuotaJadwal").doc(`${initialRow.idMurid}_${initialRow.quotaSlot}`) : null;
       const tokenRefs = scheduleTokenMinutes(start, finish).map((minute) => ({ minute, ref: db.collection("slotJadwal").doc(scheduleTokenId(initialRow.hari, minute)) }));
       await db.runTransaction(async (transaction) => {
         const requestSnap = await transaction.get(ref);
@@ -1135,13 +1187,20 @@
         if (row.status !== "Pending") throw new Error("Pengajuan ini sudah pernah diproses.");
         if (!pendingIsActive(row)) throw new Error("Pengajuan sudah kedaluwarsa. Orang tua perlu mengajukan ulang.");
 
+        const quotaSnap = quotaRef ? await transaction.get(quotaRef) : null;
         const tokenSnaps = await Promise.all(tokenRefs.map(({ ref: tokenRef }) => transaction.get(tokenRef)));
+        if (status === "Disetujui" && (!quotaSnap?.exists || quotaSnap.data().requestId !== ref.id)) throw new Error("Pengunci kuota pengajuan tidak ditemukan. Minta orang tua mengajukan ulang.");
         if (status === "Disetujui") {
           const conflictingToken = tokenSnaps.find((tokenSnap) => tokenSnap.exists && tokenBlocksSlot(tokenSnap.data()) && tokenSnap.data().requestId !== ref.id);
           if (conflictingToken) throw new Error("Slot baru saja diambil pengajuan lain. Pilih jadwal lain.");
         }
 
         transaction.update(ref, { status, updatedAt: serverTime() });
+        if (status === "Disetujui") {
+          transaction.set(quotaRef, { idMurid: row.idMurid, slot: row.quotaSlot, slotKey: String(row.quotaSlot), requestId: ref.id, status: "Aktif", scheduleId: scheduleRef.id, updatedAt: serverTime() });
+        } else if (quotaRef && quotaSnap?.exists) {
+          transaction.delete(quotaRef);
+        }
         tokenSnaps.forEach((tokenSnap, index) => {
           const tokenRef = tokenRefs[index].ref;
           if (status === "Disetujui") {
@@ -1159,6 +1218,7 @@
             jamMulai: row.jamMulai,
             jamSelesai: row.jamSelesai,
             idMurid: row.idMurid,
+            quotaSlot: row.quotaSlot,
             status: "Aktif",
             createdAt: serverTime(),
           });
@@ -1209,6 +1269,8 @@
 
       const scheduleDoc = matchingSchedules[0];
       const publicRef = db.collection("jadwalPublik").doc(scheduleDoc.id);
+      const quotaSlot = Number(requestRow.quotaSlot || scheduleDoc.data().quotaSlot);
+      const quotaRef = Number.isInteger(quotaSlot) ? db.collection("kuotaJadwal").doc(`${requestRow.idMurid}_${quotaSlot}`) : null;
       const matchingSlots = slotsSnap.docs.filter((doc) => doc.data().scheduleId === scheduleDoc.id);
       await db.runTransaction(async (transaction) => {
         const freshRequest = await transaction.get(requestRef);
@@ -1218,6 +1280,7 @@
 
         transaction.delete(scheduleDoc.ref);
         transaction.delete(publicRef);
+        if (quotaRef) transaction.delete(quotaRef);
         matchingSlots.forEach((slotDoc) => transaction.delete(slotDoc.ref));
         transaction.update(requestRef, {
           status: "Dibatalkan",
@@ -1231,8 +1294,12 @@
     }
     if (action === "hapusSemuaPengajuan") {
       await requireProfile(["admin"]);
-      const [requests, slots] = await Promise.all([db.collection("pengajuanJadwal").get(), db.collection("slotJadwal").get()]);
-      const refs = [...requests.docs, ...slots.docs.filter((doc) => doc.data().status === "Pending")];
+      const [requests, slots, quotas] = await Promise.all([
+        db.collection("pengajuanJadwal").get(),
+        db.collection("slotJadwal").get(),
+        db.collection("kuotaJadwal").get(),
+      ]);
+      const refs = [...requests.docs, ...slots.docs.filter((doc) => doc.data().status === "Pending"), ...quotas.docs.filter((doc) => doc.data().status === "Pending")];
       for (let i = 0; i < refs.length; i += 450) {
         const batch = db.batch();
         refs.slice(i, i + 450).forEach((doc) => batch.delete(doc.ref));
@@ -1242,13 +1309,14 @@
     }
     if (action === "resetSemuaJadwal") {
       await requireProfile(["admin"]);
-      const [requests, schedules, publicSchedules, slots] = await Promise.all([
+      const [requests, schedules, publicSchedules, slots, quotas] = await Promise.all([
         db.collection("pengajuanJadwal").get(),
         db.collection("jadwal").get(),
         db.collection("jadwalPublik").get(),
         db.collection("slotJadwal").get(),
+        db.collection("kuotaJadwal").get(),
       ]);
-      const refs = [...requests.docs, ...schedules.docs, ...publicSchedules.docs, ...slots.docs];
+      const refs = [...requests.docs, ...schedules.docs, ...publicSchedules.docs, ...slots.docs, ...quotas.docs];
       for (let i = 0; i < refs.length; i += 450) {
         const batch = db.batch();
         refs.slice(i, i + 450).forEach((doc) => batch.delete(doc.ref));
@@ -1273,6 +1341,10 @@
     if (action === "getAllMateri") return OK(await getMateri(true));
     if (action === "getRuangBelajar") return OK(await getMateri(false));
     if (action === "getNotifications") return OK(await notifications());
+    if (action === "getKuotaJadwal") {
+      const profile = await requireProfile(["admin", "orangtua"]);
+      return OK(await getScheduleQuota(idValue(params.get("idMurid")), profile));
+    }
     if (action === "getSlotTersedia") return OK(await getSlots(params));
     if (action === "serveFotoProfil") return ERR("Foto profil menggunakan avatar bawaan.");
     if (action === "ajukanJadwalFleksibel") {
@@ -1285,18 +1357,45 @@
       const durasi = Number(params.get("durasi"));
       const { start, finish } = validateScheduleSelection(hari, jamMulai, durasi);
       const jamSelesai = endTime(jamMulai, durasi);
-      const [student, publicRows] = await Promise.all([db.collection("murid").doc(idMurid).get(), allDocs("jadwalPublik")]);
+      const [student, publicRows, requestRows, studentSchedules, quotaRows] = await Promise.all([
+        db.collection("murid").doc(idMurid).get(),
+        allDocs("jadwalPublik"),
+        rowsForStudents("pengajuanJadwal", [idMurid]),
+        rowsForStudents("jadwal", [idMurid]),
+        rowsForStudents("kuotaJadwal", [idMurid]),
+      ]);
       if (!student.exists || ["Dihapus", "Nonaktif"].includes(student.data()?.status)) throw new Error("Murid tidak ditemukan atau sedang nonaktif.");
       if (String(student.data()?.durasi || "60") !== String(durasi)) throw new Error("Durasi harus mengikuti paket aktif murid.");
+      const activeSchedules = studentSchedules.filter((row) => row.status !== "Dihapus");
+      const pendingRequests = requestRows.filter((row) => pendingIsActive(row));
+      const maximumSchedules = scheduleQuotaForPackage(student.data()?.paket);
+      if (activeSchedules.length + pendingRequests.length >= maximumSchedules) {
+        throw new Error(`Kuota jadwal paket ini sudah penuh (${activeSchedules.length + pendingRequests.length} dari ${maximumSchedules}).`);
+      }
+      if (activeSchedules.some((row) => row.hari === hari) || pendingRequests.some((row) => row.hari === hari)) {
+        throw new Error("Jadwal tambahan harus berada pada hari yang berbeda.");
+      }
       if (publicRows.some((row) => row.hari === hari && row.terisi && row.status !== "Dihapus" && conflictsWithSchedule(start, finish, row))) {
         throw new Error(`Slot ${jamMulai} - ${jamSelesai} sudah terisi atau terkena jeda 15 menit.`);
       }
 
       const ref = db.collection("pengajuanJadwal").doc();
       const expiresAt = firebase.firestore.Timestamp.fromMillis(Date.now() + PENDING_HOLD_MS);
+      const occupiedQuotaSlots = new Set(
+        quotaRows
+          .filter((row) => row.idMurid === idMurid && (row.status === "Aktif" || pendingIsActive(row)))
+          .map((row) => Number(row.slot)),
+      );
+      const quotaSlot = Array.from({ length: maximumSchedules }, (_, index) => index + 1).find((slot) => !occupiedQuotaSlots.has(slot));
+      if (!quotaSlot) throw new Error("Kuota jadwal sedang digunakan. Muat ulang halaman lalu coba lagi.");
+      const quotaRef = db.collection("kuotaJadwal").doc(`${idMurid}_${quotaSlot}`);
       const tokenRefs = scheduleTokenMinutes(start, finish).map((minute) => ({ minute, ref: db.collection("slotJadwal").doc(scheduleTokenId(hari, minute)) }));
       await db.runTransaction(async (transaction) => {
+        const quotaSnap = await transaction.get(quotaRef);
         const tokenSnaps = await Promise.all(tokenRefs.map(({ ref: tokenRef }) => transaction.get(tokenRef)));
+        if (quotaSnap.exists && (quotaSnap.data().status === "Aktif" || pendingIsActive(quotaSnap.data()))) {
+          throw new Error("Kuota jadwal baru saja dipakai pengajuan lain. Muat ulang halaman.");
+        }
         if (tokenSnaps.some((tokenSnap) => tokenSnap.exists && tokenBlocksSlot(tokenSnap.data()))) {
           throw new Error("Slot baru saja diajukan orang tua lain. Silakan pilih jam lain.");
         }
@@ -1314,7 +1413,11 @@
           createdBy: profile.uid,
           createdAt: serverTime(),
           expiresAt,
+          quotaSlot,
+          quotaSlotKey: String(quotaSlot),
+          quotaId: quotaRef.id,
         });
+        transaction.set(quotaRef, { idMurid, slot: quotaSlot, slotKey: String(quotaSlot), requestId: ref.id, status: "Pending", expiresAt, createdAt: serverTime() });
         tokenRefs.forEach(({ minute, ref: tokenRef }) => {
           transaction.set(tokenRef, { hari, menit: minute, requestId: ref.id, status: "Pending", expiresAt, createdAt: serverTime() });
         });

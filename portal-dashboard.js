@@ -207,6 +207,7 @@
       $("schedule-time").disabled = true;
       $("schedule-time").innerHTML = '<option value="">Pilih hari dahulu</option>';
       feedback("schedule-feedback");
+      void loadScheduleQuota();
     }
     if (openHome) switchView("beranda");
   }
@@ -443,6 +444,34 @@
     }
   }
 
+  async function loadScheduleQuota() {
+    const studentId = state.student?.id;
+    const quotaInfo = $("schedule-quota");
+    const submitButton = $("schedule-submit");
+    const daySelect = $("schedule-day");
+    if (!studentId || !quotaInfo) return;
+    quotaInfo.textContent = "Memuat kuota jadwal...";
+    try {
+      const quota = await apiGet("getKuotaJadwal", { idMurid: studentId });
+      if (state.student?.id !== studentId) return;
+      const usedDays = Array.isArray(quota.hariTerpakai) && quota.hariTerpakai.length ? ` Hari terpakai: ${quota.hariTerpakai.join(", ")}.` : "";
+      quotaInfo.textContent = `Jadwal terpakai: ${quota.terpakai} dari ${quota.maksimal}. Aktif ${quota.aktif}, menunggu ${quota.pending}.${usedDays}`;
+      if (submitButton) submitButton.disabled = !quota.bisaMengajukan;
+      if (daySelect) daySelect.disabled = !quota.bisaMengajukan;
+      daySelect?.querySelectorAll("option[value]").forEach((option) => {
+        option.disabled = option.value ? quota.hariTerpakai.includes(option.value) : false;
+      });
+      if (!quota.bisaMengajukan) {
+        feedback("schedule-feedback", `Kuota jadwal paket ini sudah penuh (${quota.terpakai} dari ${quota.maksimal}).`, "error");
+      }
+    } catch (error) {
+      quotaInfo.textContent = "Kuota jadwal gagal dimuat.";
+      if (submitButton) submitButton.disabled = true;
+      if (daySelect) daySelect.disabled = true;
+      feedback("schedule-feedback", error.message, "error");
+    }
+  }
+
   async function submitSchedule(event) {
     event.preventDefault();
     const button = $("schedule-submit");
@@ -464,6 +493,7 @@
       feedback("schedule-feedback", error.message, "error");
     } finally {
       setButtonBusy(button, false);
+      await loadScheduleQuota();
     }
   }
 
