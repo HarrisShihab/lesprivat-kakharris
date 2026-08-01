@@ -15,6 +15,7 @@
     paymentProofs: [],
     allPaymentProofs: [],
     materials: [],
+    scheduleQuota: null,
   };
 
   const $ = (id) => document.getElementById(id);
@@ -123,7 +124,6 @@
     text("summary-status", student.status);
     text("summary-sessions", sessionSummary(student));
     text("summary-schedule", student.jadwal);
-    text("schedule-duration", `${student.durasi || 60} menit`);
     text("payment-student-name", student.nama);
 
     text("profile-parent-name", state.profile.nama || student.ortu);
@@ -202,10 +202,7 @@
     renderAttendance();
     renderPaymentProofs();
     if ($("schedule-form")) {
-      $("schedule-form").reset();
-      text("schedule-duration", `${selected.durasi || 60} menit`);
-      $("schedule-time").disabled = true;
-      $("schedule-time").innerHTML = '<option value="">Pilih hari dahulu</option>';
+      resetScheduleRows();
       feedback("schedule-feedback");
       void loadScheduleQuota();
     }
@@ -421,10 +418,69 @@
     renderMaterials();
   }
 
-  async function loadScheduleSlots() {
-    const day = $("schedule-day").value;
-    const select = $("schedule-time");
+  function scheduleRows() {
+    return Array.from(document.querySelectorAll("#schedule-fields .schedule-row"));
+  }
+
+  function scheduleField(row, name) {
+    return row?.querySelector(`[data-schedule-field="${name}"]`);
+  }
+
+  function resetScheduleRows() {
+    const rows = scheduleRows();
+    rows.slice(1).forEach((row) => row.remove());
+    const first = scheduleRows()[0];
+    if (!first) return;
+    scheduleField(first, "day").value = "";
+    scheduleField(first, "duration").value = `${state.student?.durasi || 60} menit`;
+    const time = scheduleField(first, "time");
+    time.disabled = true;
+    time.innerHTML = '<option value="">Pilih hari dahulu</option>';
+    first.querySelector(".schedule-remove")?.classList.add("hidden");
+    updateScheduleRowControls();
+  }
+
+  function updateScheduleRowControls() {
+    const rows = scheduleRows();
+    const quota = state.scheduleQuota;
+    const usedDays = new Set(quota?.hariTerpakai || []);
+    const selectedDays = rows.map((row) => scheduleField(row, "day")?.value).filter(Boolean);
+    rows.forEach((row, index) => {
+      const ownDay = scheduleField(row, "day")?.value;
+      row.querySelector(".schedule-row-title").textContent = `Jadwal ${index + 1}`;
+      row.querySelector(".schedule-remove")?.classList.toggle("hidden", index === 0);
+      scheduleField(row, "duration").value = `${state.student?.durasi || 60} menit`;
+      scheduleField(row, "day")?.querySelectorAll("option[value]").forEach((option) => {
+        option.disabled = Boolean(option.value && (usedDays.has(option.value) || (option.value !== ownDay && selectedDays.includes(option.value))));
+      });
+    });
+    const remaining = Math.max(Number(quota?.tersedia) || 0, 0);
+    const rowsComplete = rows.every((row) => scheduleField(row, "day")?.value && scheduleField(row, "time")?.value);
+    const canAdd = Number(quota?.maksimal) > 1 && rows.length < remaining && rowsComplete;
+    $("schedule-add")?.classList.toggle("hidden", !canAdd);
+  }
+
+  function addScheduleRow() {
+    const rows = scheduleRows();
+    const quota = state.scheduleQuota;
+    if (!rows.length || rows.length >= (Number(quota?.tersedia) || 0)) return;
+    const row = rows[0].cloneNode(true);
+    scheduleField(row, "day").value = "";
+    scheduleField(row, "duration").value = `${state.student?.durasi || 60} menit`;
+    const time = scheduleField(row, "time");
+    time.disabled = true;
+    time.innerHTML = '<option value="">Pilih hari dahulu</option>';
+    row.querySelector(".schedule-remove")?.classList.remove("hidden");
+    $("schedule-fields").appendChild(row);
+    updateScheduleRowControls();
+  }
+
+  async function loadScheduleSlots(event) {
+    const row = event?.target?.closest(".schedule-row") || scheduleRows()[0];
+    const day = scheduleField(row, "day").value;
+    const select = scheduleField(row, "time");
     const duration = Number(state.student.durasi) || 60;
+    updateScheduleRowControls();
     select.disabled = true;
     select.innerHTML = '<option value="">Memuat slot...</option>';
     feedback("schedule-feedback");
@@ -434,6 +490,7 @@
     }
     try {
       const slots = await apiGet("getSlotTersedia", { hari: day, durasi: duration });
+      if (scheduleField(row, "day").value !== day) return;
       select.innerHTML = slots.length
         ? `<option value="">Pilih jam</option>${slots.map((slot) => `<option value="${escapeHtml(slot.jamMulai)}">${escapeHtml(slot.teks)}</option>`).join("")}`
         : '<option value="">Tidak tersedia: terisi, ditahan, atau terkena jeda 15 menit</option>';
@@ -444,30 +501,35 @@
     }
   }
 
-  async function loadScheduleQuota() {
+  async function loadScheduleQuota(showFullFeedback = true) {
     const studentId = state.student?.id;
     const quotaInfo = $("schedule-quota");
     const submitButton = $("schedule-submit");
-    const daySelect = $("schedule-day");
     if (!studentId || !quotaInfo) return;
     quotaInfo.textContent = "Memuat kuota jadwal...";
     try {
       const quota = await apiGet("getKuotaJadwal", { idMurid: studentId });
       if (state.student?.id !== studentId) return;
+      state.scheduleQuota = quota;
       const usedDays = Array.isArray(quota.hariTerpakai) && quota.hariTerpakai.length ? ` Hari terpakai: ${quota.hariTerpakai.join(", ")}.` : "";
       quotaInfo.textContent = `Jadwal terpakai: ${quota.terpakai} dari ${quota.maksimal}. Aktif ${quota.aktif}, menunggu ${quota.pending}.${usedDays}`;
       if (submitButton) submitButton.disabled = !quota.bisaMengajukan;
-      if (daySelect) daySelect.disabled = !quota.bisaMengajukan;
-      daySelect?.querySelectorAll("option[value]").forEach((option) => {
-        option.disabled = option.value ? quota.hariTerpakai.includes(option.value) : false;
+      scheduleRows().forEach((row) => {
+        scheduleField(row, "day").disabled = !quota.bisaMengajukan;
       });
-      if (!quota.bisaMengajukan) {
+      while (scheduleRows().length > Math.max(quota.tersedia, 1)) scheduleRows().at(-1).remove();
+      updateScheduleRowControls();
+      if (!quota.bisaMengajukan && showFullFeedback) {
         feedback("schedule-feedback", `Kuota jadwal paket ini sudah penuh (${quota.terpakai} dari ${quota.maksimal}).`, "error");
       }
     } catch (error) {
       quotaInfo.textContent = "Kuota jadwal gagal dimuat.";
+      state.scheduleQuota = null;
       if (submitButton) submitButton.disabled = true;
-      if (daySelect) daySelect.disabled = true;
+      scheduleRows().forEach((row) => {
+        scheduleField(row, "day").disabled = true;
+      });
+      updateScheduleRowControls();
       feedback("schedule-feedback", error.message, "error");
     }
   }
@@ -478,22 +540,26 @@
     feedback("schedule-feedback");
     setButtonBusy(button, true, "Mengirim...");
     try {
+      const schedules = scheduleRows().map((row) => ({
+        hari: scheduleField(row, "day").value,
+        jamMulai: scheduleField(row, "time").value,
+      }));
       await apiGet("ajukanJadwalFleksibel", {
         idMurid: state.student.id,
-        hari: $("schedule-day").value,
-        jamMulai: $("schedule-time").value,
         durasi: Number(state.student.durasi) || 60,
+        jadwal: JSON.stringify(schedules),
       });
-      feedback("schedule-feedback", "Pengajuan berhasil dikirim. Slot ditahan selama 24 jam sambil menunggu keputusan admin.", "success");
-      event.target.reset();
-      $("schedule-duration").value = `${state.student.durasi || 60} menit`;
-      $("schedule-time").disabled = true;
-      $("schedule-time").innerHTML = '<option value="">Pilih hari dahulu</option>';
+      const total = schedules.length;
+      const successMessage = total === 1
+        ? "Pengajuan jadwal berhasil dikirim. Slot ditahan selama 24 jam sambil menunggu keputusan admin."
+        : `${total} pengajuan jadwal berhasil dikirim sekaligus. Slot ditahan selama 24 jam sambil menunggu keputusan admin.`;
+      feedback("schedule-feedback", successMessage, "success");
+      resetScheduleRows();
     } catch (error) {
       feedback("schedule-feedback", error.message, "error");
     } finally {
       setButtonBusy(button, false);
-      await loadScheduleQuota();
+      await loadScheduleQuota(false);
     }
   }
 
@@ -554,7 +620,17 @@
     document.querySelectorAll("[data-logout]").forEach((button) => button.addEventListener("click", logout));
     $("account-form")?.addEventListener("submit", submitAccount);
     $("password-form")?.addEventListener("submit", submitPassword);
-    $("schedule-day")?.addEventListener("change", loadScheduleSlots);
+    $("schedule-fields")?.addEventListener("change", (event) => {
+      if (event.target.matches('[data-schedule-field="day"]')) void loadScheduleSlots(event);
+      if (event.target.matches('[data-schedule-field="time"]')) updateScheduleRowControls();
+    });
+    $("schedule-fields")?.addEventListener("click", (event) => {
+      const removeButton = event.target.closest(".schedule-remove");
+      if (!removeButton) return;
+      removeButton.closest(".schedule-row")?.remove();
+      updateScheduleRowControls();
+    });
+    $("schedule-add")?.addEventListener("click", addScheduleRow);
     $("schedule-form")?.addEventListener("submit", submitSchedule);
     $("payment-proof-form")?.addEventListener("submit", submitPaymentProof);
     $("child-picker")?.addEventListener("change", (event) => selectParentStudent(event.target.value));
