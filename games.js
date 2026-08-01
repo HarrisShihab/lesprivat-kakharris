@@ -1,12 +1,10 @@
 (async function () {
   "use strict";
 
-  await firebasePortal.guard(["murid"]);
-  const student = await firebasePortal.getCurrentMurid();
-  if (!student) {
-    window.location.replace("login.html");
-    return;
-  }
+  const catalogDescription = document.getElementById("game-catalog-description");
+  const catalogStatus = document.getElementById("game-catalog-status");
+  const gameGrid = document.getElementById("game-grid");
+  const gameTemplate = document.getElementById("game-card-template");
 
   function detectGradeLevel(studentData) {
     const gradeLevel = String(studentData.jenjang || "").trim().toUpperCase();
@@ -18,18 +16,44 @@
     return "";
   }
 
-  const gradeLevel = detectGradeLevel(student);
-  const catalogDescription = document.getElementById("game-catalog-description");
-  document.querySelectorAll("[data-grade-levels]").forEach((card) => {
-    const supportedLevels = card.dataset.gradeLevels.split(",").map((level) => level.trim());
-    card.hidden = Boolean(gradeLevel) && !supportedLevels.includes(gradeLevel);
-  });
-
-  if (catalogDescription) {
-    catalogDescription.textContent = gradeLevel
-      ? `Menampilkan game untuk ${gradeLevel}, termasuk game SD–SMP.`
-      : "Menampilkan seluruh game karena jenjang akun belum ditentukan.";
+  function showCatalogMessage(message) {
+    catalogStatus.textContent = message;
+    catalogStatus.hidden = false;
+    gameGrid.setAttribute("aria-busy", "false");
   }
+
+  let student;
+  try {
+    await firebasePortal.guard(["murid"]);
+    student = await firebasePortal.getCurrentMurid();
+  } catch (error) {
+    console.error("Gagal memuat katalog game:", error);
+    catalogDescription.textContent = "Katalog belum dapat dimuat.";
+    showCatalogMessage("Data akun gagal dimuat. Muat ulang halaman untuk mencoba lagi.");
+    return;
+  }
+
+  if (!student) {
+    window.location.replace("login.html");
+    return;
+  }
+
+  const gradeLevel = detectGradeLevel(student);
+  if (!gradeLevel) {
+    catalogDescription.textContent = "Jenjang akun belum ditentukan.";
+    showCatalogMessage("Hubungi admin untuk melengkapi jenjang akunmu agar game yang sesuai dapat ditampilkan.");
+    return;
+  }
+
+  const matchingCards = Array.from(gameTemplate.content.querySelectorAll("[data-grade-levels]"))
+    .filter((card) => card.dataset.gradeLevels.split(",").map((level) => level.trim()).includes(gradeLevel));
+
+  const fragment = document.createDocumentFragment();
+  matchingCards.forEach((card) => fragment.appendChild(card.cloneNode(true)));
+  gameGrid.appendChild(fragment);
+  gameGrid.setAttribute("aria-busy", "false");
+  catalogStatus.hidden = true;
+  catalogDescription.textContent = `Menampilkan game untuk ${gradeLevel}, termasuk game SD–SMP.`;
 
   const storageKey = `kakHarrisGameStats:${student.id || student.username || "murid"}`;
   let stats = {};
