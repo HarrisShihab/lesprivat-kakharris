@@ -16,6 +16,11 @@
   const ERR = (message) => ({ status: "error", message });
   const serverTime = () => firebase.firestore.FieldValue.serverTimestamp();
   const today = () => new Date().toISOString().slice(0, 10);
+  const SCHEDULE_DAYS = ["Senin", "Selasa", "Rabu", "Kamis", "Jumat", "Sabtu"];
+  const SLOT_INTERVAL_MINUTES = 15;
+  const SCHEDULE_GAP_MINUTES = 15;
+  const SCHEDULE_CLOSE_MINUTES = 17 * 60 + 30;
+  const PENDING_HOLD_MS = 24 * 60 * 60 * 1000;
 
   function init() {
     if (notConfigured) throw new Error("Firebase belum dikonfigurasi. Isi firebase-config.js terlebih dahulu.");
@@ -710,13 +715,14 @@
       .sort((a, b) => String(b.tanggal).localeCompare(String(a.tanggal)))
       .map((row) => {
         const murid = students.get(row.idMurid);
+        const status = row.status === "Pending" && !pendingIsActive(row) ? "Kedaluwarsa" : row.status || "Pending";
         return {
           idPengajuan: row.idPengajuan || row._docId,
           idMurid: row.idMurid,
           namaTampilan: murid ? `${murid.nama} (${murid.kelas} ${murid.jenjang})` : row.idMurid,
           jadwalTampilan: row.jadwalTampilan || `${row.hari}, ${row.jamMulai} - ${row.jamSelesai}`,
           tanggal: row.tanggal || "-",
-          status: row.status || "Pending",
+          status,
         };
       });
   }
@@ -727,18 +733,73 @@
     return `${String(Math.floor(total / 60)).padStart(2, "0")}:${String(total % 60).padStart(2, "0")}`;
   }
 
+  function timeToMinutes(value) {
+    const [hours, minutes] = timeValue(value).split(":").map(Number);
+    return hours * 60 + minutes;
+  }
+
+  function timestampMillis(value) {
+    if (typeof value?.toMillis === "function") return value.toMillis();
+    if (typeof value?.toDate === "function") return value.toDate().getTime();
+    const parsed = Date.parse(value || "");
+    return Number.isFinite(parsed) ? parsed : 0;
+  }
+
+  function pendingIsActive(row, now = Date.now()) {
+    if (row?.status !== "Pending") return false;
+    const expiresAt = timestampMillis(row.expiresAt);
+    if (expiresAt) return expiresAt > now;
+    const createdAt = timestampMillis(row.createdAt);
+    if (createdAt) return createdAt + PENDING_HOLD_MS > now;
+    return row.tanggal === today();
+  }
+
+  function validateScheduleSelection(hari, jamMulai, duration) {
+    if (!SCHEDULE_DAYS.includes(hari) || ![60, 90].includes(duration)) throw new Error("Jadwal tidak valid.");
+    const start = timeToMinutes(jamMulai);
+    const opening = hari === "Sabtu" ? 9 * 60 : 13 * 60;
+    if (start % SLOT_INTERVAL_MINUTES !== 0) throw new Error("Jam mulai harus dalam kelipatan 15 menit.");
+    if (start < opening || start + duration > SCHEDULE_CLOSE_MINUTES) {
+      throw new Error(`Jadwal ${hari} harus berada di antara ${hari === "Sabtu" ? "09.00" : "13.00"} dan 17.30.`);
+    }
+    return { start, finish: start + duration };
+  }
+
+  function conflictsWithSchedule(start, finish, row) {
+    const otherStart = timeToMinutes(row.jamMulai);
+    const otherFinish = timeToMinutes(row.jamSelesai);
+    return start < otherFinish + SCHEDULE_GAP_MINUTES && finish + SCHEDULE_GAP_MINUTES > otherStart;
+  }
+
+  function scheduleTokenMinutes(start, finish) {
+    const tokens = [];
+    for (let minute = start; minute < finish + SCHEDULE_GAP_MINUTES; minute += SLOT_INTERVAL_MINUTES) tokens.push(minute);
+    return tokens;
+  }
+
+  function scheduleTokenId(hari, minute) {
+    return `${hari.toLowerCase()}_${String(Math.floor(minute / 60)).padStart(2, "0")}${String(minute % 60).padStart(2, "0")}`;
+  }
+
+  function tokenBlocksSlot(row, now = Date.now()) {
+    return row?.status === "Aktif" || pendingIsActive(row, now);
+  }
+
   async function getSlots(params) {
     await requireProfile(["orangtua"]);
     const hari = plain(params.get("hari"), 10);
     const duration = Number(params.get("durasi"));
-    if (!["Senin", "Selasa", "Rabu", "Kamis", "Jumat", "Sabtu"].includes(hari) || ![60, 90].includes(duration)) throw new Error("Pilihan jadwal tidak valid.");
+    if (!SCHEDULE_DAYS.includes(hari) || ![60, 90].includes(duration)) throw new Error("Pilihan jadwal tidak valid.");
     const base = hari === "Sabtu" ? 9 * 60 : 13 * 60;
-    const busy = (await allDocs("jadwalPublik")).filter((row) => row.hari === hari && row.terisi && row.status !== "Dihapus");
+    const [publicRows, tokenRows] = await Promise.all([allDocs("jadwalPublik"), allDocs("slotJadwal")]);
+    const busy = publicRows.filter((row) => row.hari === hari && row.terisi && row.status !== "Dihapus");
+    const blockedTokens = new Set(tokenRows.filter((row) => row.hari === hari && tokenBlocksSlot(row)).map((row) => row.menit));
     const result = [];
-    for (let minute = base; minute + duration <= 17 * 60 + 30; minute += 30) {
+    for (let minute = base; minute + duration <= SCHEDULE_CLOSE_MINUTES; minute += SLOT_INTERVAL_MINUTES) {
       const start = `${String(Math.floor(minute / 60)).padStart(2, "0")}:${String(minute % 60).padStart(2, "0")}`;
       const finish = endTime(start, duration);
-      if (!busy.some((row) => start < row.jamSelesai && finish > row.jamMulai)) {
+      const tokenConflict = scheduleTokenMinutes(minute, minute + duration).some((token) => blockedTokens.has(token));
+      if (!tokenConflict && !busy.some((row) => conflictsWithSchedule(minute, minute + duration, row))) {
         result.push({ jamMulai: start, jamSelesai: finish, teks: `${start} - ${finish} (${duration} menit)` });
       }
     }
@@ -1049,52 +1110,90 @@
       const status = plain(payload.status, 15);
       if (!["Disetujui", "Ditolak"].includes(status)) throw new Error("Status tidak valid.");
       const ref = db.collection("pengajuanJadwal").doc(idValue(payload.idPengajuan));
-      const snap = await ref.get();
-      if (!snap.exists) throw new Error("Pengajuan tidak ditemukan.");
-      const row = snap.data();
-      const batch = db.batch();
-      batch.update(ref, { status, updatedAt: serverTime() });
-      if (status === "Disetujui") {
-        const scheduleRef = db.collection("jadwal").doc();
-        const publicRef = db.collection("jadwalPublik").doc(scheduleRef.id);
-        const schedule = {
-          id: scheduleRef.id,
-          hari: row.hari,
-          jamMulai: row.jamMulai,
-          jamSelesai: row.jamSelesai,
-          idMurid: row.idMurid,
-          status: "Aktif",
-          createdAt: serverTime(),
-        };
-        const student = await db.collection("murid").doc(row.idMurid).get();
-        batch.set(scheduleRef, schedule);
-        batch.set(publicRef, {
-          id: scheduleRef.id,
-          hari: row.hari,
-          jamMulai: row.jamMulai,
-          jamSelesai: row.jamSelesai,
-          terisi: true,
-          kelas: `${student.data()?.kelas || ""} ${student.data()?.jenjang || ""}`.trim(),
-          status: "Aktif",
-        });
+      const initial = await ref.get();
+      if (!initial.exists) throw new Error("Pengajuan tidak ditemukan.");
+      const initialRow = initial.data();
+      if (initialRow.status !== "Pending") throw new Error("Pengajuan ini sudah pernah diproses.");
+
+      const duration = Number(initialRow.durasi);
+      const { start, finish } = validateScheduleSelection(initialRow.hari, initialRow.jamMulai, duration);
+      if (endTime(initialRow.jamMulai, duration) !== initialRow.jamSelesai) throw new Error("Rentang waktu pengajuan tidak konsisten.");
+      const [student, publicRows] = await Promise.all([db.collection("murid").doc(initialRow.idMurid).get(), allDocs("jadwalPublik")]);
+      if (!student.exists || ["Dihapus", "Nonaktif"].includes(student.data()?.status)) throw new Error("Murid tidak ditemukan atau sedang nonaktif.");
+      if (String(student.data()?.durasi || "60") !== String(duration)) throw new Error("Durasi pengajuan tidak lagi sesuai dengan paket murid.");
+      if (status === "Disetujui" && publicRows.some((row) => row.hari === initialRow.hari && row.terisi && row.status !== "Dihapus" && conflictsWithSchedule(start, finish, row))) {
+        throw new Error("Jadwal sudah terisi atau tidak memiliki jeda 15 menit. Pilih jadwal lain.");
       }
-      await batch.commit();
+
+      const scheduleRef = db.collection("jadwal").doc();
+      const publicRef = db.collection("jadwalPublik").doc(scheduleRef.id);
+      const tokenRefs = scheduleTokenMinutes(start, finish).map((minute) => ({ minute, ref: db.collection("slotJadwal").doc(scheduleTokenId(initialRow.hari, minute)) }));
+      await db.runTransaction(async (transaction) => {
+        const requestSnap = await transaction.get(ref);
+        if (!requestSnap.exists) throw new Error("Pengajuan tidak ditemukan.");
+        const row = requestSnap.data();
+        if (row.status !== "Pending") throw new Error("Pengajuan ini sudah pernah diproses.");
+        if (!pendingIsActive(row)) throw new Error("Pengajuan sudah kedaluwarsa. Orang tua perlu mengajukan ulang.");
+
+        const tokenSnaps = await Promise.all(tokenRefs.map(({ ref: tokenRef }) => transaction.get(tokenRef)));
+        if (status === "Disetujui") {
+          const conflictingToken = tokenSnaps.find((tokenSnap) => tokenSnap.exists && tokenBlocksSlot(tokenSnap.data()) && tokenSnap.data().requestId !== ref.id);
+          if (conflictingToken) throw new Error("Slot baru saja diambil pengajuan lain. Pilih jadwal lain.");
+        }
+
+        transaction.update(ref, { status, updatedAt: serverTime() });
+        tokenSnaps.forEach((tokenSnap, index) => {
+          const tokenRef = tokenRefs[index].ref;
+          if (status === "Disetujui") {
+            transaction.set(tokenRef, { hari: row.hari, menit: tokenRefs[index].minute, status: "Aktif", scheduleId: scheduleRef.id, updatedAt: serverTime() });
+          } else if (tokenSnap.exists && tokenSnap.data().requestId === ref.id) {
+            transaction.delete(tokenRef);
+          }
+        });
+
+        if (status === "Disetujui") {
+          transaction.set(scheduleRef, {
+            id: scheduleRef.id,
+            hari: row.hari,
+            jamMulai: row.jamMulai,
+            jamSelesai: row.jamSelesai,
+            idMurid: row.idMurid,
+            status: "Aktif",
+            createdAt: serverTime(),
+          });
+          transaction.set(publicRef, {
+            id: scheduleRef.id,
+            hari: row.hari,
+            jamMulai: row.jamMulai,
+            jamSelesai: row.jamSelesai,
+            terisi: true,
+            kelas: `${student.data()?.kelas || ""} ${student.data()?.jenjang || ""}`.trim(),
+            status: "Aktif",
+          });
+        }
+      });
       return OK(undefined, `Pengajuan jadwal ${status.toLowerCase()}.`);
     }
     if (action === "hapusSemuaPengajuan") {
       await requireProfile(["admin"]);
-      const rows = await db.collection("pengajuanJadwal").get();
-      for (let i = 0; i < rows.docs.length; i += 450) {
+      const [requests, slots] = await Promise.all([db.collection("pengajuanJadwal").get(), db.collection("slotJadwal").get()]);
+      const refs = [...requests.docs, ...slots.docs.filter((doc) => doc.data().status === "Pending")];
+      for (let i = 0; i < refs.length; i += 450) {
         const batch = db.batch();
-        rows.docs.slice(i, i + 450).forEach((doc) => batch.delete(doc.ref));
+        refs.slice(i, i + 450).forEach((doc) => batch.delete(doc.ref));
         await batch.commit();
       }
       return OK(undefined, "Semua pengajuan berhasil dibersihkan.");
     }
     if (action === "resetSemuaJadwal") {
       await requireProfile(["admin"]);
-      const [requests, schedules, publicSchedules] = await Promise.all([db.collection("pengajuanJadwal").get(), db.collection("jadwal").get(), db.collection("jadwalPublik").get()]);
-      const refs = [...requests.docs, ...schedules.docs, ...publicSchedules.docs];
+      const [requests, schedules, publicSchedules, slots] = await Promise.all([
+        db.collection("pengajuanJadwal").get(),
+        db.collection("jadwal").get(),
+        db.collection("jadwalPublik").get(),
+        db.collection("slotJadwal").get(),
+      ]);
+      const refs = [...requests.docs, ...schedules.docs, ...publicSchedules.docs, ...slots.docs];
       for (let i = 0; i < refs.length; i += 450) {
         const batch = db.batch();
         refs.slice(i, i + 450).forEach((doc) => batch.delete(doc.ref));
@@ -1129,25 +1228,43 @@
       const hari = plain(params.get("hari"), 10);
       const jamMulai = timeValue(params.get("jamMulai"));
       const durasi = Number(params.get("durasi"));
-      if (!["Senin", "Selasa", "Rabu", "Kamis", "Jumat", "Sabtu"].includes(hari) || ![60, 90].includes(durasi)) throw new Error("Jadwal tidak valid.");
+      const { start, finish } = validateScheduleSelection(hari, jamMulai, durasi);
       const jamSelesai = endTime(jamMulai, durasi);
-      const occupied = (await allDocs("jadwalPublik")).some((row) => row.hari === hari && row.terisi && row.status !== "Dihapus" && jamMulai < row.jamSelesai && jamSelesai > row.jamMulai);
-      if (occupied) throw new Error(`Slot ${jamMulai} - ${jamSelesai} sudah terisi.`);
+      const [student, publicRows] = await Promise.all([db.collection("murid").doc(idMurid).get(), allDocs("jadwalPublik")]);
+      if (!student.exists || ["Dihapus", "Nonaktif"].includes(student.data()?.status)) throw new Error("Murid tidak ditemukan atau sedang nonaktif.");
+      if (String(student.data()?.durasi || "60") !== String(durasi)) throw new Error("Durasi harus mengikuti paket aktif murid.");
+      if (publicRows.some((row) => row.hari === hari && row.terisi && row.status !== "Dihapus" && conflictsWithSchedule(start, finish, row))) {
+        throw new Error(`Slot ${jamMulai} - ${jamSelesai} sudah terisi atau terkena jeda 15 menit.`);
+      }
+
       const ref = db.collection("pengajuanJadwal").doc();
-      await ref.set({
-        idPengajuan: ref.id,
-        idMurid,
-        hari,
-        jamMulai,
-        jamSelesai,
-        durasi,
-        jadwalTampilan: `${hari}, ${jamMulai} - ${jamSelesai} (${durasi} menit)`,
-        tanggal: today(),
-        status: "Pending",
-        createdBy: profile.uid,
-        createdAt: serverTime(),
+      const expiresAt = firebase.firestore.Timestamp.fromMillis(Date.now() + PENDING_HOLD_MS);
+      const tokenRefs = scheduleTokenMinutes(start, finish).map((minute) => ({ minute, ref: db.collection("slotJadwal").doc(scheduleTokenId(hari, minute)) }));
+      await db.runTransaction(async (transaction) => {
+        const tokenSnaps = await Promise.all(tokenRefs.map(({ ref: tokenRef }) => transaction.get(tokenRef)));
+        if (tokenSnaps.some((tokenSnap) => tokenSnap.exists && tokenBlocksSlot(tokenSnap.data()))) {
+          throw new Error("Slot baru saja diajukan orang tua lain. Silakan pilih jam lain.");
+        }
+
+        transaction.set(ref, {
+          idPengajuan: ref.id,
+          idMurid,
+          hari,
+          jamMulai,
+          jamSelesai,
+          durasi,
+          jadwalTampilan: `${hari}, ${jamMulai} - ${jamSelesai} (${durasi} menit)`,
+          tanggal: today(),
+          status: "Pending",
+          createdBy: profile.uid,
+          createdAt: serverTime(),
+          expiresAt,
+        });
+        tokenRefs.forEach(({ minute, ref: tokenRef }) => {
+          transaction.set(tokenRef, { hari, menit: minute, requestId: ref.id, status: "Pending", expiresAt, createdAt: serverTime() });
+        });
       });
-      return OK(undefined, "Pengajuan jadwal berhasil dikirim.");
+      return OK(undefined, "Pengajuan jadwal berhasil dikirim dan slot ditahan selama 24 jam.");
     }
     throw new Error("Aksi tidak dikenali.");
   }

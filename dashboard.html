@@ -1371,10 +1371,12 @@
               return;
             }
 
-            // 🔥 KELOMPOKKAN DATA berdasarkan ID Murid
+            // Pengajuan aktif boleh dikelompokkan per murid. Riwayat yang sudah
+            // selesai tetap dipisah agar tombol aksi tidak memproses data lama.
             const groups = {};
             hasil.data.forEach((req) => {
-              const key = req.idMurid || req.namaTampilan;
+              const isPending = req.status === "Pending";
+              const key = isPending ? `pending:${req.idMurid || req.namaTampilan}` : `history:${req.idPengajuan}`;
               if (!groups[key]) {
                 groups[key] = {
                   idMurid: req.idMurid,
@@ -1426,6 +1428,9 @@
                   <span class="text-slate-400 text-xs italic">Selesai diproses</span>
                   <button onclick="kirimNotifikasiPengajuan('${idMuridAman}', '${jadwalAman}', '${overallStatus}')" class="px-3 py-1.5 bg-green-500 hover:bg-green-600 text-white rounded-lg text-xs font-semibold transition" title="Kirim notifikasi WA ke wali murid"><i class="fa-brands fa-whatsapp"></i> Kirim WA</button>
                 </div>`;
+              } else if (overallStatus === "Kedaluwarsa") {
+                statusBadge = `<span class="px-2.5 py-1 text-xs font-semibold rounded-full bg-slate-50 text-slate-600 border border-slate-200">Kedaluwarsa</span>`;
+                tombolAksi = `<div class="text-center text-slate-400 text-xs italic">Minta orang tua mengajukan ulang</div>`;
               } else {
                 // Mixed — ada yg disetujui & ditolak
                 statusBadge = `<span class="px-2.5 py-1 text-xs font-semibold rounded-full bg-slate-50 text-slate-600 border border-slate-200">Campuran</span>`;
@@ -1473,14 +1478,18 @@
         if (!confirm(`Apakah Kak Harris yakin ingin mengubah ${ids.length} pengajuan menjadi [${statusTarget}]?`)) return;
 
         let sukses = 0,
-          gagal = 0;
+          gagal = 0,
+          pesanGagal = "";
         for (const id of ids) {
           const hasil = await prosesKonfirmasi(id, statusTarget);
           if (hasil.status === "success") sukses++;
-          else gagal++;
+          else {
+            gagal++;
+            if (!pesanGagal) pesanGagal = hasil.message || "Pengajuan tidak dapat diproses.";
+          }
         }
 
-        showToast(`${sukses} pengajuan berhasil ${statusTarget.toLowerCase()}${gagal > 0 ? `, ${gagal} gagal.` : ""}`, gagal > 0 ? "warning" : "success");
+        showToast(`${sukses} pengajuan berhasil ${statusTarget.toLowerCase()}${gagal > 0 ? `, ${gagal} gagal: ${pesanGagal}` : ""}`, gagal > 0 ? "warning" : "success");
         muatPengajuanJadwal();
       }
 

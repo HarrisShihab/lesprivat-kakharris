@@ -435,7 +435,7 @@
       const slots = await apiGet("getSlotTersedia", { hari: day, durasi: duration });
       select.innerHTML = slots.length
         ? `<option value="">Pilih jam</option>${slots.map((slot) => `<option value="${escapeHtml(slot.jamMulai)}">${escapeHtml(slot.teks)}</option>`).join("")}`
-        : '<option value="">Tidak ada slot tersedia</option>';
+        : '<option value="">Tidak tersedia: terisi, ditahan, atau terkena jeda 15 menit</option>';
       select.disabled = !slots.length;
     } catch (error) {
       select.innerHTML = '<option value="">Gagal memuat slot</option>';
@@ -455,7 +455,7 @@
         jamMulai: $("schedule-time").value,
         durasi: Number(state.student.durasi) || 60,
       });
-      feedback("schedule-feedback", "Pengajuan jadwal berhasil dikirim.", "success");
+      feedback("schedule-feedback", "Pengajuan berhasil dikirim. Slot ditahan selama 24 jam sambil menunggu keputusan admin.", "success");
       event.target.reset();
       $("schedule-duration").value = `${state.student.durasi || 60} menit`;
       $("schedule-time").disabled = true;
