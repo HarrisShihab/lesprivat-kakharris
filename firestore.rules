@@ -50,9 +50,15 @@ service cloud.firestore {
           || (request.resource.data.quotaSlot == 2 && request.resource.data.quotaSlotKey == "2")
           || (request.resource.data.quotaSlot == 3 && request.resource.data.quotaSlotKey == "3"))
         && request.resource.data.quotaId == request.auth.uid + "_" + request.resource.data.idMurid + "_" + request.resource.data.quotaSlotKey
-        && ((get(/databases/$(database)/documents/murid/$(request.resource.data.idMurid)).data.paket == "reguler_12_pertemuan" && request.resource.data.quotaSlot <= 3)
-          || (get(/databases/$(database)/documents/murid/$(request.resource.data.idMurid)).data.paket == "reguler_8_pertemuan" && request.resource.data.quotaSlot <= 2)
-          || (!(get(/databases/$(database)/documents/murid/$(request.resource.data.idMurid)).data.paket in ["reguler_8_pertemuan", "reguler_12_pertemuan"]) && request.resource.data.quotaSlot == 1))
+        && ((get(/databases/$(database)/documents/murid/$(request.resource.data.idMurid)).data.paket is string
+              && get(/databases/$(database)/documents/murid/$(request.resource.data.idMurid)).data.paket.matches('(^|.*_)12(_.*|$)')
+              && request.resource.data.quotaSlot <= 3)
+          || (get(/databases/$(database)/documents/murid/$(request.resource.data.idMurid)).data.paket is string
+              && get(/databases/$(database)/documents/murid/$(request.resource.data.idMurid)).data.paket.matches('(^|.*_)8(_.*|$)')
+              && request.resource.data.quotaSlot <= 2)
+          || (request.resource.data.quotaSlot == 1
+              && (!(get(/databases/$(database)/documents/murid/$(request.resource.data.idMurid)).data.paket is string)
+                || (!get(/databases/$(database)/documents/murid/$(request.resource.data.idMurid)).data.paket.matches('(^|.*_)(8|12)(_.*|$)')))))
         && request.resource.data.status == "Pending"
         && request.resource.data.createdBy == request.auth.uid
         && request.resource.data.createdAt == request.time
