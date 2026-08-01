@@ -1126,7 +1126,7 @@
         const tbody = document.getElementById("tabelMuridBody");
         tbody.innerHTML = "<tr><td colspan='6' class='p-4 text-center text-slate-400'><i class='fa-solid fa-spinner fa-spin'></i> Memuat data...</td></tr>";
         try {
-          const response = await fetch(`${WEB_APP_URL}?action=getMurid`);
+          const response = await fetch(`${WEB_APP_URL}?action=getMurid&includeNonaktif=1`);
           const json = await response.json();
           if (json.status === "success") {
             tbody.innerHTML = "";
@@ -1138,7 +1138,13 @@
               let tombolAksi = "";
               let statusBadge = "";
 
-              if (murid.status === "Pending" || murid.status === "Kadaluwarsa") {
+              if (murid.status === "Nonaktif") {
+                statusBadge = `<span class="px-2.5 py-1 rounded-full text-xs font-semibold bg-slate-100 text-slate-600">Nonaktif</span>`;
+                tombolAksi = `
+                  <div class="flex gap-2 justify-center">
+                    <button onclick="aktifkanKembaliMurid('${murid.id}')" class="bg-blue-600 hover:bg-blue-700 text-white font-medium px-3 py-1.5 rounded-lg text-xs transition">Aktifkan Kembali</button>
+                  </div>`;
+              } else if (murid.status === "Pending" || murid.status === "Kadaluwarsa") {
                 statusBadge = `<span class="px-2.5 py-1 rounded-full text-xs font-semibold bg-amber-50 text-amber-600">${murid.status}</span>`;
                 const tombolAktivasi =
                   murid.authStatus === "aktif"
@@ -1148,11 +1154,13 @@
                   <div class="flex gap-2 justify-center">
                     ${tombolAktivasi}
                     <button onclick="rilisJadwalMurid('${murid.id}')" class="bg-amber-500 hover:bg-amber-600 text-white font-medium px-3 py-1.5 rounded-lg text-xs transition">Rilis Jadwal</button>
-                    <button onclick="hapusMurid('${murid.id}')" class="bg-red-50 hover:bg-red-100 text-red-600 font-medium px-3 py-1.5 rounded-lg text-xs transition">Hapus</button>
+                    <button onclick="nonaktifkanMurid('${murid.id}')" class="bg-red-50 hover:bg-red-100 text-red-600 font-medium px-3 py-1.5 rounded-lg text-xs transition">Nonaktifkan</button>
                   </div>`;
               } else {
                 statusBadge = `<span class="px-2.5 py-1 rounded-full text-xs font-semibold bg-green-50 text-green-600">✔ Aktif</span>`;
-                tombolAksi = `<div class="text-center text-slate-400 text-xs italic">Sudah Valid</div>`;
+                tombolAksi = `<div class="flex gap-2 justify-center">
+                  <button onclick="nonaktifkanMurid('${murid.id}')" class="bg-red-50 hover:bg-red-100 text-red-600 font-medium px-3 py-1.5 rounded-lg text-xs transition">Nonaktifkan</button>
+                </div>`;
               }
               const buktiView = murid.bukti
                 ? `<a href="${murid.bukti}" target="_blank" class="text-blue-600 underline font-medium text-xs">Lihat Bukti</a>`
@@ -1216,7 +1224,7 @@
       async function aktivasiMurid(id) {
         let murid = cacheDataMurid.find((item) => String(item.id) === String(id));
         if (!murid) {
-          const response = await fetch(`${WEB_APP_URL}?action=getMurid`);
+          const response = await fetch(`${WEB_APP_URL}?action=getMurid&includeNonaktif=1`);
           const result = await response.json();
           if (result.status === "success") {
             cacheDataMurid = result.data;
@@ -1317,21 +1325,37 @@
         }
       }
 
-      async function hapusMurid(id) {
-        if (!confirm("Hapus data pendaftaran?")) return;
+      async function nonaktifkanMurid(id) {
+        if (!confirm(`Nonaktifkan murid ${id}?\n\nAkun murid tidak dapat login dan akses orang tua ke murid ini dilepas. Riwayat belajar serta pembayaran tetap tersimpan.`)) return;
         try {
           const response = await fetch(WEB_APP_URL, {
             method: "POST",
-            body: JSON.stringify({ action: "hapusMurid", idMurid: id }),
+            body: JSON.stringify({ action: "nonaktifkanMurid", idMurid: id }),
           });
           const result = await response.json();
-          if (result.status === "success") {
-            showToast(result.message, "success");
-            muatDataMurid();
-            muatDropdownMurid();
-          }
+          if (result.status !== "success") throw new Error(result.message || "Penonaktifan gagal.");
+          showToast(result.message, "success");
+          await Promise.all([muatDataMurid(), muatAkunMurid(), muatAkunOrangTua()]);
+          muatDropdownMurid();
         } catch (error) {
-          showToast("Gagal menghapus data.", "error");
+          showToast(error.message || "Gagal menonaktifkan murid.", "error");
+        }
+      }
+
+      async function aktifkanKembaliMurid(id) {
+        if (!confirm(`Aktifkan kembali murid ${id}?`)) return;
+        try {
+          const response = await fetch(WEB_APP_URL, {
+            method: "POST",
+            body: JSON.stringify({ action: "aktifkanKembaliMurid", idMurid: id }),
+          });
+          const result = await response.json();
+          if (result.status !== "success") throw new Error(result.message || "Aktivasi ulang gagal.");
+          showToast(result.message, "success");
+          await Promise.all([muatDataMurid(), muatAkunMurid(), muatAkunOrangTua()]);
+          muatDropdownMurid();
+        } catch (error) {
+          showToast(error.message || "Gagal mengaktifkan kembali murid.", "error");
         }
       }
       async function muatPengajuanJadwal() {
@@ -1601,7 +1625,7 @@ Kak Harris - Les Privat Berkualitas untuk Semua Jenjang`;
         tbody.innerHTML = `<tr><td colspan="7" class="p-4 text-center text-slate-400"><i class="fa-solid fa-spinner fa-spin"></i> Mengambil data akun...</td></tr>`;
 
         try {
-          const respon = await fetch(`${WEB_APP_URL}?action=getMurid`);
+          const respon = await fetch(`${WEB_APP_URL}?action=getMurid&includeNonaktif=1`);
           const hasil = await respon.json();
 
           if (hasil.status === "success") {
@@ -1626,7 +1650,7 @@ Kak Harris - Les Privat Berkualitas untuk Semua Jenjang`;
                     <span class="block text-xs"><i class="fa-solid fa-user-group text-slate-300 mr-1"></i>${murid.parentUsername || murid.username || "-"}</span>
                     <span class="block text-xs mt-1"><i class="fa-solid fa-graduation-cap text-slate-300 mr-1"></i>${murid.studentUsername || "-"}</span>
                   </td>
-                  <td class="p-4 text-slate-500">${murid.authStatus === "aktif" ? "Terhubung" : "Belum dibuat"}</td>
+                  <td class="p-4 text-slate-500">${murid.status === "Nonaktif" ? "Dinonaktifkan" : murid.authStatus === "aktif" ? "Terhubung" : "Belum dibuat"}</td>
                   <td class="p-4 font-medium text-slate-900">${murid.nama}</td>
                   <td class="p-4 text-slate-600">${murid.wa || "-"}</td>
                   <td class="p-4 text-center">

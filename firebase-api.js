@@ -433,7 +433,7 @@
 
     const studentRef = db.collection("murid").doc(idMurid);
     const studentSnap = await studentRef.get();
-    if (!studentSnap.exists || studentSnap.data().status === "Dihapus") throw new Error("Data murid tidak ditemukan.");
+    if (!studentSnap.exists || ["Dihapus", "Nonaktif"].includes(studentSnap.data().status)) throw new Error("Data murid tidak ditemukan atau sedang nonaktif.");
     if (studentSnap.data().authStatus === "aktif") throw new Error("Akun murid ini sudah terhubung.");
     if (!(await usernameAvailable(studentUsername))) throw new Error("Username murid sudah digunakan.");
 
@@ -564,7 +564,7 @@
     return rows.map((row) => `${row.hari}, ${row.jamMulai} - ${row.jamSelesai}`).join(" | ");
   }
 
-  async function getMurid() {
+  async function getMurid(includeNonaktif = false) {
     const profile = await requireProfile(["admin", "orangtua", "murid"]);
     const allowed = await ownedStudentIds(profile);
     const linkedAccounts = new Map();
@@ -593,7 +593,7 @@
     }
     return Promise.all(
       rows
-        .filter((row) => row.status !== "Dihapus")
+        .filter((row) => !["Dihapus", "Nonaktif"].includes(row.status) || (profile.role === "admin" && includeNonaktif))
         .map(async (row) => {
           const id = row.id || row._docId;
           const accounts = linkedAccounts.get(String(id)) || {};
@@ -609,7 +609,7 @@
             kelas: row.kelas || "",
             paket: row.paket || "",
             jadwal: await jadwalForStudent(row.id || row._docId),
-            status: row.status || "Aktif",
+            status: row.status === "Dihapus" ? "Nonaktif" : row.status || "Aktif",
             bukti: "",
             tanggalDaftar: row.tanggalDaftar || "-",
             sesiTerpakai: Number(row.sesiTerpakai) || 0,
@@ -921,10 +921,98 @@
       await db.collection("murid").doc(idValue(payload.idMurid)).update({ status: "Aktif", sesiTerpakai: 0, updatedAt: serverTime() });
       return OK(undefined, "Akun murid diaktifkan dan sesi direset.");
     }
-    if (action === "hapusMurid") {
+    if (["hapusMurid", "nonaktifkanMurid"].includes(action)) {
       await requireProfile(["admin"]);
-      await db.collection("murid").doc(idValue(payload.idMurid)).update({ status: "Dihapus", deletedAt: serverTime() });
-      return OK(undefined, "Data murid dinonaktifkan secara aman. Akun Authentication dapat dihapus melalui Firebase Console.");
+      const idMurid = idValue(payload.idMurid);
+      const studentRef = db.collection("murid").doc(idMurid);
+      const [studentSnap, linkedAccounts] = await Promise.all([
+        studentRef.get(),
+        db.collection("users").where("muridIds", "array-contains", idMurid).get(),
+      ]);
+      if (!studentSnap.exists) throw new Error("Data murid tidak ditemukan.");
+
+      const student = studentSnap.data();
+      let parentUid = student.parentUid || "";
+      let studentUid = student.studentUid || "";
+      const batch = db.batch();
+
+      linkedAccounts.docs.forEach((accountDoc) => {
+        const account = accountDoc.data();
+        if (account.role === "orangtua") {
+          parentUid = parentUid || accountDoc.id;
+          batch.update(accountDoc.ref, {
+            muridIds: firebase.firestore.FieldValue.arrayRemove(idMurid),
+            updatedAt: serverTime(),
+          });
+        }
+        if (account.role === "murid") {
+          studentUid = studentUid || accountDoc.id;
+          batch.update(accountDoc.ref, {
+            aktif: false,
+            muridIds: firebase.firestore.FieldValue.arrayRemove(idMurid),
+            updatedAt: serverTime(),
+          });
+        }
+      });
+
+      batch.update(studentRef, {
+        status: "Nonaktif",
+        statusSebelumNonaktif: student.status || "Pending",
+        authStatus: studentUid ? "nonaktif" : student.authStatus || "belum_dibuat",
+        parentUid,
+        studentUid,
+        nonaktifAt: serverTime(),
+        updatedAt: serverTime(),
+      });
+      await batch.commit();
+      return OK(undefined, "Murid berhasil dinonaktifkan. Riwayat tetap tersimpan dan ID tidak akan digunakan ulang.");
+    }
+    if (action === "aktifkanKembaliMurid") {
+      await requireProfile(["admin"]);
+      const idMurid = idValue(payload.idMurid);
+      const studentRef = db.collection("murid").doc(idMurid);
+      const studentSnap = await studentRef.get();
+      if (!studentSnap.exists) throw new Error("Data murid tidak ditemukan.");
+
+      const student = studentSnap.data();
+      if (!["Dihapus", "Nonaktif"].includes(student.status)) throw new Error("Murid ini tidak sedang dinonaktifkan.");
+
+      const [studentAccountSnap, parentAccountSnap] = await Promise.all([
+        student.studentUid ? db.collection("users").doc(student.studentUid).get() : Promise.resolve(null),
+        student.parentUid ? db.collection("users").doc(student.parentUid).get() : Promise.resolve(null),
+      ]);
+      const hasStudentAccount = Boolean(studentAccountSnap?.exists);
+      const batch = db.batch();
+
+      if (hasStudentAccount) {
+        batch.update(studentAccountSnap.ref, {
+          aktif: true,
+          muridIds: firebase.firestore.FieldValue.arrayUnion(idMurid),
+          updatedAt: serverTime(),
+        });
+      }
+      if (parentAccountSnap?.exists) {
+        batch.update(parentAccountSnap.ref, {
+          muridIds: firebase.firestore.FieldValue.arrayUnion(idMurid),
+          updatedAt: serverTime(),
+        });
+      }
+
+      batch.update(studentRef, {
+        status: hasStudentAccount ? "Aktif" : "Pending",
+        authStatus: hasStudentAccount ? "aktif" : "belum_dibuat",
+        statusSebelumNonaktif: firebase.firestore.FieldValue.delete(),
+        nonaktifAt: firebase.firestore.FieldValue.delete(),
+        diaktifkanKembaliAt: serverTime(),
+        updatedAt: serverTime(),
+      });
+      await batch.commit();
+      return OK(
+        undefined,
+        hasStudentAccount
+          ? "Murid dan akun portal berhasil diaktifkan kembali."
+          : "Data murid dipulihkan ke Pending. Buat akun portal untuk menyelesaikan aktivasi.",
+      );
     }
     if (action === "editMurid") {
       const profile = await requireProfile(["admin"]);
@@ -1023,7 +1111,7 @@
 
   async function getAction(action, params) {
     if (action === "getJadwalPublik") return OK(await getPublicSchedule());
-    if (action === "getMurid") return OK(await getMurid());
+    if (action === "getMurid") return OK(await getMurid(params.get("includeNonaktif") === "1"));
     if (action === "getAbsensi") return OK(await getAbsensi());
     if (action === "getKeuangan") return OK(await getKeuangan());
     if (action === "getBuktiPembayaran") return OK(await getBuktiPembayaran());
