@@ -1396,7 +1396,7 @@
             tbody.innerHTML = "";
             Object.values(groups).forEach((group) => {
               const idMuridAman = (group.idMurid || "").replace(/'/g, "\\'");
-              const jadwalGabung = group.jadwalList.join(" <span class='text-slate-300 mx-1'>|</span> ");
+              const jadwalGabung = group.jadwalList.map((jadwal) => `<div>${jadwal}</div>`).join("");
               const jadwalFlat = group.jadwalList.join(" | ");
               const jadwalAman = jadwalFlat.replace(/'/g, "\\'");
               const idListStr = group.idPengajuanList.join(",");
