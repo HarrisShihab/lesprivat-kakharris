@@ -13,6 +13,7 @@
   const state = {
     operation: "addition",
     level: "easy",
+    mode: "limited",
     question: null,
     score: 0,
     correct: 0,
@@ -25,6 +26,7 @@
   };
 
   const points = { easy: 10, medium: 20, hard: 30 };
+  const QUESTION_LIMIT = 10;
   let storageKey = "";
   let gameReady = false;
 
@@ -116,10 +118,17 @@
   }
 
   function showQuestion() {
+    if (gamePanel.classList.contains("hidden")) return;
+    if (state.mode === "limited" && state.number >= QUESTION_LIMIT) {
+      endGame();
+      return;
+    }
     state.number += 1;
     state.question = createQuestion();
     state.locked = false;
-    document.getElementById("question-number").textContent = `Soal ${state.number}`;
+    document.getElementById("question-number").textContent = state.mode === "limited"
+      ? `Soal ${state.number}/${QUESTION_LIMIT}`
+      : `Soal ${state.number}`;
     document.getElementById("question").textContent = state.question.text;
     answerInput.value = "";
     feedback.textContent = "";
@@ -207,6 +216,7 @@
       correct: state.correct,
       wrong: state.wrong,
       bestStreak: state.bestStreak,
+      mode: state.mode,
     });
 
     const previousGame = stats.perGame && stats.perGame.hitungTanpaBatas
@@ -220,6 +230,7 @@
         gamesPlayed: (previousGame.gamesPlayed || 0) + 1,
         lastOperation: state.operation,
         lastLevel: state.level,
+        lastMode: state.mode,
       },
     });
 
@@ -230,6 +241,7 @@
       gamesPlayed: (stats.gamesPlayed || 0) + 1,
       lastOperation: state.operation,
       lastLevel: state.level,
+      lastMode: state.mode,
       history: history.slice(0, 5),
       perGame,
     });
@@ -239,6 +251,7 @@
   }
 
   function endGame() {
+    if (gamePanel.classList.contains("hidden")) return;
     saveResult();
     gamePanel.classList.add("hidden");
     summaryPanel.classList.remove("hidden");
@@ -257,6 +270,7 @@
     }
     state.operation = new FormData(setupForm).get("operation");
     state.level = new FormData(setupForm).get("level");
+    state.mode = new FormData(setupForm).get("mode") || "limited";
     startGame();
   });
 
@@ -301,6 +315,11 @@
       if (saved.lastLevel) {
         const level = setupForm.querySelector(`[name="level"][value="${saved.lastLevel}"]`);
         if (level) level.checked = true;
+      }
+      const savedMode = saved.lastMode || saved.perGame?.hitungTanpaBatas?.lastMode;
+      if (savedMode) {
+        const mode = setupForm.querySelector(`[name="mode"][value="${savedMode}"]`);
+        if (mode) mode.checked = true;
       }
 
       gameReady = true;

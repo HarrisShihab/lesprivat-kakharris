@@ -2,7 +2,7 @@
   "use strict";
 
   const TOTAL = 10;
-  const state = { mission: 0, score: 0, correct: 0, wrong: 0, lives: 3, streak: 0, bestStreak: 0, question: null, locked: false, hintUsed: false, recent: [] };
+  const state = { mode: "limited", mission: 0, score: 0, correct: 0, wrong: 0, lives: 3, streak: 0, bestStreak: 0, question: null, locked: false, hintUsed: false, recent: [] };
   const $ = (id) => document.getElementById(id);
   const rand = (min, max) => Math.floor(Math.random() * (max - min + 1)) + min;
   const pick = (items) => items[rand(0, items.length - 1)];
@@ -56,7 +56,7 @@
     return question;
   }
   function updateBoard() {
-    $("mission-number").textContent = `${state.mission}/${TOTAL}`; $("score").textContent = state.score; $("lives").textContent = state.lives ? "♥ ".repeat(state.lives).trim() : "0"; $("streak").textContent = state.streak; $("progress-fill").style.width = `${Math.max(10, state.mission * 10)}%`;
+    $("mission-number").textContent = state.mode === "limited" ? `${state.mission}/${TOTAL}` : state.mission; $("score").textContent = state.score; $("lives").textContent = state.mode === "endless" ? "∞" : state.lives ? "♥ ".repeat(state.lives).trim() : "0"; $("streak").textContent = state.streak; const islandMission = ((state.mission - 1) % TOTAL) + 1; $("progress-fill").style.width = `${Math.max(10, islandMission * 10)}%`;
   }
   function renderVisual(question) {
     const container = $("fraction-visual"); container.replaceChildren();
@@ -65,7 +65,8 @@
     } else { const symbol = document.createElement("span"); symbol.className = "fraction-symbol"; symbol.textContent = question.symbol; container.appendChild(symbol); }
   }
   function showMission() {
-    if (state.mission >= TOTAL || state.lives <= 0) return finish();
+    if ($("game-panel").classList.contains("hidden")) return;
+    if (state.mode === "limited" && (state.mission >= TOTAL || state.lives <= 0)) return finish();
     state.mission += 1; state.question = createQuestion(); state.locked = false; state.hintUsed = false;
     $("mission-label").textContent = state.question.label; $("question-text").textContent = state.question.text; $("feedback").textContent = ""; $("feedback").className = "feedback"; $("hint-button").disabled = false;
     renderVisual(state.question);
@@ -77,22 +78,22 @@
     const isCorrect = button.dataset.answer === state.question.answer;
     $("choices").querySelectorAll("button").forEach((item) => { item.disabled = true; if (item.dataset.answer === state.question.answer) item.classList.add("correct"); });
     if (isCorrect) { state.correct += 1; state.streak += 1; state.bestStreak = Math.max(state.bestStreak, state.streak); const points = 10 + Math.min(state.streak - 1, 5) * 2; state.score += points; $("feedback").textContent = `Misi berhasil! +${points} poin.`; $("feedback").className = "feedback correct"; }
-    else { button.classList.add("wrong"); state.wrong += 1; state.lives -= 1; state.streak = 0; $("feedback").textContent = `Belum tepat. Jawabannya ${state.question.answer}.`; $("feedback").className = "feedback wrong"; }
+    else { button.classList.add("wrong"); state.wrong += 1; if (state.mode === "limited") state.lives -= 1; state.streak = 0; $("feedback").textContent = `Belum tepat. Jawabannya ${state.question.answer}.`; $("feedback").className = "feedback wrong"; }
     updateBoard(); window.setTimeout(showMission, 1250);
   }
   function useHint() { if (state.locked || state.hintUsed) return; state.hintUsed = true; state.score = Math.max(0, state.score - 5); $("feedback").textContent = state.question.hint; $("feedback").className = "feedback hint"; $("hint-button").disabled = true; updateBoard(); }
   function loadStats() { try { return JSON.parse(localStorage.getItem(storageKey) || "{}"); } catch (error) { return {}; } }
   function saveStats() {
     const stats = loadStats(), answered = state.correct + state.wrong, old = stats.perGame?.petualanganPecahan || {};
-    const perGame = Object.assign({}, stats.perGame, { petualanganPecahan: { bestScore: Math.max(old.bestScore || 0, state.score), bestStreak: Math.max(old.bestStreak || 0, state.bestStreak), totalAnswered: (old.totalAnswered || 0) + answered, gamesPlayed: (old.gamesPlayed || 0) + 1 } });
+    const perGame = Object.assign({}, stats.perGame, { petualanganPecahan: { bestScore: Math.max(old.bestScore || 0, state.score), bestStreak: Math.max(old.bestStreak || 0, state.bestStreak), totalAnswered: (old.totalAnswered || 0) + answered, gamesPlayed: (old.gamesPlayed || 0) + 1, lastMode: state.mode } });
     try { localStorage.setItem(storageKey, JSON.stringify(Object.assign({}, stats, { bestScore: Math.max(stats.bestScore || 0, state.score), bestStreak: Math.max(stats.bestStreak || 0, state.bestStreak), totalAnswered: (stats.totalAnswered || 0) + answered, gamesPlayed: (stats.gamesPlayed || 0) + 1, perGame }))); } catch (error) { /* Statistik lokal bersifat opsional. */ }
   }
   function finish() {
     if ($("game-panel").classList.contains("hidden")) return; saveStats(); $("game-panel").classList.add("hidden"); $("summary-panel").classList.remove("hidden");
-    const won = state.mission >= TOTAL && state.correct + state.wrong >= TOTAL && state.lives > 0; $("summary-title").textContent = won ? "Kristal Pecahan ditemukan!" : "Petualangan selesai"; $("summary-mark").textContent = won ? "◆" : "🏝"; $("summary-message").textContent = won ? "Kamu berhasil menuntaskan seluruh misi di Pulau Pecahan." : `Kamu mencapai misi ${state.mission}. Coba lagi untuk menemukan kristal.`; $("summary-score").textContent = state.score; $("summary-correct").textContent = state.correct; $("summary-wrong").textContent = state.wrong; $("summary-streak").textContent = state.bestStreak; window.scrollTo({ top: 0, behavior: "smooth" });
+    const won = state.mode === "limited" && state.mission >= TOTAL && state.correct + state.wrong >= TOTAL && state.lives > 0; $("summary-title").textContent = won ? "Kristal Pecahan ditemukan!" : "Petualangan selesai"; $("summary-mark").textContent = won ? "◆" : "🏝"; $("summary-message").textContent = won ? "Kamu berhasil menuntaskan seluruh misi di Pulau Pecahan." : state.mode === "endless" ? `Petualangan diakhiri setelah ${state.mission} misi.` : `Kamu mencapai misi ${state.mission}. Coba lagi untuk menemukan kristal.`; $("summary-score").textContent = state.score; $("summary-correct").textContent = state.correct; $("summary-wrong").textContent = state.wrong; $("summary-streak").textContent = state.bestStreak; window.scrollTo({ top: 0, behavior: "smooth" });
   }
-  function start() { Object.assign(state, { mission: 0, score: 0, correct: 0, wrong: 0, lives: 3, streak: 0, bestStreak: 0, question: null, locked: false, hintUsed: false, recent: [] }); $("setup-panel").classList.add("hidden"); $("summary-panel").classList.add("hidden"); $("game-panel").classList.remove("hidden"); showMission(); }
+  function start() { state.mode = document.querySelector('[name="mode"]:checked')?.value || "limited"; Object.assign(state, { mission: 0, score: 0, correct: 0, wrong: 0, lives: 3, streak: 0, bestStreak: 0, question: null, locked: false, hintUsed: false, recent: [] }); $("setup-panel").classList.add("hidden"); $("summary-panel").classList.add("hidden"); $("game-panel").classList.remove("hidden"); showMission(); }
 
-  $("choices").addEventListener("click", (event) => { const button = event.target.closest("[data-answer]"); if (button) chooseAnswer(button); }); $("hint-button").addEventListener("click", useHint); $("end-button").addEventListener("click", finish); $("replay-button").addEventListener("click", start); $("start-button").addEventListener("click", start);
-  try { await firebasePortal.guard(["murid"]); const student = await firebasePortal.getCurrentMurid(); if (!student) throw new Error("Akun belum terhubung ke data murid."); if (!isSdStudent(student)) throw new Error("Game Petualangan Pecahan khusus untuk murid SD."); storageKey = `kakHarrisGameStats:${student.id || student.username || "murid"}`; $("setup-status").textContent = "10 misi siap: visual, pecahan senilai, perbandingan, dan operasi sederhana."; $("start-button").disabled = false; $("start-button").textContent = "Buka Peta →"; } catch (error) { $("setup-status").textContent = error.message || "Permainan gagal disiapkan."; }
+  $("choices").addEventListener("click", (event) => { const button = event.target.closest("[data-answer]"); if (button) chooseAnswer(button); }); $("hint-button").addEventListener("click", useHint); $("end-button").addEventListener("click", finish); $("replay-button").addEventListener("click", () => { $("summary-panel").classList.add("hidden"); $("setup-panel").classList.remove("hidden"); window.scrollTo({ top: 0, behavior: "smooth" }); }); $("start-button").addEventListener("click", start);
+  try { await firebasePortal.guard(["murid"]); const student = await firebasePortal.getCurrentMurid(); if (!student) throw new Error("Akun belum terhubung ke data murid."); if (!isSdStudent(student)) throw new Error("Game Petualangan Pecahan khusus untuk murid SD."); storageKey = `kakHarrisGameStats:${student.id || student.username || "murid"}`; const lastMode = loadStats().perGame?.petualanganPecahan?.lastMode; const modeInput = lastMode && document.querySelector(`[name="mode"][value="${lastMode}"]`); if (modeInput) modeInput.checked = true; $("setup-status").textContent = "Misi visual, pecahan senilai, perbandingan, dan operasi sederhana siap."; $("start-button").disabled = false; $("start-button").textContent = "Buka Peta →"; } catch (error) { $("setup-status").textContent = error.message || "Permainan gagal disiapkan."; }
 })();

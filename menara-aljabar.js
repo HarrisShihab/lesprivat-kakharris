@@ -2,7 +2,7 @@
   "use strict";
 
   const TOTAL_FLOORS = 10;
-  const state = { floor: 0, score: 0, correct: 0, wrong: 0, lives: 3, streak: 0, bestStreak: 0, question: null, locked: false, hintUsed: false, recent: [] };
+  const state = { mode: "limited", floor: 0, score: 0, correct: 0, wrong: 0, lives: 3, streak: 0, bestStreak: 0, question: null, locked: false, hintUsed: false, recent: [] };
   const $ = (id) => document.getElementById(id);
   const rand = (min, max) => Math.floor(Math.random() * (max - min + 1)) + min;
   const pick = (items) => items[rand(0, items.length - 1)];
@@ -63,15 +63,17 @@
   }
 
   function updateBoard() {
-    $("floor-number").textContent = `${state.floor}/${TOTAL_FLOORS}`;
+    $("floor-number").textContent = state.mode === "limited" ? `${state.floor}/${TOTAL_FLOORS}` : state.floor;
     $("score").textContent = state.score;
-    $("lives").textContent = state.lives ? "♥ ".repeat(state.lives).trim() : "0";
+    $("lives").textContent = state.mode === "endless" ? "∞" : state.lives ? "♥ ".repeat(state.lives).trim() : "0";
     $("streak").textContent = state.streak;
-    $("progress-fill").style.width = `${Math.max(10, state.floor * 10)}%`;
+    const towerFloor = ((state.floor - 1) % TOTAL_FLOORS) + 1;
+    $("progress-fill").style.width = `${Math.max(10, towerFloor * 10)}%`;
   }
 
   function showFloor() {
-    if (state.floor >= TOTAL_FLOORS || state.lives <= 0) return finish();
+    if ($("game-panel").classList.contains("hidden")) return;
+    if (state.mode === "limited" && (state.floor >= TOTAL_FLOORS || state.lives <= 0)) return finish();
     state.floor += 1;
     state.question = createQuestion();
     state.locked = false;
@@ -81,8 +83,9 @@
     $("feedback").textContent = "";
     $("feedback").className = "feedback";
     $("hint-button").disabled = false;
-    $("floor-label").textContent = state.floor === TOTAL_FLOORS ? "Lantai 10 · Penjaga Menara" : `Lantai ${state.floor}`;
-    $("floor-label").className = `floor-label${state.floor === TOTAL_FLOORS ? " boss" : ""}`;
+    const bossFloor = state.floor % TOTAL_FLOORS === 0;
+    $("floor-label").textContent = bossFloor ? `Lantai ${state.floor} · Penjaga Menara` : `Lantai ${state.floor}`;
+    $("floor-label").className = `floor-label${bossFloor ? " boss" : ""}`;
     updateBoard();
   }
 
@@ -100,12 +103,13 @@
       state.correct += 1;
       state.streak += 1;
       state.bestStreak = Math.max(state.bestStreak, state.streak);
-      const points = (state.floor === TOTAL_FLOORS ? 25 : 10) + Math.min(state.streak - 1, 5) * 2;
+      const bossFloor = state.floor % TOTAL_FLOORS === 0;
+      const points = (bossFloor ? 25 : 10) + Math.min(state.streak - 1, 5) * 2;
       state.score += points;
-      continueAfter(state.floor === TOTAL_FLOORS ? `Penjaga tumbang! +${points} poin.` : `Gerbang terbuka! +${points} poin.`, "correct");
+      continueAfter(bossFloor ? `Penjaga tumbang! +${points} poin.` : `Gerbang terbuka! +${points} poin.`, "correct");
     } else {
       state.wrong += 1;
-      state.lives -= 1;
+      if (state.mode === "limited") state.lives -= 1;
       state.streak = 0;
       continueAfter(`Gerbang menolak. Nilai x adalah ${state.question.answer}.`, "wrong");
     }
@@ -130,7 +134,7 @@
     const stats = loadStats();
     const answered = state.correct + state.wrong;
     const old = stats.perGame?.menaraAljabar || {};
-    const perGame = Object.assign({}, stats.perGame, { menaraAljabar: { bestScore: Math.max(old.bestScore || 0, state.score), bestStreak: Math.max(old.bestStreak || 0, state.bestStreak), totalAnswered: (old.totalAnswered || 0) + answered, gamesPlayed: (old.gamesPlayed || 0) + 1 } });
+    const perGame = Object.assign({}, stats.perGame, { menaraAljabar: { bestScore: Math.max(old.bestScore || 0, state.score), bestStreak: Math.max(old.bestStreak || 0, state.bestStreak), totalAnswered: (old.totalAnswered || 0) + answered, gamesPlayed: (old.gamesPlayed || 0) + 1, lastMode: state.mode } });
     try {
       localStorage.setItem(storageKey, JSON.stringify(Object.assign({}, stats, { bestScore: Math.max(stats.bestScore || 0, state.score), bestStreak: Math.max(stats.bestStreak || 0, state.bestStreak), totalAnswered: (stats.totalAnswered || 0) + answered, gamesPlayed: (stats.gamesPlayed || 0) + 1, perGame })));
     } catch (error) { /* Statistik lokal bersifat opsional. */ }
@@ -141,10 +145,10 @@
     saveStats();
     $("game-panel").classList.add("hidden");
     $("summary-panel").classList.remove("hidden");
-    const conquered = state.floor >= TOTAL_FLOORS && state.correct + state.wrong >= TOTAL_FLOORS && state.lives > 0;
+    const conquered = state.mode === "limited" && state.floor >= TOTAL_FLOORS && state.correct + state.wrong >= TOTAL_FLOORS && state.lives > 0;
     $("summary-title").textContent = conquered ? "Menara berhasil ditaklukkan!" : "Pendakian selesai";
     $("summary-mark").textContent = conquered ? "★" : "↟";
-    $("summary-message").textContent = conquered ? "Kamu mencapai puncak dan mengalahkan Penjaga Menara." : `Kamu mencapai lantai ${state.floor}. Coba lagi untuk sampai ke puncak.`;
+    $("summary-message").textContent = conquered ? "Kamu mencapai puncak dan mengalahkan Penjaga Menara." : state.mode === "endless" ? `Pendakian diakhiri di lantai ${state.floor}.` : `Kamu mencapai lantai ${state.floor}. Coba lagi untuk sampai ke puncak.`;
     $("summary-score").textContent = state.score;
     $("summary-correct").textContent = state.correct;
     $("summary-wrong").textContent = state.wrong;
@@ -153,6 +157,7 @@
   }
 
   function start() {
+    state.mode = document.querySelector('[name="mode"]:checked')?.value || "limited";
     Object.assign(state, { floor: 0, score: 0, correct: 0, wrong: 0, lives: 3, streak: 0, bestStreak: 0, question: null, locked: false, hintUsed: false, recent: [] });
     $("setup-panel").classList.add("hidden");
     $("summary-panel").classList.add("hidden");
@@ -172,7 +177,11 @@
   });
   $("hint-button").addEventListener("click", useHint);
   $("end-button").addEventListener("click", finish);
-  $("replay-button").addEventListener("click", start);
+  $("replay-button").addEventListener("click", () => {
+    $("summary-panel").classList.add("hidden");
+    $("setup-panel").classList.remove("hidden");
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  });
   $("start-button").addEventListener("click", start);
 
   try {
@@ -181,7 +190,10 @@
     if (!student) throw new Error("Akun belum terhubung ke data murid.");
     if (!isSmpStudent(student)) throw new Error("Game Menara Aljabar khusus untuk murid SMP.");
     storageKey = `kakHarrisGameStats:${student.id || student.username || "murid"}`;
-    $("setup-status").textContent = "10 lantai siap. Kesulitan meningkat sampai pertarungan bos.";
+    const lastMode = loadStats().perGame?.menaraAljabar?.lastMode;
+    const modeInput = lastMode && document.querySelector(`[name="mode"][value="${lastMode}"]`);
+    if (modeInput) modeInput.checked = true;
+    $("setup-status").textContent = "Kesulitan meningkat hingga pertarungan Penjaga Menara.";
     $("start-button").disabled = false;
     $("start-button").textContent = "Masuk Menara →";
   } catch (error) {

@@ -21,7 +21,7 @@
     <section class="play-header">
       <p class="eyebrow">Tantangan khusus SMP</p>
       <h1>Menara Aljabar</h1>
-      <p>Temukan nilai x untuk membuka setiap gerbang. Capai lantai 10 dan kalahkan Penjaga Menara.</p>
+      <p>Temukan nilai x untuk membuka setiap gerbang. Penjaga Menara menunggu di setiap lantai kelipatan 10.</p>
     </section>
 
     <section id="setup-panel" class="play-panel">
@@ -29,6 +29,13 @@
         <div class="tower-emblem" aria-hidden="true">x</div>
         <div><h2>Gerbang menara terkunci</h2><p id="setup-status" role="status">Memeriksa jenjang akun...</p></div>
       </div>
+      <fieldset class="option-group mode-options">
+        <legend>Pilih mode</legend>
+        <div class="option-list">
+          <label class="option-button"><input type="radio" name="mode" value="limited" checked><span>Terbatas · 10 lantai</span></label>
+          <label class="option-button"><input type="radio" name="mode" value="endless"><span>Endless · naik sampai memilih turun</span></label>
+        </div>
+      </fieldset>
       <div class="setup-actions"><a class="secondary-button" href="games.html">Batal</a><button id="start-button" class="primary-button" disabled>Menyiapkan...</button></div>
     </section>
 

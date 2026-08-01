@@ -23,7 +23,7 @@
       <section class="play-header">
         <p class="eyebrow">Latihan berhitung</p>
         <h1>Hitung Tanpa Batas</h1>
-        <p>Pilih jenis operasi dan tingkat kesulitan. Permainan berhenti saat kamu memilih selesai.</p>
+        <p>Pilih jenis operasi, tingkat kesulitan, dan mode permainan.</p>
       </section>
 
       <section id="setup-panel" class="play-panel">
@@ -49,6 +49,13 @@
               </div>
             </fieldset>
           </div>
+          <fieldset class="option-group mode-options">
+            <legend>Pilih mode</legend>
+            <div class="option-list">
+              <label class="option-button"><input type="radio" name="mode" value="limited" checked /><span>Terbatas · 10 soal</span></label>
+              <label class="option-button"><input type="radio" name="mode" value="endless" /><span>Endless · sampai pilih selesai</span></label>
+            </div>
+          </fieldset>
           <div class="setup-actions">
             <a class="secondary-button" href="games.html">Batal</a>
             <button id="start-button" class="primary-button" type="submit" disabled>Menyiapkan... <span aria-hidden="true">→</span></button>
@@ -61,7 +68,7 @@
         <div class="score-strip">
           <div class="score-item"><span>Skor</span><strong id="score">0</strong></div>
           <div class="score-item"><span>Benar</span><strong id="correct-count">0</strong></div>
-          <div class="score-item"><span>Salah</span><strong id="wrong-count">0</strong></div>
+          <div class="score-item"><span id="limit-label">Salah</span><strong id="wrong-count">0</strong></div>
           <div class="score-item"><span>Streak</span><strong id="streak">0</strong></div>
         </div>
 

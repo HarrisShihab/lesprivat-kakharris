@@ -1,23 +1,193 @@
-(async function(){"use strict";
-const TOTAL=10,s={grade:"SD",n:0,score:0,correct:0,wrong:0,lives:3,streak:0,best:0,q:null,locked:false,hint:false,recent:[]};
-const $=id=>document.getElementById(id),rand=(a,b)=>Math.floor(Math.random()*(b-a+1))+a,pick=a=>a[rand(0,a.length-1)];let storageKey="";
-function grade(st){const t=`${st.jenjang||""} KELAS ${st.kelas||""}`.toUpperCase();return t.includes("SMP")||/KELAS\s*(7|8|9)\b/.test(t)?"SMP":"SD"}
-function arith(max,stepMax){const a=rand(1,max),d=rand(2,stepMax);return{v:Array.from({length:6},(_,i)=>a+i*d),h:`Setiap angka bertambah ${d}.`}}
-function alt(max,stepMax){const a=rand(1,max),x=rand(2,stepMax),y=rand(1,stepMax-1),v=[a];for(let i=1;i<6;i++)v.push(v[i-1]+(i%2?x:y));return{v,h:`Kenaikannya bergantian: +${x}, lalu +${y}.`}}
-function mult(){const f=rand(2,9);return{v:Array.from({length:6},(_,i)=>f*(i+1)),h:`Ini adalah kelipatan ${f}.`}}
-function geo(){const a=rand(1,4),r=rand(2,3);return{v:Array.from({length:6},(_,i)=>a*r**i),h:`Setiap angka dikali ${r}.`}}
-function square(){const a=rand(1,5);return{v:Array.from({length:6},(_,i)=>(a+i)**2),h:"Ini adalah hasil kuadrat berurutan."}}
-function diff(){const a=rand(1,12),d=rand(1,4),v=[a];for(let i=1;i<6;i++)v.push(v[i-1]+d+i-1);return{v,h:`Selisihnya naik satu-satu, mulai dari +${d}.`}}
-function question(){const fs=s.grade==="SMP"?[()=>arith(30,15),()=>alt(20,12),geo,square,diff]:[()=>arith(20,10),()=>alt(15,8),mult];let q,k;do{q=pick(fs)();q.i=rand(1,4);q.a=q.v[q.i];k=q.v+":"+q.i}while(s.recent.includes(k));s.recent.push(k);if(s.recent.length>8)s.recent.shift();return q}
-function board(){$("case-number").textContent=`${s.n}/${TOTAL}`;$("score").textContent=s.score;$("lives").textContent=s.lives?"♥ ".repeat(s.lives).trim():"0";$("streak").textContent=s.streak}
-function show(){if(s.n>=TOTAL||s.lives<=0)return end();s.n++;s.q=question();s.locked=s.hint=false;$("answer").value="";$("feedback").textContent="";$("feedback").className="feedback";$("hint-button").disabled=false;$("sequence").replaceChildren(...s.q.v.map((x,i)=>{const e=document.createElement("span");e.className="pattern-number"+(i===s.q.i?" missing":"");e.textContent=i===s.q.i?"?":x;return e}));board()}
-function next(msg,type){$("feedback").textContent=msg;$("feedback").className=`feedback ${type}`;setTimeout(show,1050)}
-function check(){const input=$("answer");if(s.locked||!input.value)return;s.locked=true;if(Number(input.value)===s.q.a){s.correct++;s.streak++;s.best=Math.max(s.best,s.streak);const p=10+Math.min(s.streak-1,5)*2;s.score+=p;next(`Kasus terpecahkan! +${p} poin.`,"correct")}else{s.wrong++;s.lives--;s.streak=0;next(`Belum tepat. Jawabannya ${s.q.a}.`,"wrong")}board()}
-function hint(){if(s.locked||s.hint)return;s.hint=true;s.score=Math.max(0,s.score-5);$("feedback").textContent=s.q.h;$("feedback").className="feedback hint";$("hint-button").disabled=true;board()}
-function stats(){try{return JSON.parse(localStorage.getItem(storageKey)||"{}")}catch(e){return{}}}
-function save(){const x=stats(),answered=s.correct+s.wrong,old=x.perGame?.detektifPola||{},perGame=Object.assign({},x.perGame,{detektifPola:{bestScore:Math.max(old.bestScore||0,s.score),bestStreak:Math.max(old.bestStreak||0,s.best),totalAnswered:(old.totalAnswered||0)+answered,gamesPlayed:(old.gamesPlayed||0)+1}});try{localStorage.setItem(storageKey,JSON.stringify(Object.assign({},x,{bestScore:Math.max(x.bestScore||0,s.score),bestStreak:Math.max(x.bestStreak||0,s.best),totalAnswered:(x.totalAnswered||0)+answered,gamesPlayed:(x.gamesPlayed||0)+1,perGame})))}catch(e){}}
-function end(){if($("game-panel").classList.contains("hidden"))return;save();$("game-panel").classList.add("hidden");$("summary-panel").classList.remove("hidden");$("summary-score").textContent=s.score;$("summary-correct").textContent=s.correct;$("summary-wrong").textContent=s.wrong;$("summary-streak").textContent=s.best;$("summary-message").textContent=s.lives<=0?"Nyawamu habis. Coba pecahkan lebih banyak kasus!":"Semua kasus selesai. Hasil tersimpan di perangkat ini.";scrollTo({top:0,behavior:"smooth"})}
-function start(){Object.assign(s,{n:0,score:0,correct:0,wrong:0,lives:3,streak:0,best:0,locked:false,hint:false,recent:[]});$("setup-panel").classList.add("hidden");$("summary-panel").classList.add("hidden");$("game-panel").classList.remove("hidden");show()}
-$("keypad").addEventListener("click",e=>{const b=e.target.closest("[data-key]");if(!b||s.locked)return;const k=b.dataset.key,i=$("answer");if(k==="backspace")i.value=i.value.slice(0,-1);else if(k==="check")check();else if(i.value.length<8)i.value+=k});$("hint-button").onclick=hint;$("end-button").onclick=end;$("replay-button").onclick=start;$("start-button").onclick=start;
-try{await firebasePortal.guard(["murid"]);const st=await firebasePortal.getCurrentMurid();if(!st)throw Error("Akun belum terhubung ke data murid.");s.grade=grade(st);storageKey=`kakHarrisGameStats:${st.id||st.username||"murid"}`;$("setup-status").textContent=`Mode ${s.grade}: 10 kasus dengan kesulitan yang sesuai.`;$("start-button").disabled=false;$("start-button").textContent="Mulai Penyelidikan →"}catch(e){$("setup-status").textContent=e.message||"Permainan gagal disiapkan."}
+(async function () {
+  "use strict";
+
+  const CASE_LIMIT = 10;
+  const state = { grade: "SD", mode: "limited", number: 0, score: 0, correct: 0, wrong: 0, lives: 3, streak: 0, bestStreak: 0, question: null, locked: false, hintUsed: false, recent: [] };
+  const $ = (id) => document.getElementById(id);
+  const rand = (min, max) => Math.floor(Math.random() * (max - min + 1)) + min;
+  const pick = (items) => items[rand(0, items.length - 1)];
+  let storageKey = "";
+
+  function getGrade(student) {
+    const text = `${student.jenjang || ""} KELAS ${student.kelas || ""}`.toUpperCase();
+    return text.includes("SMP") || /KELAS\s*(7|8|9)\b/.test(text) ? "SMP" : "SD";
+  }
+
+  function arithmetic(max, stepMax) {
+    const first = rand(1, max), step = rand(2, stepMax);
+    return { values: Array.from({ length: 6 }, (_, index) => first + index * step), hint: `Setiap angka bertambah ${step}.` };
+  }
+
+  function alternating(max, stepMax) {
+    const first = rand(1, max), firstStep = rand(2, stepMax), secondStep = rand(1, stepMax - 1), values = [first];
+    for (let index = 1; index < 6; index += 1) values.push(values[index - 1] + (index % 2 ? firstStep : secondStep));
+    return { values, hint: `Kenaikannya bergantian: +${firstStep}, lalu +${secondStep}.` };
+  }
+
+  function multiples() {
+    const factor = rand(2, 9);
+    return { values: Array.from({ length: 6 }, (_, index) => factor * (index + 1)), hint: `Ini adalah kelipatan ${factor}.` };
+  }
+
+  function geometric() {
+    const first = rand(1, 4), ratio = rand(2, 3);
+    return { values: Array.from({ length: 6 }, (_, index) => first * ratio ** index), hint: `Setiap angka dikali ${ratio}.` };
+  }
+
+  function squares() {
+    const first = rand(1, 5);
+    return { values: Array.from({ length: 6 }, (_, index) => (first + index) ** 2), hint: "Ini adalah hasil kuadrat berurutan." };
+  }
+
+  function growingDifference() {
+    const first = rand(1, 12), step = rand(1, 4), values = [first];
+    for (let index = 1; index < 6; index += 1) values.push(values[index - 1] + step + index - 1);
+    return { values, hint: `Selisihnya naik satu-satu, mulai dari +${step}.` };
+  }
+
+  function createQuestion() {
+    const factories = state.grade === "SMP"
+      ? [() => arithmetic(30, 15), () => alternating(20, 12), geometric, squares, growingDifference]
+      : [() => arithmetic(20, 10), () => alternating(15, 8), multiples];
+    let question, key;
+    do {
+      question = pick(factories)();
+      question.missingIndex = rand(1, 4);
+      question.answer = question.values[question.missingIndex];
+      key = `${question.values}:${question.missingIndex}`;
+    } while (state.recent.includes(key));
+    state.recent.push(key);
+    if (state.recent.length > 8) state.recent.shift();
+    return question;
+  }
+
+  function updateBoard() {
+    $("case-number").textContent = state.mode === "limited" ? `${state.number}/${CASE_LIMIT}` : state.number;
+    $("score").textContent = state.score;
+    $("lives").textContent = state.mode === "endless" ? "∞" : state.lives ? "♥ ".repeat(state.lives).trim() : "0";
+    $("streak").textContent = state.streak;
+  }
+
+  function showQuestion() {
+    if ($("game-panel").classList.contains("hidden")) return;
+    if ((state.mode === "limited" && (state.number >= CASE_LIMIT || state.lives <= 0))) return finish();
+    state.number += 1;
+    state.question = createQuestion();
+    state.locked = false;
+    state.hintUsed = false;
+    $("answer").value = "";
+    $("feedback").textContent = "";
+    $("feedback").className = "feedback";
+    $("hint-button").disabled = false;
+    $("sequence").replaceChildren(...state.question.values.map((value, index) => {
+      const element = document.createElement("span");
+      element.className = `pattern-number${index === state.question.missingIndex ? " missing" : ""}`;
+      element.textContent = index === state.question.missingIndex ? "?" : value;
+      return element;
+    }));
+    updateBoard();
+  }
+
+  function next(message, type) {
+    $("feedback").textContent = message;
+    $("feedback").className = `feedback ${type}`;
+    window.setTimeout(showQuestion, 1050);
+  }
+
+  function checkAnswer() {
+    const input = $("answer");
+    if (state.locked || !input.value) return;
+    state.locked = true;
+    if (Number(input.value) === state.question.answer) {
+      state.correct += 1;
+      state.streak += 1;
+      state.bestStreak = Math.max(state.bestStreak, state.streak);
+      const points = 10 + Math.min(state.streak - 1, 5) * 2;
+      state.score += points;
+      next(`Kasus terpecahkan! +${points} poin.`, "correct");
+    } else {
+      state.wrong += 1;
+      if (state.mode === "limited") state.lives -= 1;
+      state.streak = 0;
+      next(`Belum tepat. Jawabannya ${state.question.answer}.`, "wrong");
+    }
+    updateBoard();
+  }
+
+  function useHint() {
+    if (state.locked || state.hintUsed) return;
+    state.hintUsed = true;
+    state.score = Math.max(0, state.score - 5);
+    $("feedback").textContent = state.question.hint;
+    $("feedback").className = "feedback hint";
+    $("hint-button").disabled = true;
+    updateBoard();
+  }
+
+  function loadStats() {
+    try { return JSON.parse(localStorage.getItem(storageKey) || "{}"); } catch (error) { return {}; }
+  }
+
+  function saveStats() {
+    const stats = loadStats(), answered = state.correct + state.wrong, old = stats.perGame?.detektifPola || {};
+    const perGame = Object.assign({}, stats.perGame, { detektifPola: { bestScore: Math.max(old.bestScore || 0, state.score), bestStreak: Math.max(old.bestStreak || 0, state.bestStreak), totalAnswered: (old.totalAnswered || 0) + answered, gamesPlayed: (old.gamesPlayed || 0) + 1, lastMode: state.mode } });
+    try { localStorage.setItem(storageKey, JSON.stringify(Object.assign({}, stats, { bestScore: Math.max(stats.bestScore || 0, state.score), bestStreak: Math.max(stats.bestStreak || 0, state.bestStreak), totalAnswered: (stats.totalAnswered || 0) + answered, gamesPlayed: (stats.gamesPlayed || 0) + 1, perGame }))); } catch (error) { /* Statistik lokal bersifat opsional. */ }
+  }
+
+  function finish() {
+    if ($("game-panel").classList.contains("hidden")) return;
+    saveStats();
+    $("game-panel").classList.add("hidden");
+    $("summary-panel").classList.remove("hidden");
+    $("summary-score").textContent = state.score;
+    $("summary-correct").textContent = state.correct;
+    $("summary-wrong").textContent = state.wrong;
+    $("summary-streak").textContent = state.bestStreak;
+    $("summary-message").textContent = state.mode === "limited" && state.lives <= 0
+      ? "Nyawamu habis. Coba pecahkan lebih banyak kasus!"
+      : state.mode === "limited" ? "Semua kasus selesai. Hasil tersimpan di perangkat ini." : `Penyelidikan diakhiri setelah ${state.number} kasus.`;
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  }
+
+  function start() {
+    state.mode = document.querySelector('[name="mode"]:checked')?.value || "limited";
+    Object.assign(state, { number: 0, score: 0, correct: 0, wrong: 0, lives: 3, streak: 0, bestStreak: 0, question: null, locked: false, hintUsed: false, recent: [] });
+    $("setup-panel").classList.add("hidden");
+    $("summary-panel").classList.add("hidden");
+    $("game-panel").classList.remove("hidden");
+    showQuestion();
+  }
+
+  $("keypad").addEventListener("click", (event) => {
+    const button = event.target.closest("[data-key]");
+    if (!button || state.locked) return;
+    const key = button.dataset.key, input = $("answer");
+    if (key === "backspace") input.value = input.value.slice(0, -1);
+    else if (key === "check") checkAnswer();
+    else if (input.value.length < 8) input.value += key;
+  });
+  $("hint-button").addEventListener("click", useHint);
+  $("end-button").addEventListener("click", finish);
+  $("replay-button").addEventListener("click", () => {
+    $("summary-panel").classList.add("hidden");
+    $("setup-panel").classList.remove("hidden");
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  });
+  $("start-button").addEventListener("click", start);
+
+  try {
+    await firebasePortal.guard(["murid"]);
+    const student = await firebasePortal.getCurrentMurid();
+    if (!student) throw new Error("Akun belum terhubung ke data murid.");
+    state.grade = getGrade(student);
+    storageKey = `kakHarrisGameStats:${student.id || student.username || "murid"}`;
+    const lastMode = loadStats().perGame?.detektifPola?.lastMode;
+    const modeInput = lastMode && document.querySelector(`[name="mode"][value="${lastMode}"]`);
+    if (modeInput) modeInput.checked = true;
+    $("setup-status").textContent = `Kesulitan disiapkan untuk jenjang ${state.grade}.`;
+    $("start-button").disabled = false;
+    $("start-button").textContent = "Mulai Penyelidikan →";
+  } catch (error) {
+    $("setup-status").textContent = error.message || "Permainan gagal disiapkan.";
+  }
 })();

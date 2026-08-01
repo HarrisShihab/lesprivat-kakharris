@@ -26,6 +26,7 @@
 
   const state = {
     level: "easy",
+    mode: "limited",
     transaction: null,
     score: 0,
     coins: 0,
@@ -39,6 +40,7 @@
   };
 
   const levelPoints = { easy: 20, medium: 35, hard: 50 };
+  const TRANSACTION_LIMIT = 10;
   let storageKey = "";
   let gameReady = false;
 
@@ -177,11 +179,18 @@
   }
 
   function showTransaction() {
+    if (gamePanel.classList.contains("hidden")) return;
+    if (state.mode === "limited" && state.number >= TRANSACTION_LIMIT) {
+      endGame();
+      return;
+    }
     state.number += 1;
     state.transaction = createTransaction();
     state.locked = false;
     resetCustomer();
-    document.getElementById("transaction-number").textContent = `Pelanggan ${state.number}`;
+    document.getElementById("transaction-number").textContent = state.mode === "limited"
+      ? `Pelanggan ${state.number}/${TRANSACTION_LIMIT}`
+      : `Pelanggan ${state.number}`;
     document.getElementById("task-label").textContent = state.transaction.label;
     document.getElementById("question").textContent = state.transaction.question;
     document.getElementById("question-note").textContent = state.transaction.note;
@@ -289,6 +298,7 @@
       wrong: state.wrong,
       bestStreak: state.bestStreak,
       coins: state.coins,
+      mode: state.mode,
     });
     const previousShop = stats.perGame && stats.perGame.tokoMatematika
       ? stats.perGame.tokoMatematika
@@ -301,6 +311,7 @@
         totalCoins: (previousShop.totalCoins || 0) + state.coins,
         gamesPlayed: (previousShop.gamesPlayed || 0) + 1,
         lastLevel: state.level,
+        lastMode: state.mode,
       },
     });
     const nextStats = Object.assign({}, stats, {
@@ -317,6 +328,7 @@
   }
 
   function endGame() {
+    if (gamePanel.classList.contains("hidden")) return;
     saveResult();
     gamePanel.classList.add("hidden");
     summaryPanel.classList.remove("hidden");
@@ -340,6 +352,7 @@
       return;
     }
     state.level = new FormData(setupForm).get("level");
+    state.mode = new FormData(setupForm).get("mode") || "limited";
     resetState();
     setupPanel.classList.add("hidden");
     summaryPanel.classList.add("hidden");
@@ -398,6 +411,11 @@
       if (lastLevel) {
         const levelInput = setupForm.querySelector(`[name="level"][value="${lastLevel}"]`);
         if (levelInput) levelInput.checked = true;
+      }
+      const lastMode = saved.perGame?.tokoMatematika?.lastMode;
+      if (lastMode) {
+        const modeInput = setupForm.querySelector(`[name="mode"][value="${lastMode}"]`);
+        if (modeInput) modeInput.checked = true;
       }
 
       gameReady = true;

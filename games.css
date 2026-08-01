@@ -237,6 +237,21 @@ h1 {
   color: var(--muted);
 }
 
+.mode-options {
+  margin-top: 22px;
+}
+
+.mode-options .option-list {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.mode-options small {
+  display: block;
+  margin-top: 3px;
+  color: var(--muted);
+  font-weight: 600;
+}
+
 .game-grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -715,6 +730,10 @@ h1 {
   .games-hero,
   .game-grid,
   .setup-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .mode-options .option-list {
     grid-template-columns: 1fr;
   }
 
