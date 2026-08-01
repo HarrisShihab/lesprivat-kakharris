@@ -84,7 +84,9 @@
   }
 
   function usernameToEmail(identifier) {
-    const value = String(identifier || "").trim().toLowerCase();
+    const value = String(identifier || "")
+      .trim()
+      .toLowerCase();
     if (value.includes("@")) return value;
     const username = value.replace(/[^a-z0-9._-]/g, "");
     if (!username) throw new Error("Username tidak valid.");
@@ -92,7 +94,9 @@
   }
 
   function usernameValue(value) {
-    const username = String(value || "").trim().toLowerCase();
+    const username = String(value || "")
+      .trim()
+      .toLowerCase();
     if (!/^[a-z0-9][a-z0-9._-]{2,39}$/.test(username)) {
       throw new Error("Username harus 3–40 karakter dan hanya berisi huruf kecil, angka, titik, garis bawah, atau tanda hubung.");
     }
@@ -135,7 +139,9 @@
   }
 
   function validPhone(value) {
-    const phone = String(value || "").replace(/\D/g, "").slice(0, 18);
+    const phone = String(value || "")
+      .replace(/\D/g, "")
+      .slice(0, 18);
     if (phone && phone.length < 9) throw new Error("Nomor WhatsApp minimal 9 digit.");
     return phone;
   }
@@ -207,48 +213,147 @@
 
   async function uploadPaymentProof(values) {
     init();
+
     const profile = await requireProfile(["orangtua"]);
     const endpoint = String(window.PAYMENT_UPLOAD_WEB_APP_URL || "").trim();
+
     if (!/^https:\/\/script\.google\.com\/macros\/s\/[A-Za-z0-9_-]+\/exec$/.test(endpoint)) {
       throw new Error("Layanan upload belum diaktifkan oleh admin. Gunakan WhatsApp untuk sementara.");
     }
+
     const file = values?.file;
+
     const allowedTypes = ["image/jpeg", "image/png", "image/webp", "application/pdf"];
-    if (!(file instanceof File)) throw new Error("Pilih file bukti pembayaran.");
-    if (!allowedTypes.includes(file.type)) throw new Error("Format file harus JPG, PNG, WebP, atau PDF.");
-    if (file.size <= 0 || file.size > 5 * 1024 * 1024) throw new Error("Ukuran file maksimal 5 MB.");
+
+    if (!(file instanceof File)) {
+      throw new Error("Pilih file bukti pembayaran.");
+    }
+
+    if (!allowedTypes.includes(file.type)) {
+      throw new Error("Format file harus JPG, PNG, WebP, atau PDF.");
+    }
+
+    if (file.size <= 0 || file.size > 5 * 1024 * 1024) {
+      throw new Error("Ukuran file maksimal 5 MB.");
+    }
+
     const nominal = Number(values?.nominal);
-    if (!Number.isInteger(nominal) || nominal < 1000 || nominal > 100000000) throw new Error("Nominal pembayaran tidak valid.");
+
+    if (!Number.isInteger(nominal) || nominal < 1000 || nominal > 100000000) {
+      throw new Error("Nominal pembayaran tidak valid.");
+    }
+
     const idMurid = idValue(values?.idMurid);
     const owned = await ownedStudentIds(profile);
-    if (!owned.includes(idMurid)) throw new Error("Akun tidak terhubung dengan murid yang dipilih.");
+
+    if (!owned.includes(idMurid)) {
+      throw new Error("Akun tidak terhubung dengan murid yang dipilih.");
+    }
+
     const keterangan = plain(values?.keterangan, 300);
-    if (!keterangan) throw new Error("Keterangan pembayaran wajib diisi.");
+
+    if (!keterangan) {
+      throw new Error("Keterangan pembayaran wajib diisi.");
+    }
 
     const idToken = await auth.currentUser.getIdToken(true);
     const base64 = await readFileAsBase64(file);
+
+    const proofCollection = db.collection("buktiPembayaran");
+
+    const beforeUpload = await proofCollection.where("idMurid", "==", idMurid).get();
+
+    const existingProofIds = new Set(beforeUpload.docs.map((doc) => doc.id));
+
     const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), 60000);
+
+    const timeout = setTimeout(() => {
+      controller.abort();
+    }, 60000);
+
     try {
-      const response = await nativeFetch(endpoint, {
+      /*
+       * Respons dari Apps Script dialihkan ke
+       * script.googleusercontent.com.
+       *
+       * Beberapa browser dapat memblokir respons redirect tersebut.
+       * Karena itu, website tidak membaca respons Google.
+       *
+       * Keberhasilan upload diperiksa melalui dokumen baru
+       * yang dibuat di Firestore.
+       */
+      await nativeFetch(endpoint, {
         method: "POST",
-        headers: { "Content-Type": "text/plain;charset=utf-8" },
+
+        headers: {
+          "Content-Type": "text/plain;charset=utf-8",
+        },
+
         body: JSON.stringify({
           action: "uploadBuktiPembayaran",
           idToken,
           idMurid,
           nominal,
           keterangan,
-          file: { name: file.name, mimeType: file.type, size: file.size, base64 },
+
+          file: {
+            name: file.name,
+            mimeType: file.type,
+            size: file.size,
+            base64,
+          },
         }),
+
         signal: controller.signal,
-        redirect: "follow",
+        mode: "no-cors",
+        redirect: "manual",
       });
-      const result = await response.json();
-      if (result.status !== "success") throw new Error(result.message || "Bukti pembayaran gagal dikirim.");
-      return result;
+
+      /*
+       * Tunggu maksimal sekitar 12 detik.
+       * Upload dianggap berhasil apabila dokumen baru
+       * benar-benar muncul di Firestore.
+       */
+      for (let attempt = 0; attempt < 12; attempt += 1) {
+        if (attempt > 0) {
+          await new Promise((resolve) => {
+            setTimeout(resolve, 1000);
+          });
+        }
+
+        const afterUpload = await proofCollection.where("idMurid", "==", idMurid).get();
+
+        const createdProof = afterUpload.docs.find((doc) => {
+          if (existingProofIds.has(doc.id)) {
+            return false;
+          }
+
+          const data = doc.data();
+
+          return data.createdBy === profile.uid && Number(data.nominal) === nominal && data.keterangan === keterangan;
+        });
+
+        if (createdProof) {
+          return {
+            status: "success",
+
+            message: "Bukti pembayaran berhasil dikirim dan menunggu konfirmasi.",
+
+            data: {
+              id: createdProof.id,
+
+              status: createdProof.data().status || "Menunggu konfirmasi",
+            },
+          };
+        }
+      }
+
+      throw new Error("Upload belum tercatat. Periksa folder Drive dan log Apps Script, lalu coba lagi.");
     } catch (error) {
-      if (error.name === "AbortError") throw new Error("Upload terlalu lama. Periksa koneksi lalu coba lagi.");
+      if (error.name === "AbortError") {
+        throw new Error("Upload terlalu lama. Periksa koneksi lalu coba lagi.");
+      }
+
       throw error;
     } finally {
       clearTimeout(timeout);
@@ -493,26 +598,26 @@
           const id = row.id || row._docId;
           const accounts = linkedAccounts.get(String(id)) || {};
           return {
-          id,
-          nama: row.nama || "",
-          ortu: row.ortu || "",
-          wa: row.wa || "",
-          username: row.username || "",
-          parentUsername: row.parentUsername || accounts.orangtua?.username || row.username || "",
-          studentUsername: row.studentUsername || accounts.murid?.username || "",
-          jenjang: row.jenjang || "",
-          kelas: row.kelas || "",
-          paket: row.paket || "",
-          jadwal: await jadwalForStudent(row.id || row._docId),
-          status: row.status || "Aktif",
-          bukti: "",
-          tanggalDaftar: row.tanggalDaftar || "-",
-          sesiTerpakai: Number(row.sesiTerpakai) || 0,
-          tanggalFreeze: row.tanggalFreeze || "-",
-          foto: row.fotoUrl || "",
-          durasi: String(row.durasi || "60"),
-          authStatus: row.authStatus || "belum_dibuat",
-        };
+            id,
+            nama: row.nama || "",
+            ortu: row.ortu || "",
+            wa: row.wa || "",
+            username: row.username || "",
+            parentUsername: row.parentUsername || accounts.orangtua?.username || row.username || "",
+            studentUsername: row.studentUsername || accounts.murid?.username || "",
+            jenjang: row.jenjang || "",
+            kelas: row.kelas || "",
+            paket: row.paket || "",
+            jadwal: await jadwalForStudent(row.id || row._docId),
+            status: row.status || "Aktif",
+            bukti: "",
+            tanggalDaftar: row.tanggalDaftar || "-",
+            sesiTerpakai: Number(row.sesiTerpakai) || 0,
+            tanggalFreeze: row.tanggalFreeze || "-",
+            foto: row.fotoUrl || "",
+            durasi: String(row.durasi || "60"),
+            authStatus: row.authStatus || "belum_dibuat",
+          };
         }),
     );
   }
@@ -563,9 +668,7 @@
       rows = await allDocs("buktiPembayaran");
     } else {
       const ids = await ownedStudentIds(profile);
-      const snapshots = await Promise.all(
-        ids.map((idMurid) => db.collection("buktiPembayaran").where("idMurid", "==", idMurid).get()),
-      );
+      const snapshots = await Promise.all(ids.map((idMurid) => db.collection("buktiPembayaran").where("idMurid", "==", idMurid).get()));
       rows = snapshots.flatMap((snap) => snap.docs.map((doc) => ({ _docId: doc.id, ...doc.data() })));
     }
     const students = new Map((await getMurid()).map((student) => [student.id, student]));
@@ -685,9 +788,7 @@
         const requests = await rowsForStudents("pengajuanJadwal", ids);
         const decided = requests.filter((row) => ["Disetujui", "Ditolak"].includes(row.status)).at(-1);
         if (decided) list.push({ icon: decided.status === "Disetujui" ? "check-circle" : "times-circle", text: `Pengajuan jadwal ${decided.status.toLowerCase()}`, tab: "" });
-        const proofSnaps = await Promise.all(
-          ids.map((idMurid) => db.collection("buktiPembayaran").where("idMurid", "==", idMurid).get()),
-        );
+        const proofSnaps = await Promise.all(ids.map((idMurid) => db.collection("buktiPembayaran").where("idMurid", "==", idMurid).get()));
         const decidedProof = proofSnaps
           .flatMap((snap) => snap.docs.map((doc) => doc.data()))
           .filter((row) => ["Diterima", "Ditolak"].includes(row.status))
@@ -777,7 +878,9 @@
       await requireProfile(["admin"]);
       const nama = plain(payload.nama, 120);
       const ortu = plain(payload.ortu, 120);
-      const wa = String(payload.wa || "").replace(/\D/g, "").slice(0, 18);
+      const wa = String(payload.wa || "")
+        .replace(/\D/g, "")
+        .slice(0, 18);
       const jenjang = plain(payload.jenjang, 5);
       const kelas = plain(payload.kelas, 4);
       const paket = plain(payload.paket, 50);
@@ -829,7 +932,9 @@
       const update = {
         nama: plain(payload.nama, 120),
         ortu: plain(payload.ortu, 120),
-        wa: String(payload.wa || "").replace(/\D/g, "").slice(0, 18),
+        wa: String(payload.wa || "")
+          .replace(/\D/g, "")
+          .slice(0, 18),
         updatedAt: serverTime(),
       };
       if (payload.paket) update.paket = plain(payload.paket, 50);
@@ -900,11 +1005,7 @@
     }
     if (action === "resetSemuaJadwal") {
       await requireProfile(["admin"]);
-      const [requests, schedules, publicSchedules] = await Promise.all([
-        db.collection("pengajuanJadwal").get(),
-        db.collection("jadwal").get(),
-        db.collection("jadwalPublik").get(),
-      ]);
+      const [requests, schedules, publicSchedules] = await Promise.all([db.collection("pengajuanJadwal").get(), db.collection("jadwal").get(), db.collection("jadwalPublik").get()]);
       const refs = [...requests.docs, ...schedules.docs, ...publicSchedules.docs];
       for (let i = 0; i < refs.length; i += 450) {
         const batch = db.batch();
