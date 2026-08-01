@@ -185,6 +185,18 @@
     $("start-button").disabled = false;
     $("start-button").textContent = "Masuk Menara →";
   } catch (error) {
-    $("setup-status").textContent = error.message || "Permainan gagal disiapkan.";
+    const setupStatus = $("setup-status");
+    const startButton = $("start-button");
+    const backLink = document.querySelector("#setup-panel .secondary-button");
+
+    setupStatus.textContent = error.message || "Permainan gagal disiapkan.";
+    setupStatus.classList.add("error");
+    startButton.hidden = true;
+
+    if (backLink) {
+      backLink.textContent = "Kembali ke Daftar Game";
+      backLink.classList.remove("secondary-button");
+      backLink.classList.add("primary-button");
+    }
   }
 })();
