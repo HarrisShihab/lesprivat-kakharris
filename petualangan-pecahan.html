@@ -1,0 +1,37 @@
+<!doctype html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="theme-color" content="#102a43">
+  <title>Petualangan Pecahan - Game Belajar</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@600;700;800&family=Source+Sans+3:wght@400;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="games.css">
+  <link rel="stylesheet" href="petualangan-pecahan.css">
+</head>
+<body>
+<main class="game-shell play-shell">
+  <header class="game-topbar"><a class="game-brand" href="games.html"><span class="brand-mark">½</span><span>Petualangan Pecahan</span></a><a class="back-link" href="games.html"><span>←</span><span>Semua Game</span></a></header>
+  <section class="play-header"><p class="eyebrow">Ekspedisi Pulau Pecahan</p><h1>Petualangan Pecahan</h1><p>Selesaikan 10 misi untuk menemukan Kristal Pecahan. Pilih jawaban langsung tanpa keyboard.</p></section>
+
+  <section id="setup-panel" class="play-panel"><div class="adventure-intro"><div class="island-emblem">🏝</div><div><h2>Peta petualangan siap</h2><p id="setup-status" role="status">Memeriksa akun murid...</p></div></div><div class="setup-actions"><a class="secondary-button" href="games.html">Batal</a><button id="start-button" class="primary-button" disabled>Menyiapkan...</button></div></section>
+
+  <section id="game-panel" class="play-panel hidden">
+    <div class="score-strip"><div class="score-item"><span>Misi</span><strong id="mission-number">1/10</strong></div><div class="score-item"><span>Skor</span><strong id="score">0</strong></div><div class="score-item"><span>Nyawa</span><strong id="lives">♥ ♥ ♥</strong></div><div class="score-item"><span>Streak</span><strong id="streak">0</strong></div></div>
+    <div class="map-progress" aria-label="Progres petualangan"><div id="progress-fill" class="map-progress-fill"></div></div>
+    <div class="question-area fraction-question">
+      <span id="mission-label" class="mission-label">Pantai Pecahan</span>
+      <h2 id="question-text">Pilih pecahan yang sesuai.</h2>
+      <div id="fraction-visual" class="fraction-visual" aria-label="Gambar pecahan"></div>
+      <div id="choices" class="fraction-choices" aria-label="Pilihan jawaban"></div>
+      <div id="feedback" class="feedback" role="status"></div>
+    </div>
+    <div class="play-actions"><button id="hint-button" class="secondary-button">Petunjuk (−5)</button><button id="end-button" class="danger-button">Akhiri Permainan</button></div>
+  </section>
+
+  <section id="summary-panel" class="summary-panel hidden"><div id="summary-mark" class="summary-mark">◆</div><h2 id="summary-title">Petualangan selesai</h2><p id="summary-message"></p><div class="summary-grid"><div class="summary-cell"><strong id="summary-score">0</strong><span>Skor</span></div><div class="summary-cell"><strong id="summary-correct">0</strong><span>Benar</span></div><div class="summary-cell"><strong id="summary-wrong">0</strong><span>Salah</span></div><div class="summary-cell"><strong id="summary-streak">0</strong><span>Streak terbaik</span></div></div><div class="summary-actions"><button id="replay-button" class="primary-button">Main Lagi</button><a class="secondary-button" href="games.html">Semua Game</a></div></section>
+</main>
+<script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script><script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-auth-compat.js"></script><script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore-compat.js"></script><script src="firebase-config.js"></script><script src="firebase-api.js"></script><script src="petualangan-pecahan.js"></script>
+</body></html>

@@ -55,4 +55,12 @@
   const patternBest = stats.perGame?.detektifPola?.bestScore || 0;
   const patternBestTag = document.getElementById("pattern-best-tag");
   if (patternBestTag && patternBest > 0) patternBestTag.textContent = `Rekor ${patternBest} poin`;
+
+  const algebraBest = stats.perGame?.menaraAljabar?.bestScore || 0;
+  const algebraBestTag = document.getElementById("algebra-best-tag");
+  if (algebraBestTag && algebraBest > 0) algebraBestTag.textContent = `Rekor ${algebraBest} poin`;
+
+  const fractionBest = stats.perGame?.petualanganPecahan?.bestScore || 0;
+  const fractionBestTag = document.getElementById("fraction-best-tag");
+  if (fractionBestTag && fractionBest > 0) fractionBestTag.textContent = `Rekor ${fractionBest} poin`;
 })();
