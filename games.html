@@ -44,7 +44,13 @@
         </div>
       </div>
 
-      <section class="game-grid">
+      <div id="game-catalog-status" role="status" aria-live="polite">
+        Menyiapkan katalog game...
+      </div>
+
+      <section class="game-grid" id="game-grid" aria-busy="true"></section>
+
+      <template id="game-card-template">
         <article class="game-card" data-grade-levels="SD,SMP">
           <div class="game-visual" aria-hidden="true">8 × 7</div>
           <div class="game-copy">
@@ -119,7 +125,7 @@
             <a class="primary-button" href="petualangan-pecahan.html">Mulai Berpetualang <span aria-hidden="true">→</span></a>
           </div>
         </article>
-      </section>
+      </template>
     </main>
     <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-auth-compat.js"></script>
