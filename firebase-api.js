@@ -1178,7 +1178,7 @@
 
       const scheduleRef = db.collection("jadwal").doc();
       const publicRef = db.collection("jadwalPublik").doc(scheduleRef.id);
-      const quotaRef = Number.isInteger(initialRow.quotaSlot) ? db.collection("kuotaJadwal").doc(`${initialRow.idMurid}_${initialRow.quotaSlot}`) : null;
+      const quotaRef = Number.isInteger(initialRow.quotaSlot) && initialRow.quotaId ? db.collection("kuotaJadwal").doc(idValue(initialRow.quotaId)) : null;
       const tokenRefs = scheduleTokenMinutes(start, finish).map((minute) => ({ minute, ref: db.collection("slotJadwal").doc(scheduleTokenId(initialRow.hari, minute)) }));
       await db.runTransaction(async (transaction) => {
         const requestSnap = await transaction.get(ref);
@@ -1270,7 +1270,7 @@
       const scheduleDoc = matchingSchedules[0];
       const publicRef = db.collection("jadwalPublik").doc(scheduleDoc.id);
       const quotaSlot = Number(requestRow.quotaSlot || scheduleDoc.data().quotaSlot);
-      const quotaRef = Number.isInteger(quotaSlot) ? db.collection("kuotaJadwal").doc(`${requestRow.idMurid}_${quotaSlot}`) : null;
+      const quotaRef = Number.isInteger(quotaSlot) && requestRow.quotaId ? db.collection("kuotaJadwal").doc(idValue(requestRow.quotaId)) : null;
       const matchingSlots = slotsSnap.docs.filter((doc) => doc.data().scheduleId === scheduleDoc.id);
       await db.runTransaction(async (transaction) => {
         const freshRequest = await transaction.get(requestRef);
@@ -1388,7 +1388,7 @@
       );
       const quotaSlot = Array.from({ length: maximumSchedules }, (_, index) => index + 1).find((slot) => !occupiedQuotaSlots.has(slot));
       if (!quotaSlot) throw new Error("Kuota jadwal sedang digunakan. Muat ulang halaman lalu coba lagi.");
-      const quotaRef = db.collection("kuotaJadwal").doc(`${idMurid}_${quotaSlot}`);
+      const quotaRef = db.collection("kuotaJadwal").doc(`${profile.uid}_${idMurid}_${quotaSlot}`);
       const tokenRefs = scheduleTokenMinutes(start, finish).map((minute) => ({ minute, ref: db.collection("slotJadwal").doc(scheduleTokenId(hari, minute)) }));
       await db.runTransaction(async (transaction) => {
         const quotaSnap = await transaction.get(quotaRef);

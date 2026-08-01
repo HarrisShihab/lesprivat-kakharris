@@ -49,7 +49,7 @@ service cloud.firestore {
         && ((request.resource.data.quotaSlot == 1 && request.resource.data.quotaSlotKey == "1")
           || (request.resource.data.quotaSlot == 2 && request.resource.data.quotaSlotKey == "2")
           || (request.resource.data.quotaSlot == 3 && request.resource.data.quotaSlotKey == "3"))
-        && request.resource.data.quotaId == request.resource.data.idMurid + "_" + request.resource.data.quotaSlotKey
+        && request.resource.data.quotaId == request.auth.uid + "_" + request.resource.data.idMurid + "_" + request.resource.data.quotaSlotKey
         && ((get(/databases/$(database)/documents/murid/$(request.resource.data.idMurid)).data.paket == "reguler_12_pertemuan" && request.resource.data.quotaSlot <= 3)
           || (get(/databases/$(database)/documents/murid/$(request.resource.data.idMurid)).data.paket == "reguler_8_pertemuan" && request.resource.data.quotaSlot <= 2)
           || (!(get(/databases/$(database)/documents/murid/$(request.resource.data.idMurid)).data.paket in ["reguler_8_pertemuan", "reguler_12_pertemuan"]) && request.resource.data.quotaSlot == 1))
@@ -162,7 +162,9 @@ service cloud.firestore {
     }
 
     match /kuotaJadwal/{quotaId} {
-      allow read: if admin()
+      allow get: if admin()
+        || (roleIs("orangtua") && quotaId.matches(request.auth.uid + "_.*"));
+      allow list: if admin()
         || (roleIs("orangtua") && ownsStudent(resource.data.idMurid));
       allow create: if roleIs("orangtua")
         && ownsStudent(request.resource.data.idMurid)
@@ -171,7 +173,7 @@ service cloud.firestore {
         && ((request.resource.data.slot == 1 && request.resource.data.slotKey == "1")
           || (request.resource.data.slot == 2 && request.resource.data.slotKey == "2")
           || (request.resource.data.slot == 3 && request.resource.data.slotKey == "3"))
-        && quotaId == request.resource.data.idMurid + "_" + request.resource.data.slotKey
+        && quotaId == request.auth.uid + "_" + request.resource.data.idMurid + "_" + request.resource.data.slotKey
         && existsAfter(/databases/$(database)/documents/pengajuanJadwal/$(request.resource.data.requestId))
         && request.resource.data.slot == getAfter(/databases/$(database)/documents/pengajuanJadwal/$(request.resource.data.requestId)).data.quotaSlot
         && request.resource.data.idMurid == getAfter(/databases/$(database)/documents/pengajuanJadwal/$(request.resource.data.requestId)).data.idMurid
@@ -190,7 +192,7 @@ service cloud.firestore {
           && ((request.resource.data.slot == 1 && request.resource.data.slotKey == "1")
             || (request.resource.data.slot == 2 && request.resource.data.slotKey == "2")
             || (request.resource.data.slot == 3 && request.resource.data.slotKey == "3"))
-          && quotaId == request.resource.data.idMurid + "_" + request.resource.data.slotKey
+          && quotaId == request.auth.uid + "_" + request.resource.data.idMurid + "_" + request.resource.data.slotKey
           && existsAfter(/databases/$(database)/documents/pengajuanJadwal/$(request.resource.data.requestId))
           && request.resource.data.slot == getAfter(/databases/$(database)/documents/pengajuanJadwal/$(request.resource.data.requestId)).data.quotaSlot
           && request.resource.data.idMurid == getAfter(/databases/$(database)/documents/pengajuanJadwal/$(request.resource.data.requestId)).data.idMurid
