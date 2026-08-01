@@ -306,7 +306,7 @@
 
         signal: controller.signal,
         mode: "no-cors",
-        redirect: "manual",
+        redirect: "follow",
       });
 
       /*
