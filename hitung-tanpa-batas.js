@@ -14,210 +14,97 @@
     operation: "addition",
     level: "easy",
     mode: "limited",
-    question: null,
-    score: 0,
-    correct: 0,
-    wrong: 0,
-    streak: 0,
-    bestStreak: 0,
-    number: 0,
-    locked: false,
-    recent: [],
+    game: null,
   };
 
-  const points = { easy: 10, medium: 20, hard: 30 };
-  const QUESTION_LIMIT = 10;
   let storageKey = "";
   let gameReady = false;
 
-  function randomInt(min, max) {
-    return Math.floor(Math.random() * (max - min + 1)) + min;
+  function scoreboardView(engineState) {
+    document.getElementById("score").textContent = engineState.score;
+    document.getElementById("correct-count").textContent = engineState.correct;
+    document.getElementById("wrong-count").textContent = engineState.wrong;
+    document.getElementById("streak").textContent = engineState.streak;
   }
 
-  function binaryQuestion(symbol, min, max) {
-    let a = randomInt(min, max);
-    let b = randomInt(min, max);
-    if (symbol === "-" && b > a) [a, b] = [b, a];
-    return { text: `${a} ${symbol} ${b}`, answer: symbol === "+" ? a + b : a - b };
-  }
-
-  function multiplicationQuestion(maxFactor) {
-    const a = randomInt(1, maxFactor);
-    const b = randomInt(1, maxFactor);
-    return { text: `${a} × ${b}`, answer: a * b };
-  }
-
-  function divisionQuestion(maxFactor) {
-    const divisor = randomInt(1, maxFactor);
-    const answer = randomInt(1, maxFactor);
-    return { text: `${divisor * answer} ÷ ${divisor}`, answer };
-  }
-
-  function evaluateTokens(numbers, operators) {
-    const values = numbers.slice();
-    const ops = operators.slice();
-    for (let i = 0; i < ops.length; ) {
-      if (ops[i] === "×" || ops[i] === "÷") {
-        const result = ops[i] === "×" ? values[i] * values[i + 1] : values[i] / values[i + 1];
-        values.splice(i, 2, result);
-        ops.splice(i, 1);
-      } else {
-        i += 1;
-      }
-    }
-    let result = values[0];
-    ops.forEach((operator, index) => {
-      result = operator === "+" ? result + values[index + 1] : result - values[index + 1];
-    });
-    return result;
-  }
-
-  function mixedQuestion(level) {
-    if (level === "easy") return binaryQuestion(Math.random() < 0.5 ? "+" : "-", 0, 20);
-
-    const count = level === "medium" ? 3 : 4;
-    const max = level === "medium" ? 12 : 25;
-    const pool = level === "medium" ? ["+", "-", "×"] : ["+", "-", "×", "÷"];
-
-    for (let attempt = 0; attempt < 200; attempt += 1) {
-      const numbers = Array.from({ length: count }, () => randomInt(1, max));
-      const operators = Array.from({ length: count - 1 }, () => pool[randomInt(0, pool.length - 1)]);
-      const answer = evaluateTokens(numbers, operators);
-      if (Number.isInteger(answer) && answer >= 0 && answer <= 2000) {
-        const text = numbers.map((number, index) => (index < operators.length ? `${number} ${operators[index]}` : `${number}`)).join(" ");
-        return { text, answer };
-      }
-    }
-    return binaryQuestion("+", 10, level === "medium" ? 100 : 1000);
-  }
-
-  function createQuestion() {
-    let question;
-    if (state.operation === "addition" || state.operation === "subtraction") {
-      const maximum = state.level === "easy" ? 20 : state.level === "medium" ? 100 : 1000;
-      question = binaryQuestion(state.operation === "addition" ? "+" : "-", 0, maximum);
-    } else if (state.operation === "multiplication") {
-      question = multiplicationQuestion(state.level === "easy" ? 5 : state.level === "medium" ? 10 : 12);
-    } else if (state.operation === "division") {
-      question = divisionQuestion(state.level === "easy" ? 5 : state.level === "medium" ? 10 : 20);
-    } else {
-      question = mixedQuestion(state.level);
-    }
-
-    if (state.recent.includes(question.text)) return createQuestion();
-    state.recent.push(question.text);
-    if (state.recent.length > 10) state.recent.shift();
-    return question;
-  }
-
-  function updateScoreboard() {
-    document.getElementById("score").textContent = state.score;
-    document.getElementById("correct-count").textContent = state.correct;
-    document.getElementById("wrong-count").textContent = state.wrong;
-    document.getElementById("streak").textContent = state.streak;
-  }
-
-  function showQuestion() {
-    if (gamePanel.classList.contains("hidden")) return;
-    if (state.mode === "limited" && state.number >= QUESTION_LIMIT) {
-      endGame();
-      return;
-    }
-    state.number += 1;
-    state.question = createQuestion();
-    state.locked = false;
-    document.getElementById("question-number").textContent = state.mode === "limited"
-      ? `Soal ${state.number}/${QUESTION_LIMIT}`
-      : `Soal ${state.number}`;
-    document.getElementById("question").textContent = state.question.text;
+  function renderQuestion(q) {
+    document.getElementById("question-number").textContent = q.total == null ? `Soal ${q.number}` : `Soal ${q.number}/${q.total}`;
+    document.getElementById("question").textContent = q.text;
     answerInput.value = "";
     feedback.textContent = "";
     feedback.className = "feedback";
     answerInput.disabled = false;
   }
 
-  function moveNext(message, className) {
+  function renderFeedback(message, ok) {
     feedback.textContent = message;
-    feedback.className = `feedback ${className}`;
+    feedback.className = `feedback ${ok ? "correct" : "wrong"}`;
     answerInput.disabled = true;
-    window.setTimeout(showQuestion, 850);
   }
 
-  function checkAnswer() {
-    if (state.locked || answerInput.value.trim() === "") return;
-    state.locked = true;
-    const submitted = Number(answerInput.value);
-
-    if (submitted === state.question.answer) {
-      state.correct += 1;
-      state.streak += 1;
-      state.bestStreak = Math.max(state.bestStreak, state.streak);
-      const bonus = state.streak > 0 && state.streak % 5 === 0 ? points[state.level] : 0;
-      state.score += points[state.level] + bonus;
-      moveNext(bonus ? `Benar! Bonus streak +${bonus}.` : "Benar! Lanjutkan.", "correct");
-    } else {
-      state.wrong += 1;
-      state.streak = 0;
-      moveNext(`Belum tepat. Jawabannya ${state.question.answer}.`, "wrong");
-    }
-    updateScoreboard();
+  function renderSummary(result) {
+    gamePanel.classList.add("hidden");
+    summaryPanel.classList.remove("hidden");
+    document.getElementById("summary-score").textContent = result.score;
+    document.getElementById("summary-correct").textContent = result.correct;
+    document.getElementById("summary-wrong").textContent = result.wrong;
+    document.getElementById("summary-streak").textContent = result.bestStreak;
+    window.scrollTo({ top: 0, behavior: "smooth" });
   }
 
-  function skipQuestion() {
-    if (state.locked) return;
-    state.locked = true;
-    state.wrong += 1;
-    state.streak = 0;
-    updateScoreboard();
-    moveNext(`Soal dilewati. Jawabannya ${state.question.answer}.`, "wrong");
-  }
-
-  function resetState() {
-    Object.assign(state, {
-      question: null,
-      score: 0,
-      correct: 0,
-      wrong: 0,
-      streak: 0,
-      bestStreak: 0,
-      number: 0,
-      locked: false,
-      recent: [],
+  function buildGame() {
+    const mode = state.mode;
+    return KakHarrisGameEngine.createQuizGame({
+      bank: HitungTanpaBatasConfig.bank,
+      basePoints: HitungTanpaBatasConfig.basePoints,
+      questionLimit: HitungTanpaBatasConfig.questionLimit,
+      feedbackDurationMs: HitungTanpaBatasConfig.feedbackDurationMs,
+      isEndless: mode === "endless",
+      level: state.level,
+      operation: state.operation,
+      // Kenaikan kesulitan adaptif aktif pada mode Endless.
+      adaptiveDifficulty: mode === "endless",
+      allowedDifficulties: ["easy", "medium", "hard"],
+      difficultyWindow: 5,
+      onQuestion: renderQuestion,
+      onFeedback: renderFeedback,
+      onScoreboard: scoreboardView,
+      onDifficultyChange(level) {
+        renderFeedback(`Level naik ke ${levelText(level)}.`, true);
+      },
+      onFinish(result) {
+        saveResult(result);
+        renderSummary(result);
+      },
     });
-    updateScoreboard();
   }
 
-  function startGame() {
-    resetState();
-    setupPanel.classList.add("hidden");
-    summaryPanel.classList.add("hidden");
-    gamePanel.classList.remove("hidden");
-    showQuestion();
+  function levelText(level) {
+    return { easy: "Mudah", medium: "Sedang", hard: "Sulit" }[level] || level;
   }
 
   function loadStats() {
     return KakHarrisGameEngine.loadStats(storageKey);
   }
 
-  function saveResult() {
-    const answered = state.correct + state.wrong;
-    KakHarrisGameEngine.saveGameResult(storageKey, "hitungTanpaBatas", {
-      score: state.score,
-      bestStreak: state.bestStreak,
+  function saveResult(result) {
+    const answered = result.correct + result.wrong;
+    KakHarrisGameEngine.saveGameResult(storageKey, HitungTanpaBatasConfig.perGameKey, {
+      score: result.score,
+      bestStreak: result.bestStreak,
       answered: answered,
+      lastOperation: state.operation,
+      lastLevel: state.level,
+      lastMode: state.mode,
     });
   }
 
-  function endGame() {
-    if (gamePanel.classList.contains("hidden")) return;
-    saveResult();
-    gamePanel.classList.add("hidden");
-    summaryPanel.classList.remove("hidden");
-    document.getElementById("summary-score").textContent = state.score;
-    document.getElementById("summary-correct").textContent = state.correct;
-    document.getElementById("summary-wrong").textContent = state.wrong;
-    document.getElementById("summary-streak").textContent = state.bestStreak;
-    window.scrollTo({ top: 0, behavior: "smooth" });
+  function startGame() {
+    setupPanel.classList.add("hidden");
+    summaryPanel.classList.add("hidden");
+    gamePanel.classList.remove("hidden");
+    state.game = buildGame();
+    state.game.start();
   }
 
   setupForm.addEventListener("submit", (event) => {
@@ -226,20 +113,26 @@
       setupStatus.textContent = "Permainan masih disiapkan. Tunggu sebentar.";
       return;
     }
-    state.operation = new FormData(setupForm).get("operation");
-    state.level = new FormData(setupForm).get("level");
-    state.mode = new FormData(setupForm).get("mode") || "limited";
+    const formData = new FormData(setupForm);
+    state.operation = formData.get("operation");
+    state.level = formData.get("level");
+    state.mode = formData.get("mode") || "limited";
     startGame();
   });
 
   document.getElementById("keypad").addEventListener("click", (event) => {
     const button = event.target.closest("[data-key]");
-    if (!button || state.locked) return;
+    if (!button) return;
     const key = button.dataset.key;
     if (key === "backspace") answerInput.value = answerInput.value.slice(0, -1);
     else if (key === "check") checkAnswer();
     else if (answerInput.value.length < 8) answerInput.value += key;
   });
+
+  function checkAnswer() {
+    if (answerInput.value.trim() === "") return;
+    state.game.submitAnswer(answerInput.value);
+  }
 
   answerInput.addEventListener("input", () => {
     answerInput.value = answerInput.value.replace(/\D/g, "").slice(0, 8);
@@ -250,8 +143,12 @@
       checkAnswer();
     }
   });
-  document.getElementById("skip-button").addEventListener("click", skipQuestion);
-  document.getElementById("end-button").addEventListener("click", endGame);
+  document.getElementById("skip-button").addEventListener("click", () => {
+    state.game.skipQuestion();
+  });
+  document.getElementById("end-button").addEventListener("click", () => {
+    state.game.finish();
+  });
   document.getElementById("replay-button").addEventListener("click", () => {
     summaryPanel.classList.add("hidden");
     setupPanel.classList.remove("hidden");

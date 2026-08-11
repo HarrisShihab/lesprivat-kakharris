@@ -1,85 +1,93 @@
 <!doctype html>
 <html lang="id">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width,initial-scale=1">
-  <meta name="theme-color" content="#102a43">
-  <title>Menara Aljabar - Game Belajar</title>
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@600;700;800&family=Source+Sans+3:wght@400;600;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="games.css">
-  <link rel="stylesheet" href="menara-aljabar.css">
-</head>
-<body>
-  <main class="game-shell play-shell">
-    <header class="game-topbar">
-      <a class="game-brand" href="games.html"><span class="brand-mark">x</span><span>Menara Aljabar</span></a>
-      <a class="back-link" href="games.html"><span>←</span><span>Semua Game</span></a>
-    </header>
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <meta name="theme-color" content="#102a43" />
+    <title>Menara Aljabar - Game Belajar</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@600;700;800&family=Source+Sans+3:wght@400;600;700&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="games.css" />
+    <link rel="stylesheet" href="menara-aljabar.css" />
+  </head>
+  <body>
+    <main class="game-shell play-shell">
+      <header class="game-topbar">
+        <a class="game-brand" href="games.html"><span class="brand-mark">x</span><span>Menara Aljabar</span></a>
+        <a class="back-link" href="games.html"><span>←</span><span>Semua Game</span></a>
+      </header>
 
-    <section class="play-header">
-      <p class="eyebrow">Tantangan khusus SMP</p>
-      <h1>Menara Aljabar</h1>
-      <p>Temukan nilai x untuk membuka setiap gerbang. Penjaga Menara menunggu di setiap lantai kelipatan 10.</p>
-    </section>
+      <section class="play-header">
+        <p class="eyebrow">Tantangan khusus SMP</p>
+        <h1>Menara Aljabar</h1>
+        <p>Temukan nilai x untuk membuka setiap gerbang. Penjaga Menara menunggu di setiap lantai kelipatan 10.</p>
+      </section>
 
-    <section id="setup-panel" class="play-panel">
-      <div class="tower-intro">
-        <div class="tower-emblem" aria-hidden="true">x</div>
-        <div><h2>Gerbang menara terkunci</h2><p id="setup-status" role="status">Memeriksa jenjang akun...</p></div>
-      </div>
-      <fieldset class="option-group mode-options">
-        <legend>Pilih mode</legend>
-        <div class="option-list">
-          <label class="option-button"><input type="radio" name="mode" value="limited" checked><span>Terbatas · 10 lantai</span></label>
-          <label class="option-button"><input type="radio" name="mode" value="endless"><span>Endless · naik sampai memilih turun</span></label>
+      <section id="setup-panel" class="play-panel">
+        <div class="tower-intro">
+          <div class="tower-emblem" aria-hidden="true">x</div>
+          <div>
+            <h2>Gerbang menara terkunci</h2>
+            <p id="setup-status" role="status">Memeriksa jenjang akun...</p>
+          </div>
         </div>
-      </fieldset>
-      <div class="setup-actions"><a class="secondary-button" href="games.html">Batal</a><button id="start-button" class="primary-button" disabled>Menyiapkan...</button></div>
-    </section>
+        <fieldset class="option-group mode-options">
+          <legend>Pilih mode</legend>
+          <div class="option-list">
+            <label class="option-button"><input type="radio" name="mode" value="limited" checked /><span>Terbatas · 10 lantai</span></label>
+            <label class="option-button"><input type="radio" name="mode" value="endless" /><span>Endless · naik sampai memilih turun</span></label>
+          </div>
+        </fieldset>
+        <div class="setup-actions"><a class="secondary-button" href="games.html">Batal</a><button id="start-button" class="primary-button" disabled>Menyiapkan...</button></div>
+      </section>
 
-    <section id="game-panel" class="play-panel hidden">
-      <div class="tower-progress" aria-label="Progres menara"><div id="progress-fill" class="progress-fill"></div></div>
-      <div class="score-strip">
-        <div class="score-item"><span>Lantai</span><strong id="floor-number">1/10</strong></div>
-        <div class="score-item"><span>Skor</span><strong id="score">0</strong></div>
-        <div class="score-item"><span>Nyawa</span><strong id="lives">♥ ♥ ♥</strong></div>
-        <div class="score-item"><span>Streak</span><strong id="streak">0</strong></div>
-      </div>
-
-      <div class="question-area">
-        <div id="floor-label" class="floor-label">Lantai 1</div>
-        <div class="question-label">Tentukan nilai x</div>
-        <div id="equation" class="algebra-equation" aria-live="polite"></div>
-        <label for="answer" class="question-label">Jawabanmu</label>
-        <input id="answer" class="answer-input" type="text" inputmode="none" autocomplete="off" readonly aria-label="Jawaban nilai x">
-        <div id="feedback" class="feedback" role="status"></div>
-        <div id="keypad" class="keypad algebra-keypad" aria-label="Papan angka">
-          <button class="key" data-key="1">1</button><button class="key" data-key="2">2</button><button class="key" data-key="3">3</button>
-          <button class="key" data-key="4">4</button><button class="key" data-key="5">5</button><button class="key" data-key="6">6</button>
-          <button class="key" data-key="7">7</button><button class="key" data-key="8">8</button><button class="key" data-key="9">9</button>
-          <button class="key" data-key="minus">−</button><button class="key" data-key="0">0</button><button class="key" data-key="backspace">⌫</button>
-          <button class="key key-check wide-check" data-key="check">Buka Gerbang ✓</button>
+      <section id="game-panel" class="play-panel hidden">
+        <div class="tower-progress" aria-label="Progres menara"><div id="progress-fill" class="progress-fill"></div></div>
+        <div class="score-strip">
+          <div class="score-item"><span>Lantai</span><strong id="floor-number">1/10</strong></div>
+          <div class="score-item"><span>Skor</span><strong id="score">0</strong></div>
+          <div class="score-item"><span>Nyawa</span><strong id="lives">♥ ♥ ♥</strong></div>
+          <div class="score-item"><span>Streak</span><strong id="streak">0</strong></div>
         </div>
-      </div>
-      <div class="play-actions"><button id="hint-button" class="secondary-button">Petunjuk (−5)</button><button id="end-button" class="danger-button">Turun dari Menara</button></div>
-    </section>
 
-    <section id="summary-panel" class="summary-panel hidden">
-      <div id="summary-mark" class="summary-mark">★</div><h2 id="summary-title">Pendakian selesai</h2><p id="summary-message"></p>
-      <div class="summary-grid">
-        <div class="summary-cell"><strong id="summary-score">0</strong><span>Skor</span></div>
-        <div class="summary-cell"><strong id="summary-correct">0</strong><span>Benar</span></div>
-        <div class="summary-cell"><strong id="summary-wrong">0</strong><span>Salah</span></div>
-        <div class="summary-cell"><strong id="summary-streak">0</strong><span>Streak terbaik</span></div>
-      </div>
-      <div class="summary-actions"><button id="replay-button" class="primary-button">Naik Lagi</button><a class="secondary-button" href="games.html">Semua Game</a></div>
-    </section>
-  </main>
-  <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-auth-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore-compat.js"></script>
-  <script src="firebase-config.js"></script><script src="firebase-api.js"></script><script src="game-engine.js"></script><script src="menara-aljabar.js"></script>
-</body>
+        <div class="question-area">
+          <div id="floor-label" class="floor-label">Lantai 1</div>
+          <div class="question-label">Tentukan nilai x</div>
+          <div id="equation" class="algebra-equation" aria-live="polite"></div>
+          <label for="answer" class="question-label">Jawabanmu</label>
+          <input id="answer" class="answer-input" type="text" inputmode="none" autocomplete="off" readonly aria-label="Jawaban nilai x" />
+          <div id="feedback" class="feedback" role="status"></div>
+          <div id="keypad" class="keypad algebra-keypad" aria-label="Papan angka">
+            <button class="key" data-key="1">1</button><button class="key" data-key="2">2</button><button class="key" data-key="3">3</button> <button class="key" data-key="4">4</button
+            ><button class="key" data-key="5">5</button><button class="key" data-key="6">6</button> <button class="key" data-key="7">7</button><button class="key" data-key="8">8</button
+            ><button class="key" data-key="9">9</button> <button class="key" data-key="minus">−</button><button class="key" data-key="0">0</button><button class="key" data-key="backspace">⌫</button>
+            <button class="key key-check wide-check" data-key="check">Buka Gerbang ✓</button>
+          </div>
+        </div>
+        <div class="play-actions"><button id="hint-button" class="secondary-button">Petunjuk (−5)</button><button id="end-button" class="danger-button">Turun dari Menara</button></div>
+      </section>
+
+      <section id="summary-panel" class="summary-panel hidden">
+        <div id="summary-mark" class="summary-mark">★</div>
+        <h2 id="summary-title">Pendakian selesai</h2>
+        <p id="summary-message"></p>
+        <div class="summary-grid">
+          <div class="summary-cell"><strong id="summary-score">0</strong><span>Skor</span></div>
+          <div class="summary-cell"><strong id="summary-correct">0</strong><span>Benar</span></div>
+          <div class="summary-cell"><strong id="summary-wrong">0</strong><span>Salah</span></div>
+          <div class="summary-cell"><strong id="summary-streak">0</strong><span>Streak terbaik</span></div>
+        </div>
+        <div class="summary-actions"><button id="replay-button" class="primary-button">Naik Lagi</button><a class="secondary-button" href="games.html">Semua Game</a></div>
+      </section>
+    </main>
+    <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore-compat.js"></script>
+    <script src="firebase-config.js"></script>
+    <script src="firebase-api.js"></script>
+    <script src="game-engine.js"></script>
+    <script src="menara-aljabar-config.js"></script>
+    <script src="menara-aljabar.js"></script>
+  </body>
 </html>

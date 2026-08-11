@@ -46,25 +46,25 @@ SMA dicatat sebagai ekspansi masa depan. Struktur data tidak boleh membatasi jen
 
 ### Fase A — Fondasi
 
-| Urutan | Dokumen | Hasil yang harus ditetapkan |
-| --- | --- | --- |
-| 1 | `README.md` | Struktur dokumentasi dan prinsip umum |
-| 2 | `01-Roadmap.md` | Tahapan, prioritas, dan batas cakupan |
-| 3 | `02-Arsitektur-Game.md` | Komponen sistem dan hubungan antarbagian |
-| 4 | `14-Mode-Permainan.md` | Standar Endless dan Terbatas untuk semua engine |
+| Urutan | Dokumen                 | Hasil yang harus ditetapkan                     |
+| ------ | ----------------------- | ----------------------------------------------- |
+| 1      | `README.md`             | Struktur dokumentasi dan prinsip umum           |
+| 2      | `01-Roadmap.md`         | Tahapan, prioritas, dan batas cakupan           |
+| 3      | `02-Arsitektur-Game.md` | Komponen sistem dan hubungan antarbagian        |
+| 4      | `14-Mode-Permainan.md`  | Standar Endless dan Terbatas untuk semua engine |
 
 **Gerbang fase:** arsitektur, istilah, format konfigurasi umum, dan aturan mode tidak saling bertentangan.
 
 ### Fase B — Engine Inti
 
-| Urutan | Dokumen | Prioritas | Contoh penggunaan |
-| --- | --- | --- | --- |
-| 5 | `03-Engine-Quiz.md` | P0 | Pilihan ganda, benar–salah, jawaban angka |
-| 6 | `04-Engine-Endless.md` | P0 | Latihan berhitung berkelanjutan |
-| 7 | `05-Engine-Matching.md` | P1 | Memasangkan soal–jawaban atau konsep–contoh |
-| 8 | `06-Engine-DragDrop.md` | P1 | Mengurutkan, mengelompokkan, melengkapi |
-| 9 | `07-Engine-Puzzle.md` | P2 | Pola, logika, susunan bilangan |
-| 10 | `08-Engine-Adventure.md` | P2 | Progres berbasis level dan tantangan |
+| Urutan | Dokumen                  | Prioritas | Contoh penggunaan                           |
+| ------ | ------------------------ | --------- | ------------------------------------------- |
+| 5      | `03-Engine-Quiz.md`      | P0        | Pilihan ganda, benar–salah, jawaban angka   |
+| 6      | `04-Engine-Endless.md`   | P0        | Latihan berhitung berkelanjutan             |
+| 7      | `05-Engine-Matching.md`  | P1        | Memasangkan soal–jawaban atau konsep–contoh |
+| 8      | `06-Engine-DragDrop.md`  | P1        | Mengurutkan, mengelompokkan, melengkapi     |
+| 9      | `07-Engine-Puzzle.md`    | P2        | Pola, logika, susunan bilangan              |
+| 10     | `08-Engine-Adventure.md` | P2        | Progres berbasis level dan tantangan        |
 
 Keterangan prioritas:
 
@@ -76,22 +76,22 @@ Keterangan prioritas:
 
 ### Fase C — Sistem Pendukung
 
-| Urutan | Dokumen | Fungsi |
-| --- | --- | --- |
-| 11 | `09-Bank-Soal.md` | Skema soal, metadata materi, jenjang, tingkat kesulitan, dan validasi |
-| 12 | `10-UI-UX.md` | Pola layar, navigasi, aksesibilitas, responsivitas, dan umpan balik |
-| 13 | `11-Database.md` | Koleksi data, relasi, keamanan, dan penyimpanan progres |
-| 14 | `12-Achievement.md` | Definisi pencapaian dan aturan pemberian |
-| 15 | `13-Level-XP.md` | Perhitungan XP, level, dan pencegahan eksploitasi |
-| 16 | `15-Analitik.md` | Peristiwa yang dicatat dan laporan performa belajar |
+| Urutan | Dokumen             | Fungsi                                                                |
+| ------ | ------------------- | --------------------------------------------------------------------- |
+| 11     | `09-Bank-Soal.md`   | Skema soal, metadata materi, jenjang, tingkat kesulitan, dan validasi |
+| 12     | `10-UI-UX.md`       | Pola layar, navigasi, aksesibilitas, responsivitas, dan umpan balik   |
+| 13     | `11-Database.md`    | Koleksi data, relasi, keamanan, dan penyimpanan progres               |
+| 14     | `12-Achievement.md` | Definisi pencapaian dan aturan pemberian                              |
+| 15     | `13-Level-XP.md`    | Perhitungan XP, level, dan pencegahan eksploitasi                     |
+| 16     | `15-Analitik.md`    | Peristiwa yang dicatat dan laporan performa belajar                   |
 
 **Gerbang fase:** tidak ada data penting yang hanya tersimpan di tampilan; aturan XP dan achievement tidak dapat dimanipulasi dengan mudah dari sisi klien; pengumpulan analitik dibatasi pada data yang memang berguna.
 
 ### Fase D — Katalog Pengembangan
 
-| Urutan | Dokumen | Fungsi |
-| --- | --- | --- |
-| 17 | `99-Ide-Game.md` | Daftar ide game berdasarkan engine, materi, jenjang, dan prioritas |
+| Urutan | Dokumen          | Fungsi                                                             |
+| ------ | ---------------- | ------------------------------------------------------------------ |
+| 17     | `99-Ide-Game.md` | Daftar ide game berdasarkan engine, materi, jenjang, dan prioritas |
 
 Ide game baru hanya masuk antrean implementasi jika sudah memiliki target belajar, engine yang digunakan, jenjang, mode, estimasi kompleksitas, dan kriteria selesai.
 
@@ -106,17 +106,17 @@ Ide game baru hanya masuk antrean implementasi jika sudah memiliki target belaja
 
 ### Tahap 1 — MVP Engine Quiz
 
+> **Progres (11 Agustus 2026):** engine quiz (`createQuizGame` pada `game-engine.js`) diterapkan pada **seluruh 5 game**. Engine diperluas untuk mendukung sistem nyawa, petunjuk, override rumus poin, dan jawaban teks/pilihan ganda. Bank soal tiap game dipisah ke berkas `*-config.js`. Validasi manual ponsel & desktop (Tahap 2) tetap disarankan sebelum penyebaran luas.
+
 Target:
 
-- Satu kontrak konfigurasi game.
-- Soal pilihan ganda dan jawaban angka.
-- Mode Terbatas berdasarkan jumlah soal dan waktu.
-- Mode Endless dengan kenaikan kesulitan.
-- Skor, streak, waktu respons, dan ringkasan hasil.
-- Filter konten sesuai jenjang akun sebelum daftar game ditampilkan.
-- Penyimpanan progres dasar.
-
-Game percontohan disarankan menggunakan materi yang mudah diverifikasi, misalnya operasi hitung bilangan bulat atau aritmetika dasar.
+- Satu kontrak konfigurasi game. _(berjalan — `createQuizGame` + berkas `*-config.js`)_
+- Soal pilihan ganda dan jawaban angka. _(berjalan — jawaban angka & pilihan ganda teks)_
+- Mode Terbatas berdasarkan jumlah soal dan waktu. _(berjalan — jumlah soal; `limited_time` belum)_
+- Mode Endless dengan kenaikan kesulitan. _(berjalan — endless manual finish + kenaikan kesulitan adaptif via Difficulty Controller pada Hitung & Toko)_
+- Skor, streak, waktu respons, dan ringkasan hasil. _(berjalan — skor, streak, ringkasan)_
+- Filter konten sesuai jenjang akun sebelum daftar game ditampilkan. _(berjalan — Menara khusus SMP; Petualangan & Detektif memfilter sesuai jenjang)_
+- Penyimpanan progres dasar. _(berjalan — `saveGameResult` ke `localStorage`)_
 
 ### Tahap 2 — Validasi MVP
 
@@ -195,15 +195,15 @@ Sebuah game hanya boleh ditandai siap rilis jika:
 
 ## 8. Risiko Utama dan Pengendalian
 
-| Risiko | Dampak | Pengendalian |
-| --- | --- | --- |
-| Terlalu banyak engine dibuat sekaligus | MVP terlambat selesai | Dahulukan Quiz dan Endless |
-| Soal ditanam langsung dalam kode | Sulit menambah konten | Gunakan bank soal terpisah |
-| Sistem XP mudah dieksploitasi | Progres tidak bermakna | Validasi hasil dan batasi hadiah berulang |
-| Filter jenjang terlambat diterapkan | Konten salah sempat terlihat | Filter sebelum daftar game dirender |
-| Fokus visual berlebihan | Waktu habis tanpa manfaat belajar | Prioritaskan alur, keterbacaan, dan umpan balik |
-| Ekspansi SMA terlalu dini | Cakupan membesar | Simpan sebagai ekspansi, bukan target MVP |
-| Data analitik terlalu banyak | Beban dan risiko privasi | Catat hanya data yang mendukung evaluasi belajar |
+| Risiko                                 | Dampak                            | Pengendalian                                     |
+| -------------------------------------- | --------------------------------- | ------------------------------------------------ |
+| Terlalu banyak engine dibuat sekaligus | MVP terlambat selesai             | Dahulukan Quiz dan Endless                       |
+| Soal ditanam langsung dalam kode       | Sulit menambah konten             | Gunakan bank soal terpisah                       |
+| Sistem XP mudah dieksploitasi          | Progres tidak bermakna            | Validasi hasil dan batasi hadiah berulang        |
+| Filter jenjang terlambat diterapkan    | Konten salah sempat terlihat      | Filter sebelum daftar game dirender              |
+| Fokus visual berlebihan                | Waktu habis tanpa manfaat belajar | Prioritaskan alur, keterbacaan, dan umpan balik  |
+| Ekspansi SMA terlalu dini              | Cakupan membesar                  | Simpan sebagai ekspansi, bukan target MVP        |
+| Data analitik terlalu banyak           | Beban dan risiko privasi          | Catat hanya data yang mendukung evaluasi belajar |
 
 ## 9. Indikator Keberhasilan Awal
 

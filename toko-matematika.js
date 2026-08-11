@@ -1,19 +1,6 @@
 (async function () {
   "use strict";
 
-  const products = [
-    { name: "Pensil", icon: "✏️", easy: 2000, medium: 2500, hard: 3500 },
-    { name: "Buku", icon: "📘", easy: 5000, medium: 7500, hard: 12500 },
-    { name: "Penghapus", icon: "🧽", easy: 1000, medium: 2000, hard: 2500 },
-    { name: "Susu", icon: "🥛", easy: 4000, medium: 6500, hard: 8500 },
-    { name: "Roti", icon: "🍞", easy: 3000, medium: 5500, hard: 7500 },
-    { name: "Apel", icon: "🍎", easy: 2000, medium: 4000, hard: 6500 },
-    { name: "Jus", icon: "🧃", easy: 4000, medium: 7000, hard: 9500 },
-    { name: "Mainan", icon: "🧸", easy: 8000, medium: 15000, hard: 27500 },
-    { name: "Penggaris", icon: "📏", easy: 3000, medium: 4500, hard: 6000 },
-    { name: "Cokelat", icon: "🍫", easy: 5000, medium: 8500, hard: 11500 },
-  ];
-
   const setupPanel = document.getElementById("setup-panel");
   const gamePanel = document.getElementById("game-panel");
   const summaryPanel = document.getElementById("summary-panel");
@@ -27,110 +14,27 @@
   const state = {
     level: "easy",
     mode: "limited",
-    transaction: null,
-    score: 0,
+    game: null,
     coins: 0,
     served: 0,
-    wrong: 0,
-    streak: 0,
-    bestStreak: 0,
-    number: 0,
-    locked: false,
-    recent: [],
+    transaction: null,
   };
 
-  const levelPoints = { easy: 20, medium: 35, hard: 50 };
-  const TRANSACTION_LIMIT = 10;
+  const coinPerLevel = { easy: 2, medium: 4, hard: 6 };
   let storageKey = "";
   let gameReady = false;
 
-  function randomInt(min, max) {
-    return Math.floor(Math.random() * (max - min + 1)) + min;
-  }
-
-  function randomItems(count) {
-    const available = products.slice();
-    const picked = [];
-    while (picked.length < count && available.length) {
-      picked.push(available.splice(randomInt(0, available.length - 1), 1)[0]);
-    }
-    return picked;
-  }
-
-  function nextRoundAmount(amount) {
-    const denominations = [5000, 10000, 20000, 50000, 100000, 200000];
-    return denominations.find((value) => value >= amount) || Math.ceil(amount / 100000) * 100000;
-  }
-
-  function transactionType() {
-    const pool = state.level === "easy"
-      ? ["total"]
-      : state.level === "medium"
-        ? ["total", "change", "quantity"]
-        : ["total", "change", "discount", "quantity"];
-    return pool[randomInt(0, pool.length - 1)];
-  }
-
-  function createTransaction() {
-    const count = state.level === "easy" ? randomInt(1, 3) : randomInt(2, 4);
-    const items = randomItems(count).map((product) => ({
-      name: product.name,
-      icon: product.icon,
-      price: product[state.level],
-      qty: state.level === "easy" ? 1 : randomInt(1, state.level === "medium" ? 3 : 5),
-    }));
-    const subtotal = items.reduce((sum, item) => sum + item.price * item.qty, 0);
-    let type = transactionType();
-    let answer = subtotal;
-    let payment = 0;
-    let discount = 0;
-    let question = "Berapa total belanja pelanggan?";
-    let note = "";
-    let label = "Hitung total";
-    let registerTotal = "?";
-    let speech = "Tolong hitung total belanja saya.";
-
-    if (type === "quantity") {
-      answer = items.reduce((sum, item) => sum + item.qty, 0);
-      question = "Berapa jumlah seluruh barang yang dibeli?";
-      note = "Jawab jumlah barang, bukan jumlah jenis produk.";
-      label = "Hitung barang";
-      registerTotal = formatRupiah(subtotal);
-      speech = "Ada berapa barang di belanjaan saya?";
-    } else if (type === "change") {
-      payment = nextRoundAmount(subtotal + 1);
-      if (payment === subtotal) payment += state.level === "hard" ? 100000 : 50000;
-      answer = payment - subtotal;
-      question = "Berapa uang kembalian pelanggan?";
-      note = `Pelanggan membayar ${formatRupiah(payment)}.`;
-      label = "Hitung kembalian";
-      registerTotal = formatRupiah(subtotal);
-      speech = `Saya membayar ${formatRupiah(payment)}.`;
-    } else if (type === "discount") {
-      discount = [10, 20, 25][randomInt(0, 2)];
-      const discountValue = (subtotal * discount) / 100;
-      if (!Number.isInteger(discountValue)) {
-        type = "total";
-      } else {
-        answer = subtotal - discountValue;
-        question = "Berapa yang harus dibayar setelah diskon?";
-        note = `Diskon ${discount}% dari total ${formatRupiah(subtotal)}.`;
-        label = `Diskon ${discount}%`;
-        registerTotal = formatRupiah(subtotal);
-        speech = `Katanya hari ini diskon ${discount}%!`;
-      }
-    }
-
-    const signature = `${type}:${items.map((item) => `${item.name}-${item.qty}`).join("|")}:${answer}`;
-    if (state.recent.includes(signature)) return createTransaction();
-    state.recent.push(signature);
-    if (state.recent.length > 8) state.recent.shift();
-
-    return { type, items, subtotal, payment, discount, answer, question, note, label, registerTotal, speech };
-  }
-
   function formatRupiah(value) {
     return `Rp${Number(value || 0).toLocaleString("id-ID")}`;
+  }
+
+  function updateStatus() {
+    const gs = state.game ? state.game.getState() : { score: 0, streak: 0 };
+    document.getElementById("score").textContent = gs.score;
+    document.getElementById("coins").textContent = state.coins;
+    document.getElementById("served").textContent = state.served;
+    document.getElementById("streak").textContent = gs.streak;
+    document.getElementById("reputation-bar").style.width = `${Math.min(100, state.served * 10)}%`;
   }
 
   function renderProducts(items) {
@@ -164,45 +68,34 @@
     });
   }
 
-  function updateStatus() {
-    document.getElementById("score").textContent = state.score;
-    document.getElementById("coins").textContent = state.coins;
-    document.getElementById("served").textContent = state.served;
-    document.getElementById("streak").textContent = state.streak;
-    document.getElementById("reputation-bar").style.width = `${Math.min(100, state.served * 10)}%`;
-  }
-
   function resetCustomer() {
     customer.classList.remove("is-happy", "is-wrong");
     void customer.offsetWidth;
     document.getElementById("customer-mouth").className = "customer-mouth";
   }
 
-  function showTransaction() {
-    if (gamePanel.classList.contains("hidden")) return;
-    if (state.mode === "limited" && state.number >= TRANSACTION_LIMIT) {
-      endGame();
-      return;
-    }
-    state.number += 1;
-    state.transaction = createTransaction();
-    state.locked = false;
+  function renderTransaction(q) {
+    const tx = q.raw;
     resetCustomer();
-    document.getElementById("transaction-number").textContent = state.mode === "limited"
-      ? `Pelanggan ${state.number}/${TRANSACTION_LIMIT}`
-      : `Pelanggan ${state.number}`;
-    document.getElementById("task-label").textContent = state.transaction.label;
-    document.getElementById("question").textContent = state.transaction.question;
-    document.getElementById("question-note").textContent = state.transaction.note;
-    document.getElementById("register-total").textContent = state.transaction.registerTotal;
-    document.getElementById("speech-bubble").textContent = state.transaction.speech;
-    renderProducts(state.transaction.items);
+    document.getElementById("transaction-number").textContent = q.total == null ? `Pelanggan ${q.number}` : `Pelanggan ${q.number}/${q.total}`;
+    document.getElementById("task-label").textContent = tx.label;
+    document.getElementById("question").textContent = tx.question;
+    document.getElementById("question-note").textContent = tx.note;
+    document.getElementById("register-total").textContent = tx.registerTotal;
+    document.getElementById("speech-bubble").textContent = tx.speech;
+    renderProducts(tx.items);
     answerInput.value = "";
-    document.getElementById("formatted-answer").textContent =
-      state.transaction.type === "quantity" ? "0 barang" : "Rp0";
+    updateFormattedAnswer();
     feedback.textContent = "";
     feedback.className = "feedback";
     answerInput.disabled = false;
+    state.transaction = tx;
+  }
+
+  function renderFeedback(message, ok) {
+    feedback.textContent = message;
+    feedback.className = `feedback ${ok ? "correct" : "wrong"}`;
+    answerInput.disabled = true;
   }
 
   function animateCoin(amount) {
@@ -213,98 +106,89 @@
     window.setTimeout(() => coin.remove(), 800);
   }
 
-  function moveNext(message, className) {
-    feedback.textContent = message;
-    feedback.className = `feedback ${className}`;
-    answerInput.disabled = true;
-    window.setTimeout(showTransaction, 1200);
+  function renderSummary(result) {
+    gamePanel.classList.add("hidden");
+    summaryPanel.classList.remove("hidden");
+    document.getElementById("summary-score").textContent = result.score;
+    document.getElementById("summary-coins").textContent = state.coins;
+    document.getElementById("summary-served").textContent = state.served;
+    document.getElementById("summary-streak").textContent = result.bestStreak;
+    document.getElementById("summary-message").textContent =
+      state.served >= 10 ? "Luar biasa, reputasi tokomu sedang naik!" : state.served >= 5 ? "Bagus! Kamu sudah menjadi kasir yang teliti." : "Coba lagi dan layani lebih banyak pelanggan.";
+    window.scrollTo({ top: 0, behavior: "smooth" });
   }
 
-  function checkAnswer() {
-    if (state.locked || answerInput.value.trim() === "") return;
-    state.locked = true;
-    const submitted = Number(answerInput.value);
-
-    if (submitted === state.transaction.answer) {
+  function onAnswer(outcome) {
+    const tx = state.transaction;
+    const unit = tx && tx.type === "quantity" ? " barang" : "";
+    if (outcome.correct) {
       state.served += 1;
-      state.streak += 1;
-      state.bestStreak = Math.max(state.bestStreak, state.streak);
-      const bonus = state.streak > 0 && state.streak % 5 === 0 ? levelPoints[state.level] : 0;
-      const earned = levelPoints[state.level] + bonus;
-      state.score += earned;
-      state.coins += state.level === "easy" ? 2 : state.level === "medium" ? 4 : 6;
+      const coins = coinPerLevel[outcome.level] || 2;
+      state.coins += coins;
+      const base = TokoMatematikaConfig.basePoints[outcome.level] || 20;
+      const bonus = outcome.points - base;
       customer.classList.add("is-happy");
-      animateCoin(state.level === "easy" ? 2 : state.level === "medium" ? 4 : 6);
-      moveNext(
-        bonus ? `Tepat! Bonus streak +${bonus} poin.` : "Tepat! Pelanggan puas.",
-        "correct"
-      );
+      animateCoin(coins);
+      renderFeedback(bonus > 0 ? `Tepat! Bonus streak +${bonus} poin.` : "Tepat! Pelanggan puas.", true);
     } else {
-      state.wrong += 1;
-      state.streak = 0;
       customer.classList.add("is-wrong");
-      const unit = state.transaction.type === "quantity" ? " barang" : "";
-      moveNext(`Belum tepat. Jawabannya ${state.transaction.answer.toLocaleString("id-ID")}${unit}.`, "wrong");
+      renderFeedback(`Belum tepat. Jawabannya ${Number(outcome.answer).toLocaleString("id-ID")}${unit}.`, false);
     }
     updateStatus();
   }
 
-  function skipTransaction() {
-    if (state.locked) return;
-    state.locked = true;
-    state.wrong += 1;
-    state.streak = 0;
-    customer.classList.add("is-wrong");
-    updateStatus();
-    const unit = state.transaction.type === "quantity" ? " barang" : "";
-    moveNext(`Dilewati. Jawabannya ${state.transaction.answer.toLocaleString("id-ID")}${unit}.`, "wrong");
+  function buildGame() {
+    const mode = state.mode;
+    return KakHarrisGameEngine.createQuizGame({
+      bank: TokoMatematikaConfig.bank,
+      basePoints: TokoMatematikaConfig.basePoints,
+      questionLimit: TokoMatematikaConfig.questionLimit,
+      feedbackDurationMs: TokoMatematikaConfig.feedbackDurationMs,
+      isEndless: mode === "endless",
+      level: state.level,
+      // Kenaikan kesulitan adaptif aktif pada mode Endless.
+      adaptiveDifficulty: mode === "endless",
+      allowedDifficulties: ["easy", "medium", "hard"],
+      difficultyWindow: 5,
+      onQuestion: renderTransaction,
+      onAnswer,
+      onDifficultyChange(level) {
+        renderFeedback(`Level toko naik ke ${levelText(level)}.`, true);
+      },
+      onFinish(result) {
+        saveResult(result);
+        renderSummary(result);
+      },
+    });
   }
 
-  function resetState() {
-    Object.assign(state, {
-      transaction: null,
-      score: 0,
-      coins: 0,
-      served: 0,
-      wrong: 0,
-      streak: 0,
-      bestStreak: 0,
-      number: 0,
-      locked: false,
-      recent: [],
-    });
-    updateStatus();
+  function levelText(level) {
+    return { easy: "Mudah", medium: "Sedang", hard: "Sulit" }[level] || level;
   }
 
   function loadStats() {
     return KakHarrisGameEngine.loadStats(storageKey);
   }
 
-  function saveResult() {
-    const answered = state.served + state.wrong;
-    KakHarrisGameEngine.saveGameResult(storageKey, "tokoMatematika", {
-      score: state.score,
-      bestStreak: state.bestStreak,
+  function saveResult(result) {
+    const answered = result.correct + result.wrong;
+    KakHarrisGameEngine.saveGameResult(storageKey, TokoMatematikaConfig.perGameKey, {
+      score: result.score,
+      bestStreak: result.bestStreak,
       answered: answered,
+      lastLevel: state.level,
+      lastMode: state.mode,
     });
   }
 
-  function endGame() {
-    if (gamePanel.classList.contains("hidden")) return;
-    saveResult();
-    gamePanel.classList.add("hidden");
-    summaryPanel.classList.remove("hidden");
-    document.getElementById("summary-score").textContent = state.score;
-    document.getElementById("summary-coins").textContent = state.coins;
-    document.getElementById("summary-served").textContent = state.served;
-    document.getElementById("summary-streak").textContent = state.bestStreak;
-    document.getElementById("summary-message").textContent =
-      state.served >= 10
-        ? "Luar biasa, reputasi tokomu sedang naik!"
-        : state.served >= 5
-          ? "Bagus! Kamu sudah menjadi kasir yang teliti."
-          : "Coba lagi dan layani lebih banyak pelanggan.";
-    window.scrollTo({ top: 0, behavior: "smooth" });
+  function startGame() {
+    state.coins = 0;
+    state.served = 0;
+    setupPanel.classList.add("hidden");
+    summaryPanel.classList.add("hidden");
+    gamePanel.classList.remove("hidden");
+    state.game = buildGame();
+    state.game.start();
   }
 
   setupForm.addEventListener("submit", (event) => {
@@ -315,16 +199,12 @@
     }
     state.level = new FormData(setupForm).get("level");
     state.mode = new FormData(setupForm).get("mode") || "limited";
-    resetState();
-    setupPanel.classList.add("hidden");
-    summaryPanel.classList.add("hidden");
-    gamePanel.classList.remove("hidden");
-    showTransaction();
+    startGame();
   });
 
   document.getElementById("keypad").addEventListener("click", (event) => {
     const button = event.target.closest("[data-key]");
-    if (!button || state.locked) return;
+    if (!button) return;
     const key = button.dataset.key;
     if (key === "backspace") answerInput.value = answerInput.value.slice(0, -1);
     else if (key === "check") checkAnswer();
@@ -334,10 +214,13 @@
 
   function updateFormattedAnswer() {
     const value = Number(answerInput.value || 0);
-    document.getElementById("formatted-answer").textContent =
-      state.transaction && state.transaction.type === "quantity"
-        ? `${value.toLocaleString("id-ID")} barang`
-        : formatRupiah(value);
+    const tx = state.transaction;
+    document.getElementById("formatted-answer").textContent = tx && tx.type === "quantity" ? `${value.toLocaleString("id-ID")} barang` : formatRupiah(value);
+  }
+
+  function checkAnswer() {
+    if (answerInput.value.trim() === "") return;
+    state.game.submitAnswer(answerInput.value);
   }
 
   answerInput.addEventListener("input", () => {
@@ -350,8 +233,12 @@
       checkAnswer();
     }
   });
-  document.getElementById("skip-button").addEventListener("click", skipTransaction);
-  document.getElementById("end-button").addEventListener("click", endGame);
+  document.getElementById("skip-button").addEventListener("click", () => {
+    state.game.skipQuestion();
+  });
+  document.getElementById("end-button").addEventListener("click", () => {
+    state.game.finish();
+  });
   document.getElementById("replay-button").addEventListener("click", () => {
     summaryPanel.classList.add("hidden");
     setupPanel.classList.remove("hidden");
@@ -365,9 +252,7 @@
       storageKey = auth.storageKey;
 
       const saved = loadStats();
-      const lastLevel = saved.perGame && saved.perGame.tokoMatematika
-        ? saved.perGame.tokoMatematika.lastLevel
-        : null;
+      const lastLevel = saved.perGame && saved.perGame.tokoMatematika ? saved.perGame.tokoMatematika.lastLevel : null;
       if (lastLevel) {
         const levelInput = setupForm.querySelector(`[name="level"][value="${lastLevel}"]`);
         if (levelInput) levelInput.checked = true;
