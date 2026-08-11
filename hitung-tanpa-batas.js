@@ -196,58 +196,16 @@
   }
 
   function loadStats() {
-    if (!storageKey) return {};
-    try {
-      return JSON.parse(localStorage.getItem(storageKey) || "{}");
-    } catch (error) {
-      return {};
-    }
+    return KakHarrisGameEngine.loadStats(storageKey);
   }
 
   function saveResult() {
-    const stats = loadStats();
     const answered = state.correct + state.wrong;
-    const history = Array.isArray(stats.history) ? stats.history : [];
-    history.unshift({
-      date: new Date().toISOString(),
-      operation: state.operation,
-      level: state.level,
+    KakHarrisGameEngine.saveGameResult(storageKey, "hitungTanpaBatas", {
       score: state.score,
-      correct: state.correct,
-      wrong: state.wrong,
       bestStreak: state.bestStreak,
-      mode: state.mode,
+      answered: answered,
     });
-
-    const previousGame = stats.perGame && stats.perGame.hitungTanpaBatas
-      ? stats.perGame.hitungTanpaBatas
-      : {};
-    const perGame = Object.assign({}, stats.perGame, {
-      hitungTanpaBatas: {
-        bestScore: Math.max(previousGame.bestScore || 0, state.score),
-        bestStreak: Math.max(previousGame.bestStreak || 0, state.bestStreak),
-        totalAnswered: (previousGame.totalAnswered || 0) + answered,
-        gamesPlayed: (previousGame.gamesPlayed || 0) + 1,
-        lastOperation: state.operation,
-        lastLevel: state.level,
-        lastMode: state.mode,
-      },
-    });
-
-    const nextStats = Object.assign({}, stats, {
-      bestScore: Math.max(stats.bestScore || 0, state.score),
-      bestStreak: Math.max(stats.bestStreak || 0, state.bestStreak),
-      totalAnswered: (stats.totalAnswered || 0) + answered,
-      gamesPlayed: (stats.gamesPlayed || 0) + 1,
-      lastOperation: state.operation,
-      lastLevel: state.level,
-      lastMode: state.mode,
-      history: history.slice(0, 5),
-      perGame,
-    });
-    try {
-      localStorage.setItem(storageKey, JSON.stringify(nextStats));
-    } catch (error) {}
   }
 
   function endGame() {
@@ -302,10 +260,9 @@
 
   async function initializeGame() {
     try {
-      await firebasePortal.guard(["murid"]);
-      const student = await firebasePortal.getCurrentMurid();
-      if (!student) throw new Error("Akun belum terhubung ke data murid.");
-      storageKey = `kakHarrisGameStats:${student.id || student.username || "murid"}`;
+      const auth = await KakHarrisGameEngine.initStudentAuth(["murid"]);
+      if (!auth) return;
+      storageKey = auth.storageKey;
 
       const saved = loadStats();
       if (saved.lastOperation) {

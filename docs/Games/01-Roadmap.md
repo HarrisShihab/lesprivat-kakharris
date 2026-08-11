@@ -97,6 +97,13 @@ Ide game baru hanya masuk antrean implementasi jika sudah memiliki target belaja
 
 ## 5. Roadmap Implementasi
 
+### Status Integrasi Game Eksisting (Selesai — 11 Agustus 2026)
+
+- **Shared Game Engine Core (`game-engine.js`)**: Berhasil dibuat dan terpasang pada seluruh 5 game eksisting.
+- **5 Game Eksisting Terintegrasi**: `Hitung Tanpa Batas`, `Toko Matematika`, `Detektif Pola Bilangan`, `Menara Aljabar`, dan `Petualangan Pecahan`.
+- **Kompatibilitas Data**: Format `localStorage` (`kakHarrisGameStats`) dipertahankan 100% kompatibel.
+- **Dokumentasi Migrasi**: Tersedia di [`docs/Games/16-Migrasi-Game-Eksisting.md`](file:///E:/web-les-27-07/docs/Games/16-Migrasi-Game-Eksisting.md).
+
 ### Tahap 1 — MVP Engine Quiz
 
 Target:

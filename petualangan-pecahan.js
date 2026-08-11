@@ -82,11 +82,14 @@
     updateBoard(); window.setTimeout(showMission, 1250);
   }
   function useHint() { if (state.locked || state.hintUsed) return; state.hintUsed = true; state.score = Math.max(0, state.score - 5); $("feedback").textContent = state.question.hint; $("feedback").className = "feedback hint"; $("hint-button").disabled = true; updateBoard(); }
-  function loadStats() { try { return JSON.parse(localStorage.getItem(storageKey) || "{}"); } catch (error) { return {}; } }
+  function loadStats() { return KakHarrisGameEngine.loadStats(storageKey); }
   function saveStats() {
-    const stats = loadStats(), answered = state.correct + state.wrong, old = stats.perGame?.petualanganPecahan || {};
-    const perGame = Object.assign({}, stats.perGame, { petualanganPecahan: { bestScore: Math.max(old.bestScore || 0, state.score), bestStreak: Math.max(old.bestStreak || 0, state.bestStreak), totalAnswered: (old.totalAnswered || 0) + answered, gamesPlayed: (old.gamesPlayed || 0) + 1, lastMode: state.mode } });
-    try { localStorage.setItem(storageKey, JSON.stringify(Object.assign({}, stats, { bestScore: Math.max(stats.bestScore || 0, state.score), bestStreak: Math.max(stats.bestStreak || 0, state.bestStreak), totalAnswered: (stats.totalAnswered || 0) + answered, gamesPlayed: (stats.gamesPlayed || 0) + 1, perGame }))); } catch (error) { /* Statistik lokal bersifat opsional. */ }
+    const answered = state.correct + state.wrong;
+    KakHarrisGameEngine.saveGameResult(storageKey, "petualanganPecahan", {
+      score: state.score,
+      bestStreak: state.bestStreak,
+      answered: answered,
+    });
   }
   function finish() {
     if ($("game-panel").classList.contains("hidden")) return; saveStats(); $("game-panel").classList.add("hidden"); $("summary-panel").classList.remove("hidden");
@@ -95,5 +98,5 @@
   function start() { state.mode = document.querySelector('[name="mode"]:checked')?.value || "limited"; Object.assign(state, { mission: 0, score: 0, correct: 0, wrong: 0, lives: 3, streak: 0, bestStreak: 0, question: null, locked: false, hintUsed: false, recent: [] }); $("setup-panel").classList.add("hidden"); $("summary-panel").classList.add("hidden"); $("game-panel").classList.remove("hidden"); showMission(); }
 
   $("choices").addEventListener("click", (event) => { const button = event.target.closest("[data-answer]"); if (button) chooseAnswer(button); }); $("hint-button").addEventListener("click", useHint); $("end-button").addEventListener("click", finish); $("replay-button").addEventListener("click", () => { $("summary-panel").classList.add("hidden"); $("setup-panel").classList.remove("hidden"); window.scrollTo({ top: 0, behavior: "smooth" }); }); $("start-button").addEventListener("click", start);
-  try { await firebasePortal.guard(["murid"]); const student = await firebasePortal.getCurrentMurid(); if (!student) throw new Error("Akun belum terhubung ke data murid."); if (!isSdStudent(student)) throw new Error("Game Petualangan Pecahan khusus untuk murid SD."); storageKey = `kakHarrisGameStats:${student.id || student.username || "murid"}`; const lastMode = loadStats().perGame?.petualanganPecahan?.lastMode; const modeInput = lastMode && document.querySelector(`[name="mode"][value="${lastMode}"]`); if (modeInput) modeInput.checked = true; $("setup-status").textContent = "Misi visual, pecahan senilai, perbandingan, dan operasi sederhana siap."; $("start-button").disabled = false; $("start-button").textContent = "Buka Peta →"; } catch (error) { $("setup-status").textContent = error.message || "Permainan gagal disiapkan."; }
+  try { const auth = await KakHarrisGameEngine.initStudentAuth(["murid"]); if (!auth) return; if (!isSdStudent(auth.student)) throw new Error("Game Petualangan Pecahan khusus untuk murid SD."); storageKey = auth.storageKey; const lastMode = loadStats().perGame?.petualanganPecahan?.lastMode; const modeInput = lastMode && document.querySelector(`[name="mode"][value="${lastMode}"]`); if (modeInput) modeInput.checked = true; $("setup-status").textContent = "Misi visual, pecahan senilai, perbandingan, dan operasi sederhana siap."; $("start-button").disabled = false; $("start-button").textContent = "Buka Peta →"; } catch (error) { $("setup-status").textContent = error.message || "Permainan gagal disiapkan."; }
 })();

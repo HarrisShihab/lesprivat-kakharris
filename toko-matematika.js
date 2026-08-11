@@ -277,54 +277,16 @@
   }
 
   function loadStats() {
-    if (!storageKey) return {};
-    try {
-      return JSON.parse(localStorage.getItem(storageKey) || "{}");
-    } catch (error) {
-      return {};
-    }
+    return KakHarrisGameEngine.loadStats(storageKey);
   }
 
   function saveResult() {
-    const stats = loadStats();
     const answered = state.served + state.wrong;
-    const history = Array.isArray(stats.history) ? stats.history : [];
-    history.unshift({
-      date: new Date().toISOString(),
-      game: "tokoMatematika",
-      level: state.level,
+    KakHarrisGameEngine.saveGameResult(storageKey, "tokoMatematika", {
       score: state.score,
-      correct: state.served,
-      wrong: state.wrong,
       bestStreak: state.bestStreak,
-      coins: state.coins,
-      mode: state.mode,
+      answered: answered,
     });
-    const previousShop = stats.perGame && stats.perGame.tokoMatematika
-      ? stats.perGame.tokoMatematika
-      : {};
-    const perGame = Object.assign({}, stats.perGame, {
-      tokoMatematika: {
-        bestScore: Math.max(previousShop.bestScore || 0, state.score),
-        bestStreak: Math.max(previousShop.bestStreak || 0, state.bestStreak),
-        totalServed: (previousShop.totalServed || 0) + state.served,
-        totalCoins: (previousShop.totalCoins || 0) + state.coins,
-        gamesPlayed: (previousShop.gamesPlayed || 0) + 1,
-        lastLevel: state.level,
-        lastMode: state.mode,
-      },
-    });
-    const nextStats = Object.assign({}, stats, {
-      bestScore: Math.max(stats.bestScore || 0, state.score),
-      bestStreak: Math.max(stats.bestStreak || 0, state.bestStreak),
-      totalAnswered: (stats.totalAnswered || 0) + answered,
-      gamesPlayed: (stats.gamesPlayed || 0) + 1,
-      history: history.slice(0, 8),
-      perGame,
-    });
-    try {
-      localStorage.setItem(storageKey, JSON.stringify(nextStats));
-    } catch (error) {}
   }
 
   function endGame() {
@@ -398,11 +360,9 @@
 
   async function initializeGame() {
     try {
-      await firebasePortal.guard(["murid"]);
-      const student = await firebasePortal.getCurrentMurid();
-      if (!student) throw new Error("Akun belum terhubung ke data murid.");
-      const studentKey = student.id || student.username || "murid";
-      storageKey = `kakHarrisGameStats:${studentKey}`;
+      const auth = await KakHarrisGameEngine.initStudentAuth(["murid"]);
+      if (!auth) return;
+      storageKey = auth.storageKey;
 
       const saved = loadStats();
       const lastLevel = saved.perGame && saved.perGame.tokoMatematika

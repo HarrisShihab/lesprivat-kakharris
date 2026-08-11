@@ -125,13 +125,16 @@
   }
 
   function loadStats() {
-    try { return JSON.parse(localStorage.getItem(storageKey) || "{}"); } catch (error) { return {}; }
+    return KakHarrisGameEngine.loadStats(storageKey);
   }
 
   function saveStats() {
-    const stats = loadStats(), answered = state.correct + state.wrong, old = stats.perGame?.detektifPola || {};
-    const perGame = Object.assign({}, stats.perGame, { detektifPola: { bestScore: Math.max(old.bestScore || 0, state.score), bestStreak: Math.max(old.bestStreak || 0, state.bestStreak), totalAnswered: (old.totalAnswered || 0) + answered, gamesPlayed: (old.gamesPlayed || 0) + 1, lastMode: state.mode } });
-    try { localStorage.setItem(storageKey, JSON.stringify(Object.assign({}, stats, { bestScore: Math.max(stats.bestScore || 0, state.score), bestStreak: Math.max(stats.bestStreak || 0, state.bestStreak), totalAnswered: (stats.totalAnswered || 0) + answered, gamesPlayed: (stats.gamesPlayed || 0) + 1, perGame }))); } catch (error) { /* Statistik lokal bersifat opsional. */ }
+    const answered = state.correct + state.wrong;
+    KakHarrisGameEngine.saveGameResult(storageKey, "detektifPola", {
+      score: state.score,
+      bestStreak: state.bestStreak,
+      answered: answered,
+    });
   }
 
   function finish() {
@@ -176,11 +179,10 @@
   $("start-button").addEventListener("click", start);
 
   try {
-    await firebasePortal.guard(["murid"]);
-    const student = await firebasePortal.getCurrentMurid();
-    if (!student) throw new Error("Akun belum terhubung ke data murid.");
-    state.grade = getGrade(student);
-    storageKey = `kakHarrisGameStats:${student.id || student.username || "murid"}`;
+    const auth = await KakHarrisGameEngine.initStudentAuth(["murid"]);
+    if (!auth) return;
+    state.grade = getGrade(auth.student);
+    storageKey = auth.storageKey;
     const lastMode = loadStats().perGame?.detektifPola?.lastMode;
     const modeInput = lastMode && document.querySelector(`[name="mode"][value="${lastMode}"]`);
     if (modeInput) modeInput.checked = true;
