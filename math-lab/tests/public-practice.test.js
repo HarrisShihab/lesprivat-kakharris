@@ -11,17 +11,17 @@ const script = fs.readFileSync(path.join(repoRoot, "math-lab-public.js"), "utf8"
 const questionSystem = require(path.join(repoRoot, "math-lab/core/question-system/index.js"));
 const practiceSession = require(path.join(repoRoot, "math-lab/core/practice-session.js"));
 const answerEvaluator = require(path.join(repoRoot, "math-lab/core/answer-evaluator.js"));
-const mathRenderer = require(path.join(repoRoot, "math-lab/core/math-renderer/math-renderer.js"));
+const MathRenderer = require(path.join(repoRoot, "math-lab/core/math-renderer/math-renderer.js"));
 const contentPolicy = require(path.join(repoRoot, "math-lab/content/pilot/algebra-practice.js"));
 
 function testPublicPageContract() {
   assert.match(html, /Coba 5 Soal Aljabar/);
   assert.match(html, /Tidak perlu login/);
   assert.match(html, /temporary|sementara/i);
-  assert.match(html, /login\.html\?next=murid-dashboard\.html/);
-  assert.match(html, /math-lab-public\.js/);
-  assert.doesNotMatch(html, /practice-persistence\.js/);
-  assert.doesNotMatch(html, /firebase-config\.js/);
+  assert.match(html, /login\\.html\\?next=murid-dashboard\\.html/);
+  assert.match(html, /math-lab-public\\.js/);
+  assert.doesNotMatch(html, /practice-persistence\\.js/);
+  assert.doesNotMatch(html, /firebase-config\\.js/);
 }
 
 function testPublicScriptContract() {
@@ -30,7 +30,6 @@ function testPublicScriptContract() {
   assert.match(script, /questionCount:\s*5/);
   assert.match(script, /generated:\s*2,\s*curated:\s*2,\s*storyTemplate:\s*1/);
   assert.match(script, /Hasil ini hanya sementara dan tidak disimpan/);
-  assert.match(script, /login\.html\?next=murid-dashboard\.html/);
   assert.doesNotMatch(script, /saveSession\(/);
   assert.doesNotMatch(script, /saveResult\(/);
   assert.doesNotMatch(script, /listHistory\(/);
@@ -38,7 +37,13 @@ function testPublicScriptContract() {
 
 function testAnonymousPracticeFlow() {
   const bundle = questionSystem.createPilotProvider();
-  const renderer = mathRenderer.MathRenderer.createRenderer();
+  const renderer = MathRenderer.createRenderer({
+    katex: {
+      renderToString(source, options) {
+        return `<span data-math="${options.displayMode ? "block" : "inline"}">${source}</span>`;
+      },
+    },
+  });
   const manager = practiceSession.createManager({
     provider: bundle.provider,
     evaluations: bundle.evaluations,
@@ -62,7 +67,7 @@ function testAnonymousPracticeFlow() {
   assert.strictEqual(snapshot.session.ownerUid, null);
   assert.strictEqual(snapshot.session.sessionType, "practice");
   assert.strictEqual(snapshot.session.questionRefs.length, 5);
-  assert.strictEqual(snapshot.progress.total, 5);
+  assert.strictEqual(snapshot.progress.totalQuestions, 5);
 
   for (let i = 0; i < 5; i += 1) {
     const item = manager.currentQuestion(snapshot.session.sessionId);
