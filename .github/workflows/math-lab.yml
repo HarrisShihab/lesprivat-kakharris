@@ -32,13 +32,16 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          shopt -s nullglob
-          tests=(math-lab/tests/*.test.js)
-          if [ ${#tests[@]} -eq 0 ]; then
+          found=false
+          for test in math-lab/tests/*.test.js; do
+            if [ ! -f "$test" ]; then
+              continue
+            fi
+            found=true
+            echo "=== $test ==="
+            node "$test"
+          done
+          if [ "$found" = false ]; then
             echo 'No Math Lab test files found.'
             exit 1
           fi
-          for test in "${tests[@]}"; do
-            echo "=== ${test} ==="
-            node "${test}"
-          done
