@@ -30,30 +30,33 @@
           <section id="learning-target" class="math-lab-card lg:col-span-2">
             <p class="math-lab-eyebrow">Target Belajar</p>
             <h2 class="math-lab-title mt-1">Pilih latihan yang ingin dikerjakan</h2>
-            <p class="math-lab-muted mt-2">Target akan dihubungkan ke Practice Engine pada langkah berikutnya.</p>
+            <p class="math-lab-muted mt-2">Pilih target, lalu mulai Practice dengan engine Math Lab yang sama seperti learner.</p>
 
             <div class="math-lab-grid mt-6">
               <div class="math-lab-field">
                 <label for="math-lab-level">Jenjang</label>
-                <select id="math-lab-level" class="math-lab-select" disabled><option>SMP</option></select>
+                <select id="math-lab-level" class="math-lab-select"><option>Memuat...</option></select>
               </div>
               <div class="math-lab-field">
                 <label for="math-lab-grade">Kelas</label>
-                <select id="math-lab-grade" class="math-lab-select" disabled><option>Kelas 7</option></select>
+                <select id="math-lab-grade" class="math-lab-select"><option>Memuat...</option></select>
               </div>
               <div class="math-lab-field">
                 <label for="math-lab-topic">Materi</label>
-                <select id="math-lab-topic" class="math-lab-select" disabled><option>Aljabar</option></select>
+                <select id="math-lab-topic" class="math-lab-select"><option>Memuat...</option></select>
               </div>
               <div class="math-lab-field">
                 <label for="math-lab-subtopic">Submateri</label>
-                <select id="math-lab-subtopic" class="math-lab-select" disabled><option>Pilot Phase 9</option></select>
+                <select id="math-lab-subtopic" class="math-lab-select"><option>Memuat...</option></select>
               </div>
             </div>
 
             <div class="math-lab-status info mt-5">
               <i class="fa-solid fa-circle-info mr-1"></i>
-              Pilihan target bersifat tampilan saja pada Step 3. Belum ada sesi latihan yang dijalankan.
+              Pilot saat ini: SMP → Kelas 7 → Aljabar. Default target ini hanya memilih konfigurasi Practice; evaluasi tetap berasal dari shared Math Lab engine.
+            </div>
+            <div class="math-lab-actions mt-5">
+              <button id="math-lab-start" class="math-lab-btn math-lab-btn-primary" type="button"><i class="fa-solid fa-play"></i> Mulai Practice</button>
             </div>
           </section>
 
@@ -61,18 +64,45 @@
             <p class="math-lab-eyebrow">Status</p>
             <div class="mt-3 flex items-center gap-3">
               <span class="w-10 h-10 rounded-xl bg-blue-50 text-blue-600 inline-flex items-center justify-center"><i class="fa-solid fa-flask"></i></span>
-              <div><strong class="text-slate-800">Math Lab siap</strong><p class="text-xs text-slate-500 mt-0.5">Practice belum dimulai</p></div>
+              <div><strong class="text-slate-800">Math Lab siap</strong><p class="text-xs text-slate-500 mt-0.5">Shared Practice Engine</p></div>
             </div>
           </aside>
 
-          <section id="learning-practice" class="math-lab-card lg:col-span-2">
-            <div class="section-title"><div><h3>Practice</h3><p>Area sesi latihan akan menggunakan engine Math Lab yang sama.</p></div></div>
-            <div class="math-lab-status mt-4"><i class="fa-solid fa-hourglass-half mr-1"></i> Practice tersedia pada Step 4.</div>
+          <div id="math-lab-status" class="math-lab-status math-lab-hidden lg:col-span-3" role="status" aria-live="polite"></div>
+
+          <section id="math-lab-practice" class="math-lab-card math-lab-hidden lg:col-span-2" aria-live="polite">
+            <div class="math-lab-question-head">
+              <div><div id="math-lab-question-number" class="math-lab-question-number">Soal 1 dari 10</div><div id="math-lab-subtopic-label" class="math-lab-muted mt-1">Aljabar</div></div>
+              <div id="math-lab-progress-text" class="math-lab-muted">1/10</div>
+            </div>
+            <div class="math-lab-progress mt-3"><span id="math-lab-progress-bar" style="width:10%"></span></div>
+            <div id="math-lab-prompt" class="math-lab-question-prompt"></div>
+            <div id="math-lab-math" class="math-lab-math" aria-label="Ekspresi matematika"></div>
+            <div id="math-lab-answer" class="math-lab-options"></div>
+            <div id="math-lab-feedback" class="math-lab-feedback math-lab-hidden" aria-live="polite"></div>
+            <div class="math-lab-actions mt-5">
+              <button id="math-lab-prev" class="math-lab-btn math-lab-btn-quiet" type="button"><i class="fa-solid fa-arrow-left"></i> Sebelumnya</button>
+              <button id="math-lab-submit" class="math-lab-btn math-lab-btn-primary" type="button">Kirim Jawaban</button>
+              <button id="math-lab-next" class="math-lab-btn math-lab-btn-secondary" type="button">Berikutnya <i class="fa-solid fa-arrow-right"></i></button>
+              <button id="math-lab-finish" class="math-lab-btn math-lab-btn-primary math-lab-hidden" type="button"><i class="fa-solid fa-check"></i> Selesaikan</button>
+            </div>
           </section>
 
-          <section id="learning-history" class="math-lab-card">
-            <div class="section-title"><div><h3>Riwayat Latihan</h3><p>Hasil milik akun ini.</p></div></div>
-            <div class="math-lab-status mt-4">Riwayat akan dihubungkan ke persistence pada langkah berikutnya.</div>
+          <section id="math-lab-result" class="math-lab-card math-lab-hidden">
+            <p class="math-lab-eyebrow">Hasil Practice</p>
+            <div class="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4 mt-2">
+              <div><div id="math-lab-result-score" class="math-lab-result-score">0</div><p class="math-lab-muted mt-2">Skor latihan</p></div>
+              <div><p id="math-lab-result-summary" class="text-sm font-semibold text-slate-700">-</p><p id="math-lab-result-trust" class="math-lab-trust mt-2">Hasil latihan — client-untrusted</p></div>
+            </div>
+            <div class="math-lab-actions mt-5"><button id="math-lab-new" class="math-lab-btn math-lab-btn-primary" type="button"><i class="fa-solid fa-rotate-right"></i> Latihan Lagi</button></div>
+          </section>
+
+          <section id="learning-history" class="math-lab-card lg:col-span-3">
+            <div class="section-title">
+              <div><h3>Riwayat Latihan</h3><p>Riwayat hanya menampilkan hasil milik akun admin yang sedang login.</p></div>
+              <button id="math-lab-refresh-history" class="small-action bg-slate-100 text-slate-700" type="button"><i class="fa-solid fa-rotate"></i> Muat ulang</button>
+            </div>
+            <div id="math-lab-history-list" class="math-lab-history mt-4"><div class="math-lab-status">Memuat riwayat...</div></div>
           </section>
         </div>
       </div>
@@ -83,6 +113,22 @@
     <script src="https://www.gstatic.com/firebasejs/12.16.0/firebase-firestore-compat.js"></script>
     <script src="firebase-config.js"></script>
     <script src="firebase-api.js"></script>
+
+    <script src="math-lab/core/contracts/taxonomy.js"></script>
+    <script src="math-lab/core/contracts/math-renderer.js"></script>
+    <script src="math-lab/core/contracts/evaluation.js"></script>
+    <script src="math-lab/core/contracts/session.js"></script>
+    <script src="math-lab/core/contracts/result.js"></script>
+    <script type="module" src="math-lab/core/question-system/browser.js"></script>
+    <script src="math-lab/core/math-renderer/katex-loader.js"></script>
+    <script src="math-lab/core/math-renderer/math-renderer.js"></script>
+    <script src="math-lab/core/answer-evaluator.js"></script>
+    <script src="math-lab/core/practice-session.js"></script>
+    <script src="math-lab/core/firestore/practice-persistence.js"></script>
+    <script src="math-lab/content/pilot/algebra-practice.js"></script>
+    <script src="math-lab/ui/student-math-lab.js"></script>
+    <script src="math-lab/admin-math-lab.js"></script>
+
     <script>
       firebasePortal.guard(["admin"]);
     </script>
