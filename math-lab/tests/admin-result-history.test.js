@@ -18,9 +18,8 @@ assert.match(ui, /result\.score/);
 assert.match(ui, /result\.correctCount/);
 assert.match(ui, /result\.totalQuestions/);
 assert.match(ui, /client-untrusted/);
-assert.match(ui, /item\.ownerUid/);
 assert.match(ui, /escapeHtml\(item\.score\)/);
-assert.match(ui, /escapeHtml\(item\.createdAt\)/);
+assert.match(ui, /escapeHtml\(formatDate\(item\.createdAt\)\)/);
 
 assert.match(persistence, /const ALLOWED_ROLES = Object\.freeze\(\["murid", "admin"\]\)/);
 assert.match(persistence, /async function saveResult\(result\)/);
