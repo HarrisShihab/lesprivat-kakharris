@@ -51,3 +51,11 @@ function dismissSemuaNotif() {
   localStorage.setItem("notif_dismissed", JSON.stringify(list));
   muatNotifikasi();
 }
+
+// Load Math Lab's admin-only navigation entry without coupling its UI logic to this shared file.
+if (document.body?.classList.contains("dashboard-admin")) {
+  const script = document.createElement("script");
+  script.src = "math-lab/admin-entry.js";
+  script.defer = true;
+  document.head.appendChild(script);
+}
