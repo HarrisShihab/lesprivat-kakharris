@@ -8,107 +8,71 @@
 })(typeof globalThis !== "undefined" ? globalThis : this, function (root) {
   "use strict";
 
-  const diagnosticContract = typeof require === "function"
-    ? require("./contracts/diagnostic.js")
-    : (root.KakHarrisMathLab && root.KakHarrisMathLab.contracts && root.KakHarrisMathLab.contracts.diagnostic);
+  const diagnosticContract = typeof require === "function" ? require("./contracts/diagnostic.js") : root.KakHarrisMathLab.contracts.diagnostic;
+  const evidenceContract = typeof require === "function" ? require("./contracts/indicator-evidence.js") : root.KakHarrisMathLab.contracts.indicatorEvidence;
 
-  function clone(value) {
-    return JSON.parse(JSON.stringify(value));
-  }
+  function clone(value) { return JSON.parse(JSON.stringify(value)); }
 
   function assertQuestionBundle(bundle, index) {
-    if (!bundle || typeof bundle !== "object") {
-      throw new TypeError(`Question bundle at index ${index} must be an object.`);
-    }
-    if (!bundle.question || typeof bundle.question !== "object") {
-      throw new TypeError(`Question bundle at index ${index} must contain question.`);
-    }
-    if (!bundle.evaluation || typeof bundle.evaluation !== "object") {
-      throw new TypeError(`Question bundle at index ${index} must contain evaluation.`);
-    }
-    if (typeof bundle.question.questionId !== "string" || !bundle.question.questionId) {
-      throw new TypeError(`Question bundle at index ${index} must contain question.questionId.`);
-    }
+    if (!bundle || typeof bundle !== "object") throw new TypeError(`Question bundle at index ${index} must be an object.`);
+    if (!bundle.question || typeof bundle.question !== "object") throw new TypeError(`Question bundle at index ${index} must contain question.`);
+    if (!bundle.evaluation || typeof bundle.evaluation !== "object") throw new TypeError(`Question bundle at index ${index} must contain evaluation.`);
+    if (typeof bundle.question.questionId !== "string" || !bundle.question.questionId) throw new TypeError(`Question bundle at index ${index} must contain question.questionId.`);
+    if (!Array.isArray(bundle.question.indicatorIds)) throw new TypeError(`Question bundle at index ${index} must contain indicatorIds array.`);
   }
 
   function assertResponse(response, index) {
-    if (!response || typeof response !== "object") {
-      throw new TypeError(`Diagnostic response at index ${index} must be an object.`);
-    }
-    if (typeof response.questionId !== "string" || !response.questionId) {
-      throw new TypeError(`Diagnostic response at index ${index} must contain questionId.`);
-    }
-    if (typeof response.isCorrect !== "boolean") {
-      throw new TypeError(`Diagnostic response at index ${index} must contain boolean isCorrect.`);
-    }
+    if (!response || typeof response !== "object") throw new TypeError(`Diagnostic response at index ${index} must be an object.`);
+    if (typeof response.questionId !== "string" || !response.questionId) throw new TypeError(`Diagnostic response at index ${index} must contain questionId.`);
+    if (typeof response.isCorrect !== "boolean") throw new TypeError(`Diagnostic response at index ${index} must contain boolean isCorrect.`);
   }
 
   function validateInput(input) {
     const value = input || {};
     const questions = Array.isArray(value.questions) ? value.questions : [];
     const responses = Array.isArray(value.responses) ? value.responses : [];
-
     questions.forEach(assertQuestionBundle);
     responses.forEach(assertResponse);
-
     const questionIds = new Set(questions.map((bundle) => bundle.question.questionId));
     const responseIds = new Set();
-
     responses.forEach((response, index) => {
-      if (!questionIds.has(response.questionId)) {
-        throw new Error(`Diagnostic response at index ${index} references unknown questionId: ${response.questionId}.`);
-      }
-      if (responseIds.has(response.questionId)) {
-        throw new Error(`Duplicate diagnostic response for questionId: ${response.questionId}.`);
-      }
+      if (!questionIds.has(response.questionId)) throw new Error(`Diagnostic response at index ${index} references unknown questionId: ${response.questionId}.`);
+      if (responseIds.has(response.questionId)) throw new Error(`Duplicate diagnostic response for questionId: ${response.questionId}.`);
       responseIds.add(response.questionId);
     });
+    return { contractVersion: diagnosticContract.CONTRACT_VERSION, sessionType: diagnosticContract.SESSION_TYPE, sessionId: value.sessionId ?? null, questions: clone(questions), responses: clone(responses) };
+  }
 
-    return {
-      contractVersion: diagnosticContract.CONTRACT_VERSION,
-      sessionType: diagnosticContract.SESSION_TYPE,
-      sessionId: value.sessionId ?? null,
-      questions: clone(questions),
-      responses: clone(responses),
-    };
+  function buildDefaultEvidence(input) {
+    const responseByQuestionId = new Map(input.responses.map((response) => [response.questionId, response]));
+    const evidence = [];
+    input.questions.forEach((bundle) => {
+      const question = bundle.question;
+      const response = responseByQuestionId.get(question.questionId) || null;
+      const evidenceType = !response ? "unanswered" : (response.isCorrect ? "correct" : "incorrect");
+      question.indicatorIds.forEach((indicatorId) => evidence.push(evidenceContract.create({
+        questionId: question.questionId,
+        indicatorId,
+        evidenceType,
+        evaluationCode: response ? (response.evaluationCode ?? null) : null,
+        misconceptionCode: response ? (response.misconceptionCode ?? null) : null,
+      })));
+    });
+    return evidence;
   }
 
   function createProvider(options) {
     const value = options || {};
-    const evidenceBuilder = typeof value.buildEvidence === "function" ? value.buildEvidence : null;
-
-    function createInput(input) {
-      return validateInput(diagnosticContract.create(input));
-    }
-
+    const evidenceBuilder = typeof value.buildEvidence === "function" ? value.buildEvidence : buildDefaultEvidence;
+    function createInput(input) { return validateInput(diagnosticContract.create(input)); }
     function analyze(input) {
       const normalized = createInput(input);
-      if (!evidenceBuilder) {
-        return Object.freeze({
-          input: normalized,
-          indicatorEvidence: [],
-          errorMappings: [],
-          mastery: [],
-          recommendations: [],
-        });
-      }
-
       const evidence = evidenceBuilder(normalized);
-      if (!Array.isArray(evidence)) {
-        throw new TypeError("Diagnostic evidence builder must return an array.");
-      }
-
-      return Object.freeze({
-        input: normalized,
-        indicatorEvidence: clone(evidence),
-        errorMappings: [],
-        mastery: [],
-        recommendations: [],
-      });
+      if (!Array.isArray(evidence)) throw new TypeError("Diagnostic evidence builder must return an array.");
+      return Object.freeze({ input: normalized, indicatorEvidence: clone(evidence), errorMappings: [], mastery: [], recommendations: [] });
     }
-
     return Object.freeze({ createInput, analyze });
   }
 
-  return Object.freeze({ createProvider, validateInput });
+  return Object.freeze({ createProvider, validateInput, buildDefaultEvidence });
 });
