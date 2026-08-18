@@ -6,8 +6,8 @@ const entry = fs.readFileSync(path.join(__dirname, "admin-entry.js"), "utf8");
 const learningPage = fs.readFileSync(path.join(__dirname, "..", "math-lab-my-learning.html"), "utf8");
 const notifier = fs.readFileSync(path.join(__dirname, "..", "notifikasi.js"), "utf8");
 
-assert.match(entry, /id = "btn-math-lab"/, "Admin entry must create the Math Lab navigation element.");
-assert.match(entry, /href = "math-lab-my-learning\.html"/, "Admin entry must target My Learning.");
+assert.match(entry, /entry\.id = "btn-math-lab"/, "Admin entry must create the Math Lab navigation element.");
+assert.match(entry, /entry\.href = "math-lab-my-learning\.html"/, "Admin entry must target My Learning.");
 assert.match(entry, /Belajar Saya/, "Admin entry must be labeled Belajar Saya.");
 assert.match(entry, /fa-calculator/, "Admin entry must use the Math Lab calculator icon.");
 assert.match(entry, /dashboard-admin/, "Admin entry must be limited to the admin dashboard.");
