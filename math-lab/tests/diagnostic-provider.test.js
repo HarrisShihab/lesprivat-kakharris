@@ -61,18 +61,31 @@ function testRejectsDuplicateResponse() {
   }), /Duplicate diagnostic response/);
 }
 
-function testAnalyzeExposesExplicitExtensionSlots() {
+function testAnalyzeRunsDiagnosticPipeline() {
   const provider = providerModule.createProvider();
   const result = provider.analyze({
+    sessionId: "diag-001",
     questions: [bundle("q-001", ["concept"])],
-    responses: [{ questionId: "q-001", isCorrect: true }],
+    responses: [{
+      questionId: "q-001",
+      isCorrect: false,
+      evaluationCode: "WRONG_OPTION",
+      misconceptionCode: null,
+    }],
   });
 
-  assert.strictEqual(result.input.sessionType, "diagnostic");
-  assert.deepStrictEqual(result.indicatorEvidence, []);
-  assert.deepStrictEqual(result.errorMappings, []);
-  assert.deepStrictEqual(result.mastery, []);
-  assert.deepStrictEqual(result.recommendations, []);
+  assert.strictEqual(result.sessionType, "diagnostic");
+  assert.strictEqual(result.sessionId, "diag-001");
+  assert.strictEqual(result.trustStatus, "client-untrusted");
+  assert.strictEqual(result.diagnosticSummary.questionCount, 1);
+  assert.strictEqual(result.diagnosticSummary.responseCount, 1);
+  assert.strictEqual(result.diagnosticSummary.correctCount, 0);
+  assert.strictEqual(result.indicatorEvidence.length, 1);
+  assert.strictEqual(result.errorMappings.length, 1);
+  assert.strictEqual(result.mastery.length, 1);
+  assert.strictEqual(result.recommendations.length, 1);
+  assert.strictEqual(result.mastery[0].indicatorId, "concept");
+  assert.strictEqual(result.mastery[0].level, "insufficient");
   assert.ok(Object.isFrozen(result));
 }
 
@@ -93,13 +106,14 @@ function testEvidenceBuilderIsInjectedWithoutCouplingToPracticeEngine() {
   assert.strictEqual(received.sessionType, "diagnostic");
   assert.strictEqual(result.indicatorEvidence.length, 1);
   assert.strictEqual(result.indicatorEvidence[0].indicatorId, "concept");
+  assert.strictEqual(result.mastery[0].level, "mastered");
 }
 
 const tests = [
   ["diagnostic-provider-normalization", testCreateInputNormalizesDiagnosticBoundary],
   ["diagnostic-provider-unknown-question", testRejectsResponseForUnknownQuestion],
   ["diagnostic-provider-duplicate-response", testRejectsDuplicateResponse],
-  ["diagnostic-provider-extension-slots", testAnalyzeExposesExplicitExtensionSlots],
+  ["diagnostic-provider-pipeline", testAnalyzeRunsDiagnosticPipeline],
   ["diagnostic-provider-evidence-extension", testEvidenceBuilderIsInjectedWithoutCouplingToPracticeEngine],
 ];
 
