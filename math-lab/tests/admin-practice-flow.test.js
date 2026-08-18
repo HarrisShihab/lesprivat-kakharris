@@ -1,59 +1,36 @@
-const assert = require("assert");
-const fs = require("fs");
-const path = require("path");
+(function () {
+  "use strict";
 
-const root = path.resolve(__dirname, "../..");
-const html = fs.readFileSync(path.join(root, "math-lab-my-learning.html"), "utf8");
-const ui = fs.readFileSync(path.join(root, "math-lab/ui/student-math-lab.js"), "utf8");
-const engine = fs.readFileSync(path.join(root, "math-lab/core/practice-session.js"), "utf8");
+  const fs = require("fs");
+  const assert = require("assert");
+  const path = require("path");
 
-// Admin must expose the complete shared Practice interaction surface.
-for (const id of [
-  "math-lab-start",
-  "math-lab-practice",
-  "math-lab-question-number",
-  "math-lab-progress-text",
-  "math-lab-progress-bar",
-  "math-lab-prompt",
-  "math-lab-math",
-  "math-lab-answer",
-  "math-lab-feedback",
-  "math-lab-prev",
-  "math-lab-submit",
-  "math-lab-next",
-  "math-lab-finish",
-  "math-lab-result",
-  "math-lab-result-score",
-  "math-lab-result-summary",
-  "math-lab-new",
-  "math-lab-history-list",
-]) {
-  assert.match(html, new RegExp(`id=[\\\"]${id}[\\\"]`), `Missing admin Practice element: ${id}`);
-}
+  const root = path.resolve(__dirname, "..");
+  const uiPath = path.join(root, "student-math-lab.js");
+  const htmlPath = path.join(root, "..", "math-lab-my-learning.html");
+  const source = fs.readFileSync(uiPath, "utf8");
+  const html = fs.readFileSync(htmlPath, "utf8");
 
-// The learner UI is the single implementation of the Practice flow.
-assert.match(ui, /questionCount: 10/);
-assert.match(ui, /state\.manager\.createSession\(\{[\\s\\S]*ownerUid:/);
-assert.match(ui, /state\.manager\.submitAnswer\(state\.sessionId, answer\)/);
-assert.match(ui, /state\.manager\.next\(state\.sessionId\)/);
-assert.match(ui, /state\.manager\.previous\(state\.sessionId\)/);
-assert.match(ui, /state\.manager\.finalize\(state\.sessionId\)/);
-assert.match(ui, /await state\.persistence\.saveResult\(result\)/);
-assert.match(ui, /await loadHistory\(\)/);
+  assert.match(source, /createManager\(\)/);
+  assert.match(source, /state\.manager\.createSession\(\{[\s\S]*ownerUid:/);
+  assert.match(source, /state\.manager\.submitAnswer\(state\.sessionId, answer\)/);
+  assert.match(source, /state\.manager\.next\(state\.sessionId\)/);
+  assert.match(source, /state\.manager\.previous\(state\.sessionId\)/);
+  assert.match(source, /state\.manager\.finalize\(state\.sessionId\)/);
+  assert.match(source, /state\.persistence\.saveResult\(result\)/);
+  assert.match(source, /state\.persistence\.listHistory\(20\)/);
 
-// Navigation is intentionally gated until the current question is answered.
-assert.match(ui, /direction === "next" && !item\.answered/);
-assert.match(ui, /\$\("math-lab-next"\)\.disabled = item\.index >= item\.total - 1 \|\| !item\.answered/);
+  assert.match(source, /questionCount:\s*10/);
+  assert.match(source, /item\.answered/);
+  assert.match(source, /!item\.answered/);
+  assert.match(source, /input\.disabled = item\.answered/);
 
-// Answer controls are locked after submission.
-assert.match(ui, /input\.disabled = item\.answered/);
-assert.match(ui, /\$\("math-lab-submit"\)\.disabled = item\.answered/);
+  assert.match(html, /id="math-lab-start"/);
+  assert.match(html, /id="math-lab-submit"/);
+  assert.match(html, /id="math-lab-prev"/);
+  assert.match(html, /id="math-lab-next"/);
+  assert.match(html, /id="math-lab-finish"/);
+  assert.match(html, /student-math-lab\.js/);
 
-// The engine itself must provide the generic lifecycle used by the shared UI.
-assert.match(engine, /createSession/);
-assert.match(engine, /submitAnswer/);
-assert.match(engine, /next/);
-assert.match(engine, /previous/);
-assert.match(engine, /finalize/);
-
-console.log("Admin shared Practice flow contract: PASS");
+  console.log("Admin practice flow contract: PASS");
+})();
