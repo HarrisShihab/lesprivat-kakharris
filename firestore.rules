@@ -214,6 +214,67 @@ service cloud.firestore {
       allow read, write: if admin();
     }
 
+    // Math Lab MVP: Practice only. Client-written scores/results are explicitly
+    // untrusted until a trusted backend is selected and implemented.
+    function mathLabUser() {
+      return active() && myUser().role in ["murid", "admin"];
+    }
+
+    function ownsMathLabDocument() {
+      return mathLabUser() && request.auth.uid == resource.data.ownerUid;
+    }
+
+    function ownsMathLabCreate() {
+      return mathLabUser() && request.auth.uid == request.resource.data.ownerUid;
+    }
+
+    match /mathSessions/{sessionId} {
+      allow get, list: if mathLabUser() && resource.data.ownerUid == request.auth.uid;
+      allow create: if mathLabUser()
+        && sessionId == request.resource.data.sessionId
+        && ownsMathLabCreate()
+        && request.resource.data.sessionType == "practice"
+        && request.resource.data.trustStatus == "client-untrusted";
+      allow update: if ownsMathLabDocument()
+        && request.resource.data.ownerUid == resource.data.ownerUid
+        && request.resource.data.sessionId == resource.data.sessionId
+        && request.resource.data.sessionType == resource.data.sessionType
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly([
+          "currentIndex", "status", "finishedAt", "responses", "updatedAt", "trustStatus"
+        ])
+        && request.resource.data.trustStatus == "client-untrusted";
+      allow delete: if false;
+    }
+
+    match /mathResults/{resultId} {
+      allow get, list: if mathLabUser() && resource.data.ownerUid == request.auth.uid;
+      allow create: if mathLabUser()
+        && resultId == request.resource.data.resultId
+        && ownsMathLabCreate()
+        && request.resource.data.sessionType == "practice"
+        && request.resource.data.trustStatus == "client-untrusted"
+        && request.resource.data.diagnosticSummary == null
+        && request.resource.data.mastery == null
+        && request.resource.data.recommendations.size() == 0;
+      allow update, delete: if false;
+    }
+
+    match /mathContent/{docId} {
+      allow read, write: if false;
+    }
+
+    match /mathEvaluations/{docId} {
+      allow read, write: if false;
+    }
+
+    match /mathMastery/{docId} {
+      allow read, write: if false;
+    }
+
+    match /mathTaxonomy/{docId} {
+      allow read, write: if false;
+    }
+
     match /{document=**} {
       allow read, write: if false;
     }

@@ -100,6 +100,7 @@
       beranda: role === "orangtua" ? "Beranda Administrasi" : "Beranda Belajar",
       profil: "Profil Saya",
       "ruang-belajar": "Ruang Belajar",
+      "math-lab": "Math Lab",
       pengaturan: "Pengaturan Akun",
     };
     text("page-title", titles[target]);
@@ -640,6 +641,27 @@
     });
   }
 
+
+  function waitForQuestionSystem(timeoutMs = 10000) {
+    const existing = window.KakHarrisMathLab?.questionSystemReady;
+    if (existing && typeof existing.then === "function") return existing;
+    if (window.KakHarrisMathLab?.questionSystem?.createPilotProvider) return Promise.resolve(window.KakHarrisMathLab.questionSystem);
+
+    return new Promise((resolve, reject) => {
+      let timer = null;
+      const cleanup = () => {
+        window.removeEventListener("math-lab:question-system-ready", onReady);
+        window.removeEventListener("math-lab:question-system-error", onError);
+        if (timer) clearTimeout(timer);
+      };
+      const onReady = () => { cleanup(); resolve(window.KakHarrisMathLab?.questionSystem || null); };
+      const onError = (event) => { cleanup(); reject(event.detail instanceof Error ? event.detail : new Error("Question System gagal dimuat.")); };
+      window.addEventListener("math-lab:question-system-ready", onReady, { once: true });
+      window.addEventListener("math-lab:question-system-error", onError, { once: true });
+      timer = setTimeout(() => { cleanup(); reject(new Error("Question System belum selesai dimuat di browser.")); }, timeoutMs);
+    });
+  }
+
   async function init() {
     bindEvents();
     try {
@@ -655,6 +677,10 @@
       else await loadStudentData();
       $("page-loader")?.classList.add("hidden");
       $("portal-app")?.classList.remove("hidden");
+      if (role === "murid" && window.KakHarrisMathLab?.studentUI?.init) {
+        const questionSystem = await waitForQuestionSystem();
+        await window.KakHarrisMathLab.studentUI.init({ profile: state.profile, student: state.student, questionSystem });
+      }
     } catch (error) {
       console.error("Portal:", error);
       if ($("page-loader")) {
