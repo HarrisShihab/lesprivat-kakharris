@@ -18,7 +18,7 @@ const requiredTests = [
 const tests = fs.readdirSync(testsDir)
   .filter((name) => name.endsWith(".test.js"))
   .sort()
-  .map((name) => path.join(testsDir, "tests", name));
+  .map((name) => path.join(testsDir, name));
 
 if (tests.length === 0) {
   console.error("No Math Lab test files found.");
