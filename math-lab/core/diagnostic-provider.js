@@ -10,6 +10,10 @@
 
   const diagnosticContract = typeof require === "function" ? require("./contracts/diagnostic.js") : root.KakHarrisMathLab.contracts.diagnostic;
   const evidenceContract = typeof require === "function" ? require("./contracts/indicator-evidence.js") : root.KakHarrisMathLab.contracts.indicatorEvidence;
+  const errorMapper = typeof require === "function" ? require("./diagnostic-error-mapper.js") : root.KakHarrisMathLab.diagnostic.errorMapper;
+  const masteryEngine = typeof require === "function" ? require("./diagnostic-mastery.js") : root.KakHarrisMathLab.diagnostic.mastery;
+  const recommendationEngine = typeof require === "function" ? require("./diagnostic-recommendation.js") : root.KakHarrisMathLab.diagnostic.recommendation;
+  const resultContract = typeof require === "function" ? require("./contracts/diagnostic-result.js") : root.KakHarrisMathLab.contracts.diagnosticResult;
 
   function clone(value) { return JSON.parse(JSON.stringify(value)); }
 
@@ -64,12 +68,34 @@
   function createProvider(options) {
     const value = options || {};
     const evidenceBuilder = typeof value.buildEvidence === "function" ? value.buildEvidence : buildDefaultEvidence;
+    const errorMapperFn = typeof value.mapErrors === "function" ? value.mapErrors : errorMapper.mapAll;
+    const masteryFn = typeof value.calculateMastery === "function" ? value.calculateMastery : masteryEngine.calculate;
+    const recommendationFn = typeof value.generateRecommendations === "function" ? value.generateRecommendations : recommendationEngine.generate;
+
     function createInput(input) { return validateInput(diagnosticContract.create(input)); }
     function analyze(input) {
       const normalized = createInput(input);
-      const evidence = evidenceBuilder(normalized);
-      if (!Array.isArray(evidence)) throw new TypeError("Diagnostic evidence builder must return an array.");
-      return Object.freeze({ input: normalized, indicatorEvidence: clone(evidence), errorMappings: [], mastery: [], recommendations: [] });
+      const indicatorEvidence = evidenceBuilder(normalized);
+      if (!Array.isArray(indicatorEvidence)) throw new TypeError("Diagnostic evidence builder must return an array.");
+      const errorMappings = errorMapperFn(indicatorEvidence);
+      const mastery = masteryFn(indicatorEvidence);
+      const recommendations = recommendationFn(mastery);
+      const summary = {
+        questionCount: normalized.questions.length,
+        responseCount: normalized.responses.length,
+        answeredCount: normalized.responses.length,
+        correctCount: normalized.responses.filter((response) => response.isCorrect).length,
+        indicatorCount: mastery.length,
+      };
+      return resultContract.create({
+        resultId: `DIAG_${normalized.sessionId || "UNASSIGNED"}`,
+        sessionId: normalized.sessionId,
+        diagnosticSummary: summary,
+        indicatorEvidence,
+        errorMappings,
+        mastery,
+        recommendations,
+      });
     }
     return Object.freeze({ createInput, analyze });
   }
