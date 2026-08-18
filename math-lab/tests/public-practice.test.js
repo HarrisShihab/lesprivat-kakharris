@@ -18,10 +18,10 @@ function testPublicPageContract() {
   assert.match(html, /Coba 5 Soal Aljabar/);
   assert.match(html, /Tidak perlu login/);
   assert.match(html, /temporary|sementara/i);
-  assert.match(html, /login\\.html\\?next=murid-dashboard\\.html/);
-  assert.match(html, /math-lab-public\\.js/);
-  assert.doesNotMatch(html, /practice-persistence\\.js/);
-  assert.doesNotMatch(html, /firebase-config\\.js/);
+  assert.match(html, /login[.]html[?]next=murid-dashboard[.]html/);
+  assert.match(html, /math-lab-public[.]js/);
+  assert.doesNotMatch(html, /practice-persistence[.]js/);
+  assert.doesNotMatch(html, /firebase-config[.]js/);
 }
 
 function testPublicScriptContract() {
