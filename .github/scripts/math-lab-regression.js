@@ -13,6 +13,7 @@ const requiredTests = [
   "admin-practice-flow.test.js",
   "admin-result-history.test.js",
   "admin-security-boundary.test.js",
+  "public-practice.test.js",
 ];
 
 const tests = fs.readdirSync(testsDir)
@@ -27,7 +28,7 @@ if (tests.length === 0) {
 
 const missingRequired = requiredTests.filter((name) => !fs.existsSync(path.join(testsDir, name)));
 if (missingRequired.length > 0) {
-  console.error(`Missing required Phase 9 tests: ${missingRequired.join(", ")}`);
+  console.error(`Missing required Math Lab tests: ${missingRequired.join(", ")}`);
   process.exit(1);
 }
 
@@ -81,6 +82,6 @@ for (const test of tests) {
 
 console.log(`\nMath Lab regression: ${tests.length - failed}/${tests.length} test files passed.`);
 console.log(`Math Lab syntax check: ${sourceFiles.length} JavaScript files checked.`);
-console.log(`Phase 9 required tests: ${requiredTests.length}/${requiredTests.length} present.`);
+console.log(`Required Math Lab tests: ${requiredTests.length}/${requiredTests.length} present.`);
 
 if (failed > 0) process.exit(1);
