@@ -1,0 +1,34 @@
+name: Math Lab Regression
+
+on:
+  push:
+    paths:
+      - 'math-lab/**'
+      - '.github/workflows/math-lab.yml'
+      - '.github/scripts/math-lab-regression.js'
+  pull_request:
+    paths:
+      - 'math-lab/**'
+      - '.github/workflows/math-lab.yml'
+      - '.github/scripts/math-lab-regression.js'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    name: Math Lab tests
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+
+      - name: Run Math Lab regression
+        run: node .github/scripts/math-lab-regression.js
