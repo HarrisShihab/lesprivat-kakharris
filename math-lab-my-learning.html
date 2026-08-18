@@ -3,23 +3,113 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Belajar Saya - Math Lab</title>
+    <meta name="theme-color" content="#1d4ed8" />
+    <title>Belajar Saya — Math Lab</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css" />
     <link rel="stylesheet" href="style.css" />
+    <link rel="stylesheet" href="dashboard-design.css" />
+    <link rel="stylesheet" href="math-lab/ui/math-lab.css" />
   </head>
-  <body class="min-h-screen bg-slate-50 text-slate-700">
-    <main class="max-w-4xl mx-auto px-6 py-10">
-      <a href="dashboard.html" class="inline-flex items-center gap-2 text-sm text-blue-600 hover:text-blue-700 font-semibold">
-        ← Kembali ke Dashboard Admin
-      </a>
+  <body data-portal-role="admin" class="bg-slate-50 text-slate-700">
+    <div id="page-loader" class="page-loader">
+      <i class="fa-solid fa-circle-notch fa-spin"></i>
+      <span>Memuat Math Lab...</span>
+    </div>
 
-      <section class="mt-8 bg-white rounded-2xl border border-slate-200 shadow-sm p-6 lg:p-8">
-        <p class="text-sm font-semibold text-blue-600">Math Lab</p>
-        <h1 class="mt-2 text-2xl lg:text-3xl font-bold text-slate-800">Belajar Saya</h1>
-        <p class="mt-3 text-slate-500">
-          Ruang belajar pribadi admin. Practice dan riwayat akan diintegrasikan pada langkah berikutnya.
-        </p>
-      </section>
+    <main id="math-lab-app" class="min-h-screen hidden">
+      <div class="max-w-6xl mx-auto px-5 py-6 lg:px-8 lg:py-10">
+        <header class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-8">
+          <div>
+            <p class="text-xs text-slate-400">Dashboard Admin · Math Lab</p>
+            <h1 class="text-2xl lg:text-3xl font-bold text-slate-800 mt-1">Belajar Saya</h1>
+            <p class="text-sm text-slate-500 mt-2">Ruang latihan pribadi untuk mengerjakan dan meninjau hasil belajar.</p>
+          </div>
+          <a href="dashboard.html" class="inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-white border border-slate-200 text-slate-700 font-semibold text-sm hover:bg-slate-50 transition shadow-sm">
+            <i class="fa-solid fa-arrow-left"></i>
+            Kembali ke Dashboard
+          </a>
+        </header>
+
+        <div class="grid lg:grid-cols-3 gap-6 items-start">
+          <section id="learning-target" class="math-lab-card lg:col-span-2">
+            <p class="math-lab-eyebrow">Target Belajar</p>
+            <h2 class="math-lab-title mt-1">Pilih latihan yang ingin dikerjakan</h2>
+            <p class="math-lab-muted mt-2">Target akan dihubungkan ke Practice Engine pada langkah berikutnya.</p>
+
+            <div class="math-lab-grid mt-6">
+              <div class="math-lab-field">
+                <label for="math-lab-level">Jenjang</label>
+                <select id="math-lab-level" class="math-lab-select" disabled>
+                  <option>SMP</option>
+                </select>
+              </div>
+              <div class="math-lab-field">
+                <label for="math-lab-grade">Kelas</label>
+                <select id="math-lab-grade" class="math-lab-select" disabled>
+                  <option>Kelas 7</option>
+                </select>
+              </div>
+              <div class="math-lab-field">
+                <label for="math-lab-topic">Materi</label>
+                <select id="math-lab-topic" class="math-lab-select" disabled>
+                  <option>Aljabar</option>
+                </select>
+              </div>
+              <div class="math-lab-field">
+                <label for="math-lab-subtopic">Submateri</label>
+                <select id="math-lab-subtopic" class="math-lab-select" disabled>
+                  <option>Pilot Phase 9</option>
+                </select>
+              </div>
+            </div>
+
+            <div class="math-lab-status info mt-5">
+              <i class="fa-solid fa-circle-info mr-1"></i>
+              Pilihan target bersifat tampilan saja pada Step 3. Belum ada sesi latihan yang dijalankan.
+            </div>
+          </section>
+
+          <aside class="math-lab-card">
+            <p class="math-lab-eyebrow">Status</p>
+            <div class="mt-3 flex items-center gap-3">
+              <span class="w-10 h-10 rounded-xl bg-blue-50 text-blue-600 inline-flex items-center justify-center">
+                <i class="fa-solid fa-flask"></i>
+              </span>
+              <div>
+                <strong class="text-slate-800">Math Lab siap</strong>
+                <p class="text-xs text-slate-500 mt-0.5">Practice belum dimulai</p>
+              </div>
+            </div>
+          </aside>
+
+          <section id="learning-practice" class="math-lab-card lg:col-span-2">
+            <div class="section-title">
+              <div>
+                <h3>Practice</h3>
+                <p>Area sesi latihan akan menggunakan engine Math Lab yang sama.</p>
+              </div>
+            </div>
+            <div class="math-lab-status mt-4">
+              <i class="fa-solid fa-hourglass-half mr-1"></i>
+              Practice tersedia pada Step 4.
+            </div>
+          </section>
+
+          <section id="learning-history" class="math-lab-card">
+            <div class="section-title">
+              <div>
+                <h3>Riwayat Latihan</h3>
+                <p>Hasil milik akun ini.</p>
+              </div>
+            </div>
+            <div class="math-lab-status mt-4">
+              Riwayat akan dihubungkan ke persistence pada langkah berikutnya.
+            </div>
+          </section>
+        </div>
+      </div>
     </main>
 
     <script src="https://www.gstatic.com/firebasejs/12.16.0/firebase-app-compat.js"></script>
@@ -28,7 +118,10 @@
     <script src="firebase-config.js"></script>
     <script src="firebase-api.js"></script>
     <script>
-      firebasePortal.guard(["admin"]);
+      firebasePortal.guard(["admin"]).then(() => {
+        document.getElementById("page-loader")?.classList.add("hidden");
+        document.getElementById("math-lab-app")?.classList.remove("hidden");
+      });
     </script>
   </body>
 </html>
