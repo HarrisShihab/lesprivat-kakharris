@@ -7,6 +7,7 @@ const path = require("path");
 const repoRoot = path.resolve(__dirname, "../..");
 const html = fs.readFileSync(path.join(repoRoot, "math-lab-public.html"), "utf8");
 const script = fs.readFileSync(path.join(repoRoot, "math-lab-public.js"), "utf8");
+const publicScript = fs.readFileSync(path.join(repoRoot, "public.js"), "utf8");
 
 const questionSystem = require(path.join(repoRoot, "math-lab/core/question-system/index.js"));
 const practiceSession = require(path.join(repoRoot, "math-lab/core/practice-session.js"));
@@ -22,6 +23,14 @@ function testPublicPageContract() {
   assert.match(html, /math-lab-public[.]js/);
   assert.doesNotMatch(html, /practice-persistence[.]js/);
   assert.doesNotMatch(html, /firebase-config[.]js/);
+}
+
+function testPublicEntryPointContract() {
+  assert.match(publicScript, /math-lab-public[.]html/);
+  assert.match(publicScript, /Free Math Lab/);
+  assert.match(publicScript, /Coba 5 Soal Gratis/);
+  assert.match(publicScript, /public-nav/);
+  assert.match(publicScript, /hero-actions/);
 }
 
 function testPublicScriptContract() {
@@ -87,6 +96,7 @@ function testAnonymousPracticeFlow() {
 
 const tests = [
   ["public-page-contract", testPublicPageContract],
+  ["public-entry-point-contract", testPublicEntryPointContract],
   ["public-script-contract", testPublicScriptContract],
   ["anonymous-practice-flow", testAnonymousPracticeFlow],
 ];
