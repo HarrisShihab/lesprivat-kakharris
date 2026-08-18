@@ -6,7 +6,7 @@
   const path = require("path");
 
   const root = path.resolve(__dirname, "..");
-  const uiPath = path.join(root, "student-math-lab.js");
+  const uiPath = path.join(root, "ui", "student-math-lab.js");
   const htmlPath = path.join(root, "..", "math-lab-my-learning.html");
   const source = fs.readFileSync(uiPath, "utf8");
   const html = fs.readFileSync(htmlPath, "utf8");
