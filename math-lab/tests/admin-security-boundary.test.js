@@ -2,6 +2,7 @@ const assert = require("assert");
 const fs = require("fs");
 const path = require("path");
 const persistence = require("../core/firestore/practice-persistence.js");
+const evaluatorApi = require("../core/answer-evaluator.js");
 
 const root = path.resolve(__dirname, "..");
 const rules = fs.readFileSync(path.join(root, "..", "firestore.rules"), "utf8");
@@ -29,7 +30,14 @@ assert.doesNotMatch(adminAdapter, /correctAnswer|evaluationRef|mathEvaluations|e
 // Admin page may load the public evaluator, but the page/adapter must not embed evaluator secrets.
 assert.doesNotMatch(adminHtml, /correctAnswer|evaluationRef|mathEvaluations|evaluationSpec/);
 assert.match(evaluator, /function publicResult\(evaluationResult\)/);
-assert.doesNotMatch(evaluator, /return Object\.freeze\(\{[\s\S]*correctAnswer/);
+const publicResult = evaluatorApi.publicResult({
+  isCorrect: true,
+  evaluationCode: "CORRECT",
+  misconceptionCode: null,
+  correctAnswer: "SECRET",
+});
+assert.deepStrictEqual(Object.keys(publicResult).sort(), ["evaluationCode", "isCorrect", "misconceptionCode", "outcome"].sort());
+assert.strictEqual(Object.prototype.hasOwnProperty.call(publicResult, "correctAnswer"), false);
 
 // Persistence explicitly permits admin and enforces ownerUid before reads/writes.
 assert.match(persistenceSource, /ALLOWED_ROLES = Object\.freeze\(\[\"murid\", \"admin\"\]\)/);
