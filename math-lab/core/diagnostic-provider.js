@@ -8,12 +8,24 @@
 })(typeof globalThis !== "undefined" ? globalThis : this, function (root) {
   "use strict";
 
-  const diagnosticContract = typeof require === "function" ? require("./contracts/diagnostic.js") : root.KakHarrisMathLab.contracts.diagnostic;
-  const evidenceContract = typeof require === "function" ? require("./contracts/indicator-evidence.js") : root.KakHarrisMathLab.contracts.indicatorEvidence;
-  const errorMapper = typeof require === "function" ? require("./diagnostic-error-mapper.js") : root.KakHarrisMathLab.diagnostic.errorMapper;
-  const masteryEngine = typeof require === "function" ? require("./diagnostic-mastery.js") : root.KakHarrisMathLab.diagnostic.mastery;
-  const recommendationEngine = typeof require === "function" ? require("./diagnostic-recommendation.js") : root.KakHarrisMathLab.diagnostic.recommendation;
-  const resultContract = typeof require === "function" ? require("./contracts/diagnostic-result.js") : root.KakHarrisMathLab.contracts.diagnosticResult;
+  const diagnosticContract = typeof require === "function"
+    ? require("./contracts/diagnostic.js")
+    : (root.KakHarrisMathLab && root.KakHarrisMathLab.contracts && root.KakHarrisMathLab.contracts.diagnostic);
+  const evidenceContract = typeof require === "function"
+    ? require("./contracts/indicator-evidence.js")
+    : (root.KakHarrisMathLab && root.KakHarrisMathLab.contracts && root.KakHarrisMathLab.contracts.indicatorEvidence);
+  const errorMapper = typeof require === "function"
+    ? require("./diagnostic-error-mapper.js")
+    : (root.KakHarrisMathLab && root.KakHarrisMathLab.diagnostic && root.KakHarrisMathLab.diagnostic.errorMapper);
+  const masteryEngine = typeof require === "function"
+    ? require("./diagnostic-mastery.js")
+    : (root.KakHarrisMathLab && root.KakHarrisMathLab.diagnostic && root.KakHarrisMathLab.diagnostic.mastery);
+  const recommendationEngine = typeof require === "function"
+    ? require("./diagnostic-recommendation.js")
+    : (root.KakHarrisMathLab && root.KakHarrisMathLab.diagnostic && root.KakHarrisMathLab.diagnostic.recommendation);
+  const resultContract = typeof require === "function"
+    ? require("./contracts/diagnostic-result.js")
+    : (root.KakHarrisMathLab && root.KakHarrisMathLab.contracts && root.KakHarrisMathLab.contracts.diagnosticResult);
 
   function clone(value) { return JSON.parse(JSON.stringify(value)); }
 
@@ -44,7 +56,13 @@
       if (responseIds.has(response.questionId)) throw new Error(`Duplicate diagnostic response for questionId: ${response.questionId}.`);
       responseIds.add(response.questionId);
     });
-    return { contractVersion: diagnosticContract.CONTRACT_VERSION, sessionType: diagnosticContract.SESSION_TYPE, sessionId: value.sessionId ?? null, questions: clone(questions), responses: clone(responses) };
+    return {
+      contractVersion: diagnosticContract.CONTRACT_VERSION,
+      sessionType: diagnosticContract.SESSION_TYPE,
+      sessionId: value.sessionId ?? null,
+      questions: clone(questions),
+      responses: clone(responses),
+    };
   }
 
   function buildDefaultEvidence(input) {
@@ -73,6 +91,7 @@
     const recommendationFn = typeof value.generateRecommendations === "function" ? value.generateRecommendations : recommendationEngine.generate;
 
     function createInput(input) { return validateInput(diagnosticContract.create(input)); }
+
     function analyze(input) {
       const normalized = createInput(input);
       const indicatorEvidence = evidenceBuilder(normalized);
@@ -87,7 +106,7 @@
         correctCount: normalized.responses.filter((response) => response.isCorrect).length,
         indicatorCount: mastery.length,
       };
-      return resultContract.create({
+      return Object.freeze(resultContract.create({
         resultId: `DIAG_${normalized.sessionId || "UNASSIGNED"}`,
         sessionId: normalized.sessionId,
         diagnosticSummary: summary,
@@ -95,7 +114,7 @@
         errorMappings,
         mastery,
         recommendations,
-      });
+      }));
     }
     return Object.freeze({ createInput, analyze });
   }
