@@ -3,6 +3,7 @@
   const api = factory();
   if (typeof module !== "undefined" && module.exports) module.exports = api;
   root.KakHarrisMathLab = root.KakHarrisMathLab || {};
+  root.KakHarrisMathLab.contracts = root.KakHarrisMathLab.contracts || {};
   root.KakHarrisMathLab.contracts.mastery = api;
 })(typeof globalThis !== "undefined" ? globalThis : this, function () {
   "use strict";
