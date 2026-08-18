@@ -1,0 +1,44 @@
+name: Math Lab Regression
+
+on:
+  push:
+    paths:
+      - 'math-lab/**'
+      - '.github/workflows/math-lab.yml'
+  pull_request:
+    paths:
+      - 'math-lab/**'
+      - '.github/workflows/math-lab.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    name: Math Lab tests
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+
+      - name: Run Math Lab regression
+        shell: bash
+        run: |
+          set -euo pipefail
+          shopt -s nullglob
+          tests=(math-lab/tests/*.test.js)
+          if [ ${#tests[@]} -eq 0 ]; then
+            echo 'No Math Lab test files found.'
+            exit 1
+          fi
+          for test in "${tests[@]}"; do
+            echo "=== ${test} ==="
+            node "${test}"
+          done
