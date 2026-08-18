@@ -19,12 +19,10 @@
   assert.match(source, /state\.manager\.finalize\(state\.sessionId\)/);
   assert.match(source, /state\.persistence\.saveResult\(result\)/);
   assert.match(source, /state\.persistence\.listHistory\(20\)/);
-
   assert.match(source, /questionCount:\s*10/);
   assert.match(source, /item\.answered/);
   assert.match(source, /!item\.answered/);
   assert.match(source, /input\.disabled = item\.answered/);
-
   assert.match(html, /id="math-lab-start"/);
   assert.match(html, /id="math-lab-submit"/);
   assert.match(html, /id="math-lab-prev"/);
