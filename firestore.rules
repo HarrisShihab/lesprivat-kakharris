@@ -58,7 +58,7 @@ service cloud.firestore {
               && request.resource.data.quotaSlot <= 2)
           || (request.resource.data.quotaSlot == 1
               && (!(get(/databases/$(database)/documents/murid/$(request.resource.data.idMurid)).data.paket is string)
-                || (!get(/databases/$(database)/documents/murid/$(request.resource.data.idMurid)).data.paket.matches('(^|.*_)(8|12)(_.*|$)')))))
+                || (!get(/databases/$(database)/documents/murid/$(request.resource.data.idMurid)).data.paket.matches('(^|.*_)(8|12)(_.*|$')))))
         && request.resource.data.status == "Pending"
         && request.resource.data.createdBy == request.auth.uid
         && request.resource.data.createdAt == request.time
@@ -125,8 +125,6 @@ service cloud.firestore {
     match /buktiPembayaran/{docId} {
       allow read: if admin()
         || (roleIs("orangtua") && ownsStudent(resource.data.idMurid));
-      // Upload dari browser ditolak. Dokumen dibuat oleh Apps Script memakai
-      // kredensial pemilik proyek setelah Firebase ID Token diverifikasi.
       allow create: if admin();
       allow update, delete: if admin();
     }
@@ -156,7 +154,6 @@ service cloud.firestore {
     }
 
     match /slotJadwal/{slotId} {
-      // Hanya berisi waktu yang ditahan, tanpa identitas murid.
       allow read: if true;
       allow create: if roleIs("orangtua") && validPendingSlot();
       allow update: if admin()
@@ -214,8 +211,6 @@ service cloud.firestore {
       allow read, write: if admin();
     }
 
-    // Math Lab MVP: Practice only. Client-written scores/results are explicitly
-    // untrusted until a trusted backend is selected and implemented.
     function mathLabUser() {
       return active() && myUser().role in ["murid", "admin"];
     }
@@ -256,6 +251,19 @@ service cloud.firestore {
         && request.resource.data.diagnosticSummary == null
         && request.resource.data.mastery == null
         && request.resource.data.recommendations.size() == 0;
+      allow update, delete: if false;
+    }
+
+    match /mathDiagnosticResults/{resultId} {
+      allow get, list: if mathLabUser() && resource.data.ownerUid == request.auth.uid;
+      allow create: if mathLabUser()
+        && resultId == request.resource.data.resultId
+        && request.resource.data.ownerUid == request.auth.uid
+        && request.resource.data.sessionType == "diagnostic"
+        && request.resource.data.trustStatus == "client-untrusted"
+        && request.resource.data.diagnosticSummary is map
+        && request.resource.data.mastery is list
+        && request.resource.data.recommendations is list;
       allow update, delete: if false;
     }
 
