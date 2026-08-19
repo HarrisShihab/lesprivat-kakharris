@@ -44,6 +44,9 @@ jobs:
           distribution: 'zulu'
           java-version: '21'
 
+      - name: Verify Java runtime for Firebase Emulator
+        run: java -version
+
       - name: Install emulator test dependencies
         run: npm install --no-save @firebase/rules-unit-testing firebase
 
