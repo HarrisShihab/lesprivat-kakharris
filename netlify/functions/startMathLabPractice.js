@@ -46,9 +46,10 @@ exports.handler = async (event) => {
     }
 
     const id = `math-session-${crypto.randomUUID()}`;
-    const now = new Date().toISOString();
+    const startedAt = Date.now();
+    const timestamp = new Date(startedAt).toISOString();
     const questionVersions = Object.fromEntries(questions.map((question) => [question.questionId, question.version.contentVersion]));
-    const session = {
+    const storageSession = {
       contractVersion: "1.0",
       sessionId: id,
       ownerUid: auth.uid,
@@ -63,23 +64,27 @@ exports.handler = async (event) => {
       questionVersions,
       currentIndex: 0,
       status: "active",
-      startedAt: { __timestamp: now },
+      startedAt: { __timestamp: timestamp },
       finishedAt: null,
       responses: [],
       trustStatus: "client-untrusted",
-      updatedAt: { __timestamp: now },
+      updatedAt: { __timestamp: timestamp },
     };
 
     // The user's Firebase ID token is used for this Firestore write, so the
     // existing Firestore Security Rules still enforce ownerUid/role boundaries.
     await firestoreRequest(`mathSessions/${encodeURIComponent(id)}`, token, {
       method: "PATCH",
-      body: JSON.stringify({ fields: fsFields(session) }),
+      body: JSON.stringify({ fields: fsFields(storageSession) }),
     });
 
     return json(200, {
       data: {
-        session,
+        session: {
+          ...storageSession,
+          startedAt,
+          updatedAt: startedAt,
+        },
         questions,
       },
     });
