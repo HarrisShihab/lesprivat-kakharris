@@ -7,8 +7,20 @@ const {
   methodGuard,
   bearer,
   verifyIdToken,
+  firestoreRequest,
+  decodeDocument,
   errorResponse,
 } = require("./math-lab-trusted-utils.js");
+
+async function assertMathLabUser(token, uid) {
+  const document = await firestoreRequest(`users/${encodeURIComponent(uid)}`, token, { method: "GET" });
+  const profile = decodeDocument(document);
+  if (profile.aktif !== true || !["murid", "admin"].includes(String(profile.role || ""))) {
+    const error = new Error("Akun tidak memiliki akses Math Lab.");
+    error.statusCode = 403;
+    throw error;
+  }
+}
 
 exports.handler = async (event) => {
   const methodError = methodGuard(event);
@@ -17,6 +29,7 @@ exports.handler = async (event) => {
   try {
     const token = bearer(event);
     const auth = await verifyIdToken(token);
+    await assertMathLabUser(token, auth.uid);
     const sessionId = `math-diagnostic-${crypto.randomUUID()}`;
     const startedAt = Date.now();
 
