@@ -4,11 +4,19 @@ on:
   push:
     paths:
       - 'math-lab/**'
+      - 'functions/**'
+      - 'firestore.rules'
+      - 'firebase.json'
+      - 'test-quiz-engine.js'
       - '.github/workflows/math-lab.yml'
       - '.github/scripts/math-lab-regression.js'
   pull_request:
     paths:
       - 'math-lab/**'
+      - 'functions/**'
+      - 'firestore.rules'
+      - 'firebase.json'
+      - 'test-quiz-engine.js'
       - '.github/workflows/math-lab.yml'
       - '.github/scripts/math-lab-regression.js'
   workflow_dispatch:
@@ -30,5 +38,26 @@ jobs:
         with:
           node-version: '24'
 
+      - name: Setup Java 21 for Firebase Emulator
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'zulu'
+          java-version: '21'
+
+      - name: Verify Java runtime for Firebase Emulator
+        run: java -version
+
+      - name: Install emulator test dependencies
+        run: npm install --no-save @firebase/rules-unit-testing firebase
+
       - name: Run Math Lab regression
         run: node .github/scripts/math-lab-regression.js
+
+      - name: Run trusted Functions unit tests
+        run: node --test functions/test/*.test.js
+
+      - name: Run Firestore Emulator security tests
+        run: npx --yes firebase-tools@latest emulators:exec --only firestore --project demo-math-lab "node math-lab/tests/firestore-rules-emulator.test.js"
+
+      - name: Run Game System regression
+        run: node test-quiz-engine.js
