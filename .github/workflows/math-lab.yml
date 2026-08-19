@@ -4,11 +4,17 @@ on:
   push:
     paths:
       - 'math-lab/**'
+      - 'functions/**'
+      - 'firestore.rules'
+      - 'firebase.json'
       - '.github/workflows/math-lab.yml'
       - '.github/scripts/math-lab-regression.js'
   pull_request:
     paths:
       - 'math-lab/**'
+      - 'functions/**'
+      - 'firestore.rules'
+      - 'firebase.json'
       - '.github/workflows/math-lab.yml'
       - '.github/scripts/math-lab-regression.js'
   workflow_dispatch:
@@ -30,5 +36,11 @@ jobs:
         with:
           node-version: '24'
 
+      - name: Install emulator test dependencies
+        run: npm install --no-save @firebase/rules-unit-testing firebase
+
       - name: Run Math Lab regression
         run: node .github/scripts/math-lab-regression.js
+
+      - name: Run Firestore Emulator security tests
+        run: npx --yes firebase-tools@latest emulators:exec --only firestore --project demo-math-lab "node math-lab/tests/firestore-rules-emulator.test.js"
