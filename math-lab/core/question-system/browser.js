@@ -1,46 +1,24 @@
 /**
- * Browser entry point for the generic Question System.
+ * Authenticated-safe browser entry for Math Lab.
  *
- * The Question System files remain UMD-compatible for Node tests and legacy
- * consumers, but the browser must load them through a deterministic module
- * entry point so their dependency order does not depend on <script> tags.
+ * The evaluation-bearing Question System is deliberately isolated from this
+ * entry. The anonymous Public Math Lab may opt into the separate public entry;
+ * authenticated Math Lab must use the trusted evaluation boundary.
  */
 const root = globalThis;
 root.KakHarrisMathLab = root.KakHarrisMathLab || {};
 
 const ready = (async () => {
-  const load = async (path) => import(path);
-
-  await load("../contracts/question.js");
-  await load("../contracts/taxonomy.js");
-  await load("./fingerprint.js");
-  await load("./versioning.js");
-  await load("./question-factory.js");
-  await load("./validator.js");
-  await load("../../content/pilot/algebra-curated.js");
-  await load("../../content/pilot/algebra-taxonomy.js");
-  await load("./generators.js");
-  await load("./story-templates.js");
-  await load("./provider.js");
-  await load("./index.js");
-
-  const questionSystem = root.KakHarrisMathLab?.questionSystem;
-  if (!questionSystem?.createPilotProvider) {
-    throw new Error("Question System browser entry loaded, but createPilotProvider is unavailable.");
-  }
-
-  return questionSystem;
+  const isPublic = typeof location !== "undefined" && /(?:^|\/)math-lab-public\.html(?:$|[?#])/.test(location.pathname + location.search + location.hash);
+  if (isPublic) return import("./public-browser.js").then((module) => module.default || root.KakHarrisMathLab?.publicQuestionSystemReady);
+  return null;
 })();
 
 root.KakHarrisMathLab.questionSystemReady = ready;
 ready.then(() => {
-  if (typeof root.dispatchEvent === "function" && typeof root.CustomEvent === "function") {
-    root.dispatchEvent(new root.CustomEvent("math-lab:question-system-ready"));
-  }
+  if (typeof root.dispatchEvent === "function" && typeof root.CustomEvent === "function") root.dispatchEvent(new root.CustomEvent("math-lab:question-system-ready"));
 }).catch((error) => {
-  if (typeof root.dispatchEvent === "function" && typeof root.CustomEvent === "function") {
-    root.dispatchEvent(new root.CustomEvent("math-lab:question-system-error", { detail: error }));
-  }
+  if (typeof root.dispatchEvent === "function" && typeof root.CustomEvent === "function") root.dispatchEvent(new root.CustomEvent("math-lab:question-system-error", { detail:error }));
 });
 
 export default ready;
