@@ -44,7 +44,15 @@ if (RECORDS.length !== 12 || RECORDS.filter((record) => record.question.contentK
   throw new Error("Diagnostic pilot content distribution is invalid.");
 }
 
-const RECORD_BY_ID = new Map(RECORDS.map((record) => [record.question.questionId, record]));
+// Keep evaluation server-side, but allow completion to resolve any question
+// from the deterministic pilot pool. This prevents a valid question served by
+// a different deploy slice from being rejected at completion time.
+const PILOT_POOL = Object.freeze([
+  ...CURATED_IDS.map((id) => curatedById.get(id)),
+  ...generated,
+  ...stories,
+].filter(Boolean));
+const PILOT_BY_ID = new Map(PILOT_POOL.map((record) => [record.question.questionId, record]));
 
 function presentationQuestion(record) {
   const q = record.question;
@@ -68,8 +76,7 @@ function getQuestions() {
   return RECORDS.map(presentationQuestion);
 }
 
-function evaluateAnswer(questionId, answer) {
-  const record = RECORD_BY_ID.get(String(questionId || ""));
+function evaluateRecord(record, answer) {
   if (!record) return null;
   const evaluation = evaluator.evaluate(record.question, record.evaluation, answer);
   return {
@@ -82,41 +89,45 @@ function evaluateAnswer(questionId, answer) {
   };
 }
 
+function evaluateAnswer(questionId, answer) {
+  return evaluateRecord(PILOT_BY_ID.get(String(questionId || "")), answer);
+}
+
 function analyze(sessionId, rawResponses) {
-  if (!Array.isArray(rawResponses) || rawResponses.length !== RECORDS.length) {
-    const error = new Error(`Diagnostic requires exactly ${RECORDS.length} responses.`);
+  if (!Array.isArray(rawResponses) || rawResponses.length !== 12) {
+    const error = new Error("Diagnostic requires exactly 12 responses.");
     error.statusCode = 400;
     throw error;
   }
 
   const seen = new Set();
-  const responses = rawResponses.map((item) => {
+  const records = rawResponses.map((item) => {
     const questionId = String(item?.questionId || "").trim();
     if (seen.has(questionId)) {
       const error = new Error(`Duplicate diagnostic response for questionId: ${questionId}.`);
       error.statusCode = 400;
       throw error;
     }
-    seen.add(questionId);
-    const evaluated = evaluateAnswer(questionId, item?.answer);
-    if (!evaluated) {
+    const record = PILOT_BY_ID.get(questionId);
+    if (!record) {
       const error = new Error(`Unknown diagnostic questionId: ${questionId}.`);
       error.statusCode = 400;
       throw error;
     }
-    return evaluated;
+    seen.add(questionId);
+    return record;
   });
 
-  const expectedIds = new Set(RECORDS.map((record) => record.question.questionId));
-  if (seen.size !== expectedIds.size || [...expectedIds].some((id) => !seen.has(id))) {
-    const error = new Error("Diagnostic responses do not match the trusted pilot question set.");
+  if (seen.size !== 12) {
+    const error = new Error("Diagnostic responses must contain 12 unique trusted pilot questions.");
     error.statusCode = 400;
     throw error;
   }
 
+  const responses = rawResponses.map((item, index) => evaluateRecord(records[index], item?.answer));
   const result = diagnosticProvider.createProvider().analyze({
     sessionId: String(sessionId || ""),
-    questions: RECORDS,
+    questions: records,
     responses,
   });
 
