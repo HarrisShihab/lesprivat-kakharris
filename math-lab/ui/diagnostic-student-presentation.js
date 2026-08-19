@@ -84,7 +84,100 @@
     hideTrustMetadataFromUi();
   }
 
+  function escapeHtml(value) {
+    return String(value ?? "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/\"/g, "&quot;").replace(/'/g, "&#039;");
+  }
+
+  function formatDate(value) {
+    if (!value) return "-";
+    let date;
+    if (typeof value.toDate === "function") date = value.toDate();
+    else if (typeof value.toMillis === "function") date = new Date(value.toMillis());
+    else date = new Date(value);
+    return Number.isNaN(date.getTime()) ? "-" : new Intl.DateTimeFormat("id-ID", { dateStyle: "medium", timeStyle: "short" }).format(date);
+  }
+
+  function firebaseContext() {
+    const fb = root.firebase;
+    const user = fb?.auth?.().currentUser;
+    const db = fb?.firestore?.();
+    if (!fb || !user?.uid || !db) throw new Error("Sesi login atau Firestore belum siap.");
+    return { user, db };
+  }
+
+  function renderHistoryItem(item, type) {
+    const topic = item.topicId === "aljabar" ? "Aljabar" : String(item.topicId || "Materi").replace(/-/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
+    const label = type === "diagnostic" ? "Diagnostic" : "Practice";
+    return `<article class="math-lab-history-item"><div><strong>${escapeHtml(topic)}</strong><div class="math-lab-muted">${escapeHtml(formatDate(item.createdAt))} · ${escapeHtml(item.totalQuestions || 0)} soal · ${label}</div></div><div><div class="math-lab-score">${escapeHtml(item.score ?? 0)}/100</div></div></article>`;
+  }
+
+  async function loadDiagnosticHistory(target) {
+    const container = target || document.getElementById("math-lab-diagnostic-history-list");
+    if (!container) return;
+    container.innerHTML = '<div class="math-lab-status">Memuat riwayat diagnostic...</div>';
+    try {
+      const { user, db } = firebaseContext();
+      const snap = await db.collection("mathDiagnosticResults").where("ownerUid", "==", user.uid).orderBy("createdAt", "desc").limit(5).get();
+      if (!snap.docs.length) {
+        container.innerHTML = '<div class="math-lab-status empty">Belum ada riwayat diagnostic.</div>';
+        return;
+      }
+      container.innerHTML = snap.docs.map((doc) => renderHistoryItem({ id: doc.id, ...doc.data() }, "diagnostic")).join("");
+    } catch (error) {
+      const message = String(error?.message || error || "Gagal memuat riwayat diagnostic.");
+      if (/requires an index|FAILED_PRECONDITION|create_composite/i.test(message)) {
+        container.innerHTML = '<div class="math-lab-status info">Riwayat diagnostic sedang menyiapkan index Firestore. Coba muat ulang setelah index selesai dibuat.</div>';
+      } else if (/permission|insufficient/i.test(message)) {
+        container.innerHTML = '<div class="math-lab-status error">Riwayat diagnostic belum dapat dimuat karena izin akses.</div>';
+      } else {
+        container.innerHTML = `<div class="math-lab-status error">Riwayat diagnostic belum dapat dimuat. ${escapeHtml(message)}</div>`;
+      }
+    }
+  }
+
+  function ensureHistorySections() {
+    const practiceList = document.getElementById("math-lab-history-list");
+    if (!practiceList) return;
+    const practiceSection = practiceList.closest("section");
+    if (!practiceSection || document.getElementById("math-lab-diagnostic-history")) return;
+
+    const heading = practiceSection.querySelector("h3");
+    const description = practiceSection.querySelector("p");
+    if (heading) heading.textContent = "Riwayat Practice";
+    if (description) description.textContent = "5 hasil Practice terbaru milik akun ini.";
+
+    const diagnosticSection = document.createElement("section");
+    diagnosticSection.id = "math-lab-diagnostic-history";
+    diagnosticSection.className = "math-lab-card";
+    diagnosticSection.innerHTML = '<div class="section-title"><div><h3>Riwayat Diagnostic</h3><p>5 hasil Diagnostic terbaru milik akun ini.</p></div><button id="math-lab-refresh-diagnostic-history" class="small-action bg-slate-100 text-slate-700" type="button"><i class="fa-solid fa-rotate"></i> Muat ulang</button></div><div id="math-lab-diagnostic-history-list" class="math-lab-history mt-4"><div class="math-lab-status">Memuat riwayat diagnostic...</div></div>';
+    practiceSection.parentElement?.insertBefore(diagnosticSection, practiceSection.nextSibling);
+    document.getElementById("math-lab-refresh-diagnostic-history")?.addEventListener("click", () => loadDiagnosticHistory());
+    loadDiagnosticHistory();
+  }
+
+  function installPracticeHistoryLimit() {
+    const persistence = root.KakHarrisMathLab?.firestore?.practicePersistence;
+    if (!persistence?.createPersistence || persistence.createPersistence.__historySplitInstalled) return;
+    const originalCreate = persistence.createPersistence;
+    const wrappedCreate = function (options) {
+      const api = originalCreate(options);
+      const originalList = api.listHistory;
+      api.listHistory = async function (limit = 5) {
+        const { user, db } = firebaseContext();
+        const safeLimit = Math.max(1, Math.min(5, Number(limit) || 5));
+        const snap = await db.collection("mathResults").where("ownerUid", "==", user.uid).orderBy("createdAt", "desc").limit(safeLimit).get();
+        return snap.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
+      };
+      api.listDiagnosticHistory = originalList;
+      return api;
+    };
+    wrappedCreate.__historySplitInstalled = true;
+    persistence.createPersistence = wrappedCreate;
+  }
+
   function refresh() {
+    installPracticeHistoryLimit();
+    ensureHistorySections();
     presentDiagnosticResult();
     hideTrustMetadataFromUi();
   }
@@ -98,6 +191,7 @@
     indicatorLabel,
     levelLabel,
     recommendationText,
+    loadDiagnosticHistory,
     refresh,
     INDICATOR_LABELS,
     LEVEL_LABELS,
