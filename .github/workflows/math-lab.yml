@@ -7,6 +7,7 @@ on:
       - 'functions/**'
       - 'firestore.rules'
       - 'firebase.json'
+      - 'test-quiz-engine.js'
       - '.github/workflows/math-lab.yml'
       - '.github/scripts/math-lab-regression.js'
   pull_request:
@@ -15,6 +16,7 @@ on:
       - 'functions/**'
       - 'firestore.rules'
       - 'firebase.json'
+      - 'test-quiz-engine.js'
       - '.github/workflows/math-lab.yml'
       - '.github/scripts/math-lab-regression.js'
   workflow_dispatch:
@@ -42,5 +44,11 @@ jobs:
       - name: Run Math Lab regression
         run: node .github/scripts/math-lab-regression.js
 
+      - name: Run trusted Functions unit tests
+        run: node --test functions/test/*.test.js
+
       - name: Run Firestore Emulator security tests
         run: npx --yes firebase-tools@latest emulators:exec --only firestore --project demo-math-lab "node math-lab/tests/firestore-rules-emulator.test.js"
+
+      - name: Run Game System regression
+        run: node test-quiz-engine.js
