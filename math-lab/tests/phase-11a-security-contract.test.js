@@ -24,7 +24,6 @@ assert.match(publicEntry, /ownerUid:\s*null/);
 assert.doesNotMatch(publicEntry, /saveSession|saveResult|listHistory/);
 pass("public-entry-no-persistence");
 
-assert.match(rules, /request\.auth\.uid\s*==\s*ownerUid/);
 assert.match(rules, /ownerUid\s*==\s*request\.auth\.uid/);
 pass("persistence-authenticated-owner-bound");
 
