@@ -8,8 +8,6 @@ const {
   readBody,
   bearer,
   verifyIdToken,
-  fsFields,
-  firestoreRequest,
   errorResponse,
 } = require("./math-lab-trusted-utils.js");
 
@@ -47,42 +45,31 @@ exports.handler = async (event) => {
 
     const id = `math-session-${crypto.randomUUID()}`;
     const startedAt = Date.now();
-    const timestamp = new Date(startedAt).toISOString();
     const questionVersions = Object.fromEntries(questions.map((question) => [question.questionId, question.version.contentVersion]));
-    const storageSession = {
-      contractVersion: "1.0",
-      sessionId: id,
-      ownerUid: auth.uid,
-      sessionType: "practice",
-      educationLevel: config.educationLevel,
-      grade: config.grade,
-      phase: config.phase,
-      subject: config.subject,
-      topicId: config.topicId,
-      subtopicId: config.subtopicId,
-      questionRefs: questions.map((question) => question.questionId),
-      questionVersions,
-      currentIndex: 0,
-      status: "active",
-      startedAt: { __timestamp: timestamp },
-      finishedAt: null,
-      responses: [],
-      trustStatus: "client-untrusted",
-      updatedAt: { __timestamp: timestamp },
-    };
 
-    // The user's Firebase ID token is used for this Firestore write, so the
-    // existing Firestore Security Rules still enforce ownerUid/role boundaries.
-    await firestoreRequest(`mathSessions/${encodeURIComponent(id)}`, token, {
-      method: "PATCH",
-      body: JSON.stringify({ fields: fsFields(storageSession) }),
-    });
-
+    // Persistence remains in the existing authenticated Firestore client path.
+    // The trusted boundary is the question/evaluation source, not the score.
     return json(200, {
       data: {
         session: {
-          ...storageSession,
+          contractVersion: "1.0",
+          sessionId: id,
+          ownerUid: auth.uid,
+          sessionType: "practice",
+          educationLevel: config.educationLevel,
+          grade: config.grade,
+          phase: config.phase,
+          subject: config.subject,
+          topicId: config.topicId,
+          subtopicId: config.subtopicId,
+          questionRefs: questions.map((question) => question.questionId),
+          questionVersions,
+          currentIndex: 0,
+          status: "active",
           startedAt,
+          finishedAt: null,
+          responses: [],
+          trustStatus: "client-untrusted",
           updatedAt: startedAt,
         },
         questions,
