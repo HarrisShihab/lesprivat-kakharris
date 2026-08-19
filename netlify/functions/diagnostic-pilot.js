@@ -1,10 +1,36 @@
 "use strict";
 
 const content = require("../../math-lab/content/pilot/algebra-curated.js");
+const practicePilot = require("../../functions/math-lab-pilot.js");
 const evaluator = require("../../math-lab/core/answer-evaluator.js");
 const diagnosticProvider = require("../../math-lab/core/diagnostic-provider.js");
 
-const RECORDS = Object.freeze(content.records.slice(0, 12));
+const CURATED_IDS = Object.freeze([
+  "alg-cur-001",
+  "alg-cur-002",
+  "alg-cur-005",
+  "alg-cur-011",
+  "alg-cur-012",
+  "alg-cur-015",
+  "alg-cur-027",
+  "alg-cur-029",
+]);
+
+const curatedById = new Map(content.records.map((record) => [record.question.questionId, record]));
+const practiceBundles = practicePilot.createPractice();
+const generated = practiceBundles.map((entry) => entry).filter((entry) => entry.question.contentKind === "generated");
+const stories = practiceBundles.map((entry) => entry).filter((entry) => entry.question.contentKind === "story-template");
+
+const RECORDS = Object.freeze([
+  ...CURATED_IDS.map((id) => curatedById.get(id)),
+  ...generated.slice(0, 2),
+  ...stories.slice(0, 2),
+].filter(Boolean));
+
+if (RECORDS.length !== 12 || RECORDS.filter((record) => record.question.contentKind === "curated").length !== 8 || RECORDS.filter((record) => record.question.contentKind === "generated").length !== 2 || RECORDS.filter((record) => record.question.contentKind === "story-template").length !== 2) {
+  throw new Error("Diagnostic pilot content distribution is invalid.");
+}
+
 const RECORD_BY_ID = new Map(RECORDS.map((record) => [record.question.questionId, record]));
 
 function presentationQuestion(record) {
