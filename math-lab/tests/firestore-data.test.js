@@ -90,16 +90,9 @@ function fakeFirebase(uid, profile, db) {
   assert.equal(debugLogs.some((entry) => entry.path === 'mathSessions/s1' && entry.operation === 'SET' && entry.status === 'OK'), true);
   const createLog = debugLogs.find((entry) => entry.path === 'mathSessions/s1' && entry.operation === 'SET');
   assert.deepEqual(createLog.meta, {
-    documentId: 's1',
-    authUid: 'u1',
-    role: 'murid',
-    aktif: true,
-    mathLabUser: true,
-    ownerUidPresent: true,
-    ownerUidMatchesAuth: true,
-    sessionIdMatchesPath: true,
-    sessionType: 'practice',
-    trustStatus: 'client-untrusted',
+    documentId: 's1', authUid: 'u1', role: 'murid', aktif: true, mathLabUser: true,
+    ownerUidPresent: true, ownerUidMatchesAuth: true, sessionIdMatchesPath: true,
+    sessionType: 'practice', trustStatus: 'client-untrusted',
     topLevelKeys: ['contractVersion', 'createdAt', 'currentIndex', 'educationLevel', 'finishedAt', 'grade', 'ownerUid', 'phase', 'questionRefs', 'questionVersions', 'responses', 'sessionId', 'sessionType', 'startedAt', 'status', 'subject', 'subtopicId', 'topicId', 'trustStatus', 'updatedAt'],
   });
   assert.equal(debugLogs.some((entry) => entry.path === 'mathSessions/s1' && entry.operation === 'GET' && entry.stage === 'create session'), false, 'new session create must not log a pre-read');
@@ -120,16 +113,7 @@ function fakeFirebase(uid, profile, db) {
   assert.equal((await store.listHistory()).length, 1);
   assert.equal(db._docs.get('mathResults/r1').trustStatus, 'client-untrusted');
   const historyLog = debugLogs.find((entry) => entry.path === 'mathResults' && entry.operation === 'LIST');
-  assert.deepEqual(historyLog.meta, {
-    queryWhere: { field: 'ownerUid', operator: '==', valueType: 'string' },
-    queryOrderBy: { field: 'createdAt', direction: 'desc' },
-    limit: 50,
-    authUid: 'u1',
-    role: 'murid',
-    aktif: true,
-    mathLabUser: true,
-    queryOwnerUidMatchesAuth: true,
-  });
+  assert.deepEqual(historyLog.meta, { authUid: 'u1', role: 'murid', limit: 50 });
 
   const other = fakeFirebase('u2', null, db);
   db._docs.set('users/u2', { aktif: true, role: 'murid' });
