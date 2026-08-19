@@ -10,7 +10,7 @@ test("trusted pilot returns presentation-safe questions", () => {
   for (const entry of practice) {
     assert.ok(entry.question.questionId);
     assert.ok(Array.isArray(entry.question.content.options));
-    assert.strictEqual(entry.question.evaluationRef, null);
+    assert.ok(!Object.prototype.hasOwnProperty.call(entry.question, "evaluationRef") || entry.question.evaluationRef == null);
     assert.ok(!Object.prototype.hasOwnProperty.call(entry.question, "correctOptionId"));
     assert.ok(!Object.prototype.hasOwnProperty.call(entry.question, "evaluation"));
   }
