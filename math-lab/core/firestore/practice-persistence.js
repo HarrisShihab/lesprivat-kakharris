@@ -11,6 +11,7 @@
   const COLLECTIONS = Object.freeze({
     sessions: "mathSessions",
     results: "mathResults",
+    diagnosticResults: "mathDiagnosticResults",
   });
 
   const ALLOWED_ROLES = Object.freeze(["murid", "admin"]);
@@ -181,7 +182,6 @@
       diagnosticSummary: null,
       mastery: null,
       recommendations: [],
-      // History timestamps must come from Firestore, not from the client result.
       createdAt: serverTimestamp(firebaseLike),
       trustStatus: "client-untrusted",
     };
@@ -211,46 +211,16 @@
       const ref = db.collection(COLLECTIONS.sessions).doc(payload.sessionId);
 
       if (mode === "create") {
-        // For a new document, Firestore Rules authorize from request.resource.data.
-        // A pre-read would evaluate the get rule against missing resource.data and
-        // can therefore fail before the create rule is ever reached.
-        await debugOperation(debugLog, {
-          collection: COLLECTIONS.sessions,
-          path: `${COLLECTIONS.sessions}/${payload.sessionId}`,
-          operation: "SET",
-          stage: "create session",
-          meta: {
-            documentId: payload.sessionId,
-            authUid: String(user.uid),
-            role: String(context.profile?.role || ""),
-            aktif: context.profile?.aktif === true,
-            mathLabUser: context.profile?.aktif === true && ["murid", "admin"].includes(context.profile?.role),
-            ownerUidPresent: Boolean(payload.ownerUid),
-            ownerUidMatchesAuth: String(payload.ownerUid) === String(user.uid),
-            sessionIdMatchesPath: String(payload.sessionId) === String(ref.id),
-            sessionType: payload.sessionType,
-            trustStatus: payload.trustStatus,
-            topLevelKeys: Object.keys({ ...payload, createdAt: null }).sort(),
-          },
-        }, () => ref.set({ ...payload, createdAt: serverTimestamp(firebaseLike) }));
+        await debugOperation(debugLog, { collection: COLLECTIONS.sessions, path: `${COLLECTIONS.sessions}/${payload.sessionId}`, operation: "SET", stage: "create session", meta: { documentId: payload.sessionId, authUid: String(user.uid), role: String(context.profile?.role || ""), aktif: context.profile?.aktif === true, mathLabUser: context.profile?.aktif === true && ["murid", "admin"].includes(context.profile?.role), ownerUidPresent: Boolean(payload.ownerUid), ownerUidMatchesAuth: String(payload.ownerUid) === String(user.uid), sessionIdMatchesPath: String(payload.sessionId) === String(ref.id), sessionType: payload.sessionType, trustStatus: payload.trustStatus, topLevelKeys: Object.keys({ ...payload, createdAt: null }).sort() } }, () => ref.set({ ...payload, createdAt: serverTimestamp(firebaseLike) }));
         return { sessionId: payload.sessionId, ownerUid: user.uid, trustStatus: "client-untrusted" };
       }
 
       if (mode !== "update") throw new Error("Mode persistence session tidak valid.");
-
-      // Existing sessions require an ownership read before the restricted update.
       const existing = await debugOperation(debugLog, { collection: COLLECTIONS.sessions, path: `${COLLECTIONS.sessions}/${payload.sessionId}`, operation: "GET", stage: "verify existing session ownership" }, () => ref.get());
       if (!existing.exists) throw new Error("Session yang akan diperbarui tidak ditemukan.");
       const current = existing.data() || {};
       if (String(current.ownerUid) !== String(user.uid)) throw new Error("Session bukan milik pengguna aktif.");
-      await debugOperation(debugLog, { collection: COLLECTIONS.sessions, path: `${COLLECTIONS.sessions}/${payload.sessionId}`, operation: "UPDATE", stage: "update existing session" }, () => ref.update({
-        currentIndex: payload.currentIndex,
-        status: payload.status,
-        finishedAt: payload.finishedAt,
-        responses: payload.responses,
-        updatedAt: serverTimestamp(firebaseLike),
-        trustStatus: "client-untrusted",
-      }));
+      await debugOperation(debugLog, { collection: COLLECTIONS.sessions, path: `${COLLECTIONS.sessions}/${payload.sessionId}`, operation: "UPDATE", stage: "update existing session" }, () => ref.update({ currentIndex: payload.currentIndex, status: payload.status, finishedAt: payload.finishedAt, responses: payload.responses, updatedAt: serverTimestamp(firebaseLike), trustStatus: "client-untrusted" }));
       return { sessionId: payload.sessionId, ownerUid: user.uid, trustStatus: "client-untrusted" };
     }
 
@@ -259,10 +229,6 @@
       const payload = resultPayload(result, firebaseLike);
       assertOwner(payload, user.uid);
       const ref = db.collection(COLLECTIONS.results).doc(payload.resultId);
-      // Results are immutable. A direct set is safe here: Rules allow create
-      // only when ownerUid matches; an existing result is an update and the
-      // update rule is explicitly denied. This avoids a pre-read against the
-      // resource-based get rule for a new result.
       await debugOperation(debugLog, { collection: COLLECTIONS.results, path: `${COLLECTIONS.results}/${payload.resultId}`, operation: "SET", stage: "create result" }, () => ref.set(payload));
       return { resultId: payload.resultId, ownerUid: user.uid, trustStatus: "client-untrusted", alreadyExists: false };
     }
@@ -288,54 +254,23 @@
     async function listHistory(limit = 50) {
       const { user, profile } = await assertUser(true);
       const safeLimit = Math.max(1, Math.min(100, Number(limit) || 50));
-      const query = db.collection(COLLECTIONS.results)
-        .where("ownerUid", "==", user.uid)
-        .orderBy("createdAt", "desc")
-        .limit(safeLimit);
-      const snap = await debugOperation(debugLog, {
-        collection: COLLECTIONS.results,
-        path: COLLECTIONS.results,
-        operation: "LIST",
-        stage: "load history",
-        meta: {
-          queryWhere: { field: "ownerUid", operator: "==", valueType: "string" },
-          queryOrderBy: { field: "createdAt", direction: "desc" },
-          limit: safeLimit,
-          authUid: String(user.uid),
-          role: String(profile.role || ""),
-          aktif: profile.aktif === true,
-          mathLabUser: profile.aktif === true && ["murid", "admin"].includes(profile.role),
-          queryOwnerUidMatchesAuth: true,
-        },
-      }, () => query.get());
-      return snap.docs.map((doc) => {
-        const data = doc.data() || {};
-        return {
-          id: doc.id,
-          ...clone(data),
-          createdAt: data.createdAt,
-        };
-      });
+      const resultQuery = db.collection(COLLECTIONS.results).where("ownerUid", "==", user.uid).orderBy("createdAt", "desc").limit(safeLimit);
+      const diagnosticQuery = db.collection(COLLECTIONS.diagnosticResults).where("ownerUid", "==", user.uid).orderBy("createdAt", "desc").limit(safeLimit);
+      const [resultSnap, diagnosticSnap] = await Promise.all([
+        debugOperation(debugLog, { collection: COLLECTIONS.results, path: COLLECTIONS.results, operation: "LIST", stage: "load practice history", meta: { authUid: String(user.uid), role: String(profile.role || ""), limit: safeLimit } }, () => resultQuery.get()),
+        debugOperation(debugLog, { collection: COLLECTIONS.diagnosticResults, path: COLLECTIONS.diagnosticResults, operation: "LIST", stage: "load diagnostic history", meta: { authUid: String(user.uid), role: String(profile.role || ""), limit: safeLimit } }, () => diagnosticQuery.get()),
+      ]);
+      const practice = resultSnap.docs.map((doc) => ({ id: doc.id, ...clone(doc.data()) }));
+      const diagnostic = diagnosticSnap.docs.map((doc) => ({ id: doc.id, ...clone(doc.data()) }));
+      return practice.concat(diagnostic).sort((a, b) => {
+        const av = a.createdAt?.toMillis ? a.createdAt.toMillis() : new Date(a.createdAt || 0).getTime();
+        const bv = b.createdAt?.toMillis ? b.createdAt.toMillis() : new Date(b.createdAt || 0).getTime();
+        return bv - av;
+      }).slice(0, safeLimit);
     }
 
-    return Object.freeze({
-      saveSession,
-      saveResult,
-      getSession,
-      getResult,
-      listHistory,
-      COLLECTIONS,
-      SESSION_MUTABLE_KEYS,
-    });
+    return Object.freeze({ saveSession, saveResult, getSession, getResult, listHistory, COLLECTIONS, SESSION_MUTABLE_KEYS });
   }
 
-  return Object.freeze({
-    COLLECTIONS,
-    ALLOWED_ROLES,
-    SESSION_MUTABLE_KEYS,
-    createPersistence,
-    sessionPayload,
-    resultPayload,
-    sanitizeResponse,
-  });
+  return Object.freeze({ COLLECTIONS, ALLOWED_ROLES, SESSION_MUTABLE_KEYS, createPersistence, sessionPayload, resultPayload, sanitizeResponse });
 });
