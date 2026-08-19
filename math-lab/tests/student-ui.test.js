@@ -9,6 +9,8 @@ const html = fs.readFileSync(path.join(root, "murid-dashboard.html"), "utf8");
 const portal = fs.readFileSync(path.join(root, "portal-dashboard.js"), "utf8");
 const css = fs.readFileSync(path.join(root, "math-lab/ui/math-lab.css"), "utf8");
 const ui = fs.readFileSync(path.join(root, "math-lab/ui/student-math-lab.js"), "utf8");
+const firebaseConfig = fs.readFileSync(path.join(root, "firebase-config.js"), "utf8");
+const presentation = fs.readFileSync(path.join(root, "math-lab/ui/diagnostic-student-presentation.js"), "utf8");
 
 const requiredIds = [
   "view-math-lab", "math-lab-setup", "math-lab-level", "math-lab-grade",
@@ -27,8 +29,10 @@ assert.ok(portal.includes('studentUI?.init'), "Portal-to-Math-Lab initialization
 assert.ok(!html.includes("XP"), "Gamification text must not be introduced into student UI");
 assert.ok(!html.includes("Leaderboard"), "Leaderboard must not be introduced into student UI");
 assert.ok(css.length > 1000, "Math Lab responsive CSS appears incomplete");
-assert.ok(ui.includes("client-untrusted"), "Client-untrusted result status must remain visible");
+assert.ok(ui.includes("client-untrusted"), "Internal client-untrusted metadata marker must remain available to persistence logic");
 assert.ok(ui.includes("MathRenderer"), "MathRenderer integration missing");
 assert.ok(ui.includes("saveSession") && ui.includes("saveResult"), "Firestore persistence integration missing");
+assert.ok(firebaseConfig.includes("math-lab/ui/diagnostic-student-presentation.js"), "Student diagnostic presentation layer is not loaded");
+assert.ok(presentation.includes("element.remove()"), "Student trust metadata presentation cleanup is missing");
 
 console.log(`PASS student-ui-static (${requiredIds.length} required IDs)`);
