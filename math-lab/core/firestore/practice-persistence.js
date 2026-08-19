@@ -251,22 +251,12 @@
       return { id: snap.id, ...clone(data) };
     }
 
-    async function listHistory(limit = 50) {
+    async function listHistory(limit = 5) {
       const { user, profile } = await assertUser(true);
-      const safeLimit = Math.max(1, Math.min(100, Number(limit) || 50));
+      const safeLimit = Math.max(1, Math.min(5, Number(limit) || 5));
       const resultQuery = db.collection(COLLECTIONS.results).where("ownerUid", "==", user.uid).orderBy("createdAt", "desc").limit(safeLimit);
-      const diagnosticQuery = db.collection(COLLECTIONS.diagnosticResults).where("ownerUid", "==", user.uid).orderBy("createdAt", "desc").limit(safeLimit);
-      const [resultSnap, diagnosticSnap] = await Promise.all([
-        debugOperation(debugLog, { collection: COLLECTIONS.results, path: COLLECTIONS.results, operation: "LIST", stage: "load practice history", meta: { authUid: String(user.uid), role: String(profile.role || ""), limit: safeLimit } }, () => resultQuery.get()),
-        debugOperation(debugLog, { collection: COLLECTIONS.diagnosticResults, path: COLLECTIONS.diagnosticResults, operation: "LIST", stage: "load diagnostic history", meta: { authUid: String(user.uid), role: String(profile.role || ""), limit: safeLimit } }, () => diagnosticQuery.get()),
-      ]);
-      const practice = resultSnap.docs.map((doc) => ({ id: doc.id, ...clone(doc.data()) }));
-      const diagnostic = diagnosticSnap.docs.map((doc) => ({ id: doc.id, ...clone(doc.data()) }));
-      return practice.concat(diagnostic).sort((a, b) => {
-        const av = a.createdAt?.toMillis ? a.createdAt.toMillis() : new Date(a.createdAt || 0).getTime();
-        const bv = b.createdAt?.toMillis ? b.createdAt.toMillis() : new Date(b.createdAt || 0).getTime();
-        return bv - av;
-      }).slice(0, safeLimit);
+      const resultSnap = await debugOperation(debugLog, { collection: COLLECTIONS.results, path: COLLECTIONS.results, operation: "LIST", stage: "load practice history", meta: { authUid: String(user.uid), role: String(profile.role || ""), limit: safeLimit } }, () => resultQuery.get());
+      return resultSnap.docs.map((doc) => ({ id: doc.id, ...clone(doc.data()) }));
     }
 
     return Object.freeze({ saveSession, saveResult, getSession, getResult, listHistory, COLLECTIONS, SESSION_MUTABLE_KEYS });
