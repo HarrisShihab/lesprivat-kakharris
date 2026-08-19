@@ -14,8 +14,10 @@ const trustedPilot = fs.readFileSync(path.join(root, "functions/math-lab-pilot.j
 
 function pass(name) { console.log(`PASS ${name}`); }
 
-assert.match(rules, /match \/mathEvaluations\/{evaluationId\}/);
-assert.match(rules, /allow read, write: if false;/);
+assert.match(rules, /mathEvaluations/);
+assert.match(rules, /mathMastery/);
+assert.match(rules, /mathTaxonomy/);
+assert.ok((rules.match(/allow read, write: if false;/g) || []).length >= 3);
 pass("firestore-private-evaluation-collections-closed");
 
 assert.match(publicEntry, /ownerUid:\s*null/);
