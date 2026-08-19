@@ -17,9 +17,22 @@ const CURATED_IDS = Object.freeze([
 ]);
 
 const curatedById = new Map(content.records.map((record) => [record.question.questionId, record]));
-const practiceBundles = practicePilot.createPractice();
-const generated = practiceBundles.map((entry) => entry).filter((entry) => entry.question.contentKind === "generated");
-const stories = practiceBundles.map((entry) => entry).filter((entry) => entry.question.contentKind === "story-template");
+const practiceBundles = practicePilot.createPractice().map((entry) => {
+  if (entry.evaluation) return entry;
+  const question = entry.question;
+  return {
+    question,
+    evaluation: {
+      evaluationId: `eval-${question.questionId}-${question.version?.contentVersion || "1.0"}`,
+      questionId: question.questionId,
+      questionVersion: question.version?.contentVersion || "1.0",
+      questionType: question.questionType,
+      specification: { correctOptionId: entry.correctOptionId || null },
+    },
+  };
+});
+const generated = practiceBundles.filter((entry) => entry.question.contentKind === "generated");
+const stories = practiceBundles.filter((entry) => entry.question.contentKind === "story-template");
 
 const RECORDS = Object.freeze([
   ...CURATED_IDS.map((id) => curatedById.get(id)),
