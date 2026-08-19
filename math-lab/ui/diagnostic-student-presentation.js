@@ -155,28 +155,7 @@
     loadDiagnosticHistory();
   }
 
-  function installPracticeHistoryLimit() {
-    const persistence = root.KakHarrisMathLab?.firestore?.practicePersistence;
-    if (!persistence?.createPersistence || persistence.createPersistence.__historySplitInstalled) return;
-    const originalCreate = persistence.createPersistence;
-    const wrappedCreate = function (options) {
-      const api = originalCreate(options);
-      const originalList = api.listHistory;
-      api.listHistory = async function (limit = 5) {
-        const { user, db } = firebaseContext();
-        const safeLimit = Math.max(1, Math.min(5, Number(limit) || 5));
-        const snap = await db.collection("mathResults").where("ownerUid", "==", user.uid).orderBy("createdAt", "desc").limit(safeLimit).get();
-        return snap.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
-      };
-      api.listDiagnosticHistory = originalList;
-      return api;
-    };
-    wrappedCreate.__historySplitInstalled = true;
-    persistence.createPersistence = wrappedCreate;
-  }
-
   function refresh() {
-    installPracticeHistoryLimit();
     ensureHistorySections();
     presentDiagnosticResult();
     hideTrustMetadataFromUi();
