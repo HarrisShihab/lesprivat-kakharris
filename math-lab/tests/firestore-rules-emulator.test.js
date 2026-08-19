@@ -30,6 +30,9 @@ const root = path.resolve(__dirname, "../..");
       await setDoc(doc(db, "mathResults/result-alice"), {
         contractVersion:"1.0",resultId:"result-alice",sessionId:"session-alice",ownerUid:"alice",sessionType:"practice",educationLevel:"SMP",grade:7,phase:"D",subject:"matematika",topicId:"aljabar",score:50,accuracy:0.5,correctCount:1,wrongCount:1,totalQuestions:2,responses:[],trustStatus:"client-untrusted"
       });
+      await setDoc(doc(db, "mathDiagnosticResults/diagnostic-alice"), {
+        contractVersion:"1.0",resultId:"diagnostic-alice",sessionId:"diag-alice",ownerUid:"alice",sessionType:"diagnostic",diagnosticSummary:{score:50},mastery:[],recommendations:[],responses:[],trustStatus:"client-untrusted"
+      });
       await setDoc(doc(db, "mathEvaluations/eval-private"), { specification:{correctOptionId:"opt-1"} });
     });
 
@@ -38,16 +41,21 @@ const root = path.resolve(__dirname, "../..");
     const anonymous=env.unauthenticatedContext().firestore();
 
     assert.ok((await assertSucceeds(getDoc(doc(alice,"mathSessions/session-alice")))).exists());
+    assert.ok((await assertSucceeds(getDoc(doc(alice,"mathDiagnosticResults/diagnostic-alice")))).exists());
     await assertFails(getDoc(doc(bob,"mathSessions/session-alice")));
     await assertFails(updateDoc(doc(bob,"mathSessions/session-alice"),{status:"completed"}));
+    await assertFails(getDoc(doc(bob,"mathDiagnosticResults/diagnostic-alice")));
+    await assertFails(updateDoc(doc(alice,"mathDiagnosticResults/diagnostic-alice"),{diagnosticSummary:{score:100}}));
     await assertFails(deleteDoc(doc(alice,"mathResults/result-alice")));
+    await assertFails(deleteDoc(doc(alice,"mathDiagnosticResults/diagnostic-alice")));
     await assertFails(getDoc(doc(alice,"mathEvaluations/eval-private")));
     await assertFails(getDoc(doc(anonymous,"mathSessions/session-alice")));
-    await assertFails(setDoc(doc(anonymous,"mathSessions/anonymous-write"),{ownerUid:null}));
+    await assertFails(setDoc(doc(anonymous,"mathDiagnosticResults/anonymous-write"),{ownerUid:null,sessionType:"diagnostic",diagnosticSummary:{},mastery:[],recommendations:[],trustStatus:"client-untrusted"}));
 
     console.log("PASS Firestore Emulator security boundary");
     console.log("PASS owner isolation");
     console.log("PASS result immutability");
+    console.log("PASS diagnostic result isolation");
     console.log("PASS private evaluation collection denial");
     console.log("PASS anonymous persistence denial");
   } finally { await env.cleanup(); }
