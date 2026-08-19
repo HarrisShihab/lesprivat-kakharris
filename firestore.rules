@@ -2,63 +2,29 @@ rules_version = '2';
 
 service cloud.firestore {
   match /databases/{database}/documents {
-    function signedIn() {
-      return request.auth != null;
-    }
-
-    function myUser() {
-      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data;
-    }
-
-    function active() {
-      return signedIn() && myUser().aktif == true;
-    }
-
-    function roleIs(role) {
-      return active() && myUser().role == role;
-    }
-
-    function admin() {
-      return roleIs("admin");
-    }
-
-    function ownsStudent(muridId) {
-      return active()
-        && myUser().role in ["orangtua", "murid"]
-        && muridId in myUser().muridIds;
-    }
+    function signedIn() { return request.auth != null; }
+    function myUser() { return get(/databases/$(database)/documents/users/$(request.auth.uid)).data; }
+    function active() { return signedIn() && myUser().aktif == true; }
+    function roleIs(role) { return active() && myUser().role == role; }
+    function admin() { return roleIs("admin"); }
+    function ownsStudent(muridId) { return active() && myUser().role in ["orangtua", "murid"] && muridId in myUser().muridIds; }
 
     function validScheduleRequest() {
-      return request.resource.data.keys().hasOnly([
-          "idPengajuan", "idMurid", "hari", "jamMulai", "jamSelesai",
-          "durasi", "jadwalTampilan", "tanggal", "status", "createdBy",
-          "createdAt", "expiresAt", "quotaSlot", "quotaSlotKey", "quotaId"
-        ])
+      return request.resource.data.keys().hasOnly(["idPengajuan", "idMurid", "hari", "jamMulai", "jamSelesai", "durasi", "jadwalTampilan", "tanggal", "status", "createdBy", "createdAt", "expiresAt", "quotaSlot", "quotaSlotKey", "quotaId"])
         && request.resource.data.idPengajuan is string
         && request.resource.data.idMurid is string
         && request.resource.data.hari in ["Senin", "Selasa", "Rabu", "Kamis", "Jumat", "Sabtu"]
-        && ((request.resource.data.hari == "Sabtu"
-              && request.resource.data.jamMulai.matches('^(09|1[0-7]):(00|15|30|45)$'))
-          || (request.resource.data.hari != "Sabtu"
-              && request.resource.data.jamMulai.matches('^1[3-7]:(00|15|30|45)$')))
+        && ((request.resource.data.hari == "Sabtu" && request.resource.data.jamMulai.matches('^(09|1[0-7]):(00|15|30|45)$')) || (request.resource.data.hari != "Sabtu" && request.resource.data.jamMulai.matches('^1[3-7]:(00|15|30|45)$')))
         && request.resource.data.jamSelesai.matches('^(1[0-6]:(00|15|30|45)|17:(00|15|30))$')
         && request.resource.data.durasi in [60, 90]
         && request.resource.data.quotaSlot is int
         && request.resource.data.quotaSlot >= 1
         && request.resource.data.quotaSlotKey in ["1", "2", "3"]
-        && ((request.resource.data.quotaSlot == 1 && request.resource.data.quotaSlotKey == "1")
-          || (request.resource.data.quotaSlot == 2 && request.resource.data.quotaSlotKey == "2")
-          || (request.resource.data.quotaSlot == 3 && request.resource.data.quotaSlotKey == "3"))
+        && ((request.resource.data.quotaSlot == 1 && request.resource.data.quotaSlotKey == "1") || (request.resource.data.quotaSlot == 2 && request.resource.data.quotaSlotKey == "2") || (request.resource.data.quotaSlot == 3 && request.resource.data.quotaSlotKey == "3"))
         && request.resource.data.quotaId == request.auth.uid + "_" + request.resource.data.idMurid + "_" + request.resource.data.quotaSlotKey
-        && ((get(/databases/$(database)/documents/murid/$(request.resource.data.idMurid)).data.paket is string
-              && get(/databases/$(database)/documents/murid/$(request.resource.data.idMurid)).data.paket.matches('(^|.*_)12(_.*|$)')
-              && request.resource.data.quotaSlot <= 3)
-          || (get(/databases/$(database)/documents/murid/$(request.resource.data.idMurid)).data.paket is string
-              && get(/databases/$(database)/documents/murid/$(request.resource.data.idMurid)).data.paket.matches('(^|.*_)8(_.*|$)')
-              && request.resource.data.quotaSlot <= 2)
-          || (request.resource.data.quotaSlot == 1
-              && (!(get(/databases/$(database)/documents/murid/$(request.resource.data.idMurid)).data.paket is string)
-                || (!get(/databases/$(database)/documents/murid/$(request.resource.data.idMurid)).data.paket.matches('(^|.*_)(8|12)(_.*|$')))))
+        && ((get(/databases/$(database)/documents/murid/$(request.resource.data.idMurid)).data.paket is string && get(/databases/$(database)/documents/murid/$(request.resource.data.idMurid)).data.paket.matches('(^|.*_)12(_.*|$)') && request.resource.data.quotaSlot <= 3)
+          || (get(/databases/$(database)/documents/murid/$(request.resource.data.idMurid)).data.paket is string && get(/databases/$(database)/documents/murid/$(request.resource.data.idMurid)).data.paket.matches('(^|.*_)8(_.*|$)') && request.resource.data.quotaSlot <= 2)
+          || (request.resource.data.quotaSlot == 1 && (!(get(/databases/$(database)/documents/murid/$(request.resource.data.idMurid)).data.paket is string) || (!get(/databases/$(database)/documents/murid/$(request.resource.data.idMurid)).data.paket.matches('(^|.*_)(8|12)(_.*|$)')))))
         && request.resource.data.status == "Pending"
         && request.resource.data.createdBy == request.auth.uid
         && request.resource.data.createdAt == request.time
@@ -70,16 +36,11 @@ service cloud.firestore {
         && getAfter(/databases/$(database)/documents/kuotaJadwal/$(request.resource.data.quotaId)).data.idMurid == request.resource.data.idMurid
         && getAfter(/databases/$(database)/documents/kuotaJadwal/$(request.resource.data.quotaId)).data.slot == request.resource.data.quotaSlot
         && ownsStudent(request.resource.data.idMurid)
-        && ((request.resource.data.durasi == 60
-              && get(/databases/$(database)/documents/murid/$(request.resource.data.idMurid)).data.get("durasi", "60") in ["60", 60])
-          || (request.resource.data.durasi == 90
-              && get(/databases/$(database)/documents/murid/$(request.resource.data.idMurid)).data.get("durasi", "60") in ["90", 90]));
+        && ((request.resource.data.durasi == 60 && get(/databases/$(database)/documents/murid/$(request.resource.data.idMurid)).data.get("durasi", "60") in ["60", 60]) || (request.resource.data.durasi == 90 && get(/databases/$(database)/documents/murid/$(request.resource.data.idMurid)).data.get("durasi", "60") in ["90", 90]));
     }
 
     function validPendingSlot() {
-      return request.resource.data.keys().hasOnly([
-          "hari", "menit", "requestId", "status", "expiresAt", "createdAt"
-        ])
+      return request.resource.data.keys().hasOnly(["hari", "menit", "requestId", "status", "expiresAt", "createdAt"])
         && request.resource.data.requestId is string
         && request.resource.data.hari in ["Senin", "Selasa", "Rabu", "Kamis", "Jumat", "Sabtu"]
         && request.resource.data.menit is int
@@ -98,193 +59,53 @@ service cloud.firestore {
     match /users/{uid} {
       allow read: if admin() || (signedIn() && request.auth.uid == uid);
       allow create, delete: if admin();
-      allow update: if admin()
-        || (signedIn()
-          && request.auth.uid == uid
-          && active()
-          && request.resource.data.diff(resource.data).affectedKeys()
-            .hasOnly(["nama", "emailKontak", "telepon", "updatedAt"]));
+      allow update: if admin() || (signedIn() && request.auth.uid == uid && active() && request.resource.data.diff(resource.data).affectedKeys().hasOnly(["nama", "emailKontak", "telepon", "updatedAt"]));
     }
-
-    match /murid/{muridId} {
-      allow read: if admin() || ownsStudent(muridId);
-      allow create, update, delete: if admin();
-    }
-
-    match /absensi/{docId} {
-      allow read: if admin() || ownsStudent(resource.data.idMurid);
-      allow create, update, delete: if admin();
-    }
-
-    match /keuangan/{docId} {
-      allow read: if admin()
-        || (roleIs("orangtua") && ownsStudent(resource.data.idMurid));
-      allow create, update, delete: if admin();
-    }
-
-    match /buktiPembayaran/{docId} {
-      allow read: if admin()
-        || (roleIs("orangtua") && ownsStudent(resource.data.idMurid));
-      allow create: if admin();
-      allow update, delete: if admin();
-    }
-
-    match /materi/{docId} {
-      allow read: if admin() || ownsStudent(resource.data.idMurid);
-      allow create, update, delete: if admin();
-    }
-
-    match /jadwal/{docId} {
-      allow read: if admin() || ownsStudent(resource.data.idMurid);
-      allow create, update, delete: if admin();
-    }
-
-    match /jadwalPublik/{docId} {
-      allow read: if true;
-      allow create, update, delete: if admin();
-    }
-
-    match /pengajuanJadwal/{docId} {
-      allow read: if admin()
-        || (roleIs("orangtua") && ownsStudent(resource.data.idMurid));
-      allow create: if roleIs("orangtua")
-        && request.resource.data.idPengajuan == docId
-        && validScheduleRequest();
-      allow update, delete: if admin();
-    }
-
-    match /slotJadwal/{slotId} {
-      allow read: if true;
-      allow create: if roleIs("orangtua") && validPendingSlot();
-      allow update: if admin()
-        || (roleIs("orangtua")
-          && resource.data.status == "Pending"
-          && resource.data.expiresAt <= request.time
-          && validPendingSlot());
-      allow delete: if admin();
-    }
-
+    match /murid/{muridId} { allow read: if admin() || ownsStudent(muridId); allow create, update, delete: if admin(); }
+    match /absensi/{docId} { allow read: if admin() || ownsStudent(resource.data.idMurid); allow create, update, delete: if admin(); }
+    match /keuangan/{docId} { allow read: if admin() || (roleIs("orangtua") && ownsStudent(resource.data.idMurid)); allow create, update, delete: if admin(); }
+    match /buktiPembayaran/{docId} { allow read: if admin() || (roleIs("orangtua") && ownsStudent(resource.data.idMurid)); allow create: if admin(); allow update, delete: if admin(); }
+    match /materi/{docId} { allow read: if admin() || ownsStudent(resource.data.idMurid); allow create, update, delete: if admin(); }
+    match /jadwal/{docId} { allow read: if admin() || ownsStudent(resource.data.idMurid); allow create, update, delete: if admin(); }
+    match /jadwalPublik/{docId} { allow read: if true; allow create, update, delete: if admin(); }
+    match /pengajuanJadwal/{docId} { allow read: if admin() || (roleIs("orangtua") && ownsStudent(resource.data.idMurid)); allow create: if roleIs("orangtua") && request.resource.data.idPengajuan == docId && validScheduleRequest(); allow update, delete: if admin(); }
+    match /slotJadwal/{slotId} { allow read: if true; allow create: if roleIs("orangtua") && validPendingSlot(); allow update: if admin() || (roleIs("orangtua") && resource.data.status == "Pending" && resource.data.expiresAt <= request.time && validPendingSlot()); allow delete: if admin(); }
     match /kuotaJadwal/{quotaId} {
-      allow get: if admin()
-        || (roleIs("orangtua") && quotaId.matches(request.auth.uid + "_.*"));
-      allow list: if admin()
-        || (roleIs("orangtua") && ownsStudent(resource.data.idMurid));
-      allow create: if roleIs("orangtua")
-        && ownsStudent(request.resource.data.idMurid)
-        && request.resource.data.keys().hasOnly(["idMurid", "slot", "slotKey", "requestId", "status", "expiresAt", "createdAt"])
-        && request.resource.data.slotKey in ["1", "2", "3"]
-        && ((request.resource.data.slot == 1 && request.resource.data.slotKey == "1")
-          || (request.resource.data.slot == 2 && request.resource.data.slotKey == "2")
-          || (request.resource.data.slot == 3 && request.resource.data.slotKey == "3"))
-        && quotaId == request.auth.uid + "_" + request.resource.data.idMurid + "_" + request.resource.data.slotKey
-        && existsAfter(/databases/$(database)/documents/pengajuanJadwal/$(request.resource.data.requestId))
-        && request.resource.data.slot == getAfter(/databases/$(database)/documents/pengajuanJadwal/$(request.resource.data.requestId)).data.quotaSlot
-        && request.resource.data.idMurid == getAfter(/databases/$(database)/documents/pengajuanJadwal/$(request.resource.data.requestId)).data.idMurid
-        && quotaId == getAfter(/databases/$(database)/documents/pengajuanJadwal/$(request.resource.data.requestId)).data.quotaId
-        && request.resource.data.status == "Pending"
-        && request.resource.data.createdAt == request.time
-        && request.resource.data.expiresAt == getAfter(/databases/$(database)/documents/pengajuanJadwal/$(request.resource.data.requestId)).data.expiresAt
-        && getAfter(/databases/$(database)/documents/pengajuanJadwal/$(request.resource.data.requestId)).data.createdBy == request.auth.uid;
-      allow update: if admin()
-        || (roleIs("orangtua")
-          && resource.data.status == "Pending"
-          && resource.data.expiresAt <= request.time
-          && ownsStudent(request.resource.data.idMurid)
-          && request.resource.data.keys().hasOnly(["idMurid", "slot", "slotKey", "requestId", "status", "expiresAt", "createdAt"])
-          && request.resource.data.slotKey in ["1", "2", "3"]
-          && ((request.resource.data.slot == 1 && request.resource.data.slotKey == "1")
-            || (request.resource.data.slot == 2 && request.resource.data.slotKey == "2")
-            || (request.resource.data.slot == 3 && request.resource.data.slotKey == "3"))
-          && quotaId == request.auth.uid + "_" + request.resource.data.idMurid + "_" + request.resource.data.slotKey
-          && existsAfter(/databases/$(database)/documents/pengajuanJadwal/$(request.resource.data.requestId))
-          && request.resource.data.slot == getAfter(/databases/$(database)/documents/pengajuanJadwal/$(request.resource.data.requestId)).data.quotaSlot
-          && request.resource.data.idMurid == getAfter(/databases/$(database)/documents/pengajuanJadwal/$(request.resource.data.requestId)).data.idMurid
-          && quotaId == getAfter(/databases/$(database)/documents/pengajuanJadwal/$(request.resource.data.requestId)).data.quotaId
-          && request.resource.data.status == "Pending"
-          && request.resource.data.createdAt == request.time
-          && request.resource.data.expiresAt == getAfter(/databases/$(database)/documents/pengajuanJadwal/$(request.resource.data.requestId)).data.expiresAt
-          && getAfter(/databases/$(database)/documents/pengajuanJadwal/$(request.resource.data.requestId)).data.createdBy == request.auth.uid);
+      allow get: if admin() || (roleIs("orangtua") && quotaId.matches(request.auth.uid + "_.*"));
+      allow list: if admin() || (roleIs("orangtua") && ownsStudent(resource.data.idMurid));
+      allow create: if roleIs("orangtua") && ownsStudent(request.resource.data.idMurid) && request.resource.data.keys().hasOnly(["idMurid", "slot", "slotKey", "requestId", "status", "expiresAt", "createdAt"]) && request.resource.data.slotKey in ["1", "2", "3"] && ((request.resource.data.slot == 1 && request.resource.data.slotKey == "1") || (request.resource.data.slot == 2 && request.resource.data.slotKey == "2") || (request.resource.data.slot == 3 && request.resource.data.slotKey == "3")) && quotaId == request.auth.uid + "_" + request.resource.data.idMurid + "_" + request.resource.data.slotKey && existsAfter(/databases/$(database)/documents/pengajuanJadwal/$(request.resource.data.requestId)) && request.resource.data.slot == getAfter(/databases/$(database)/documents/pengajuanJadwal/$(request.resource.data.requestId)).data.quotaSlot && request.resource.data.idMurid == getAfter(/databases/$(database)/documents/pengajuanJadwal/$(request.resource.data.requestId)).data.idMurid && quotaId == getAfter(/databases/$(database)/documents/pengajuanJadwal/$(request.resource.data.requestId)).data.quotaId && request.resource.data.status == "Pending" && request.resource.data.createdAt == request.time && request.resource.data.expiresAt == getAfter(/databases/$(database)/documents/pengajuanJadwal/$(request.resource.data.requestId)).data.expiresAt && getAfter(/databases/$(database)/documents/pengajuanJadwal/$(request.resource.data.requestId)).data.createdBy == request.auth.uid;
+      allow update: if admin() || (roleIs("orangtua") && resource.data.status == "Pending" && resource.data.expiresAt <= request.time && ownsStudent(request.resource.data.idMurid) && request.resource.data.keys().hasOnly(["idMurid", "slot", "slotKey", "requestId", "status", "expiresAt", "createdAt"]) && request.resource.data.slotKey in ["1", "2", "3"] && ((request.resource.data.slot == 1 && request.resource.data.slotKey == "1") || (request.resource.data.slot == 2 && request.resource.data.slotKey == "2") || (request.resource.data.slot == 3 && request.resource.data.slotKey == "3")) && quotaId == request.auth.uid + "_" + request.resource.data.idMurid + "_" + request.resource.data.slotKey && existsAfter(/databases/$(database)/documents/pengajuanJadwal/$(request.resource.data.requestId)) && request.resource.data.slot == getAfter(/databases/$(database)/documents/pengajuanJadwal/$(request.resource.data.requestId)).data.quotaSlot && request.resource.data.idMurid == getAfter(/databases/$(database)/documents/pengajuanJadwal/$(request.resource.data.requestId)).data.idMurid && quotaId == getAfter(/databases/$(database)/documents/pengajuanJadwal/$(request.resource.data.requestId)).data.quotaId && request.resource.data.status == "Pending" && request.resource.data.createdAt == request.time && request.resource.data.expiresAt == getAfter(/databases/$(database)/documents/pengajuanJadwal/$(request.resource.data.requestId)).data.expiresAt && getAfter(/databases/$(database)/documents/pengajuanJadwal/$(request.resource.data.requestId)).data.createdBy == request.auth.uid);
       allow delete: if admin();
     }
+    match /system/{docId} { allow read, write: if admin(); }
 
-    match /system/{docId} {
-      allow read, write: if admin();
-    }
-
-    function mathLabUser() {
-      return active() && myUser().role in ["murid", "admin"];
-    }
-
-    function ownsMathLabDocument() {
-      return mathLabUser() && request.auth.uid == resource.data.ownerUid;
-    }
-
-    function ownsMathLabCreate() {
-      return mathLabUser() && request.auth.uid == request.resource.data.ownerUid;
-    }
+    function mathLabUser() { return active() && myUser().role in ["murid", "admin"]; }
+    function ownsMathLabDocument() { return mathLabUser() && request.auth.uid == resource.data.ownerUid; }
+    function ownsMathLabCreate() { return mathLabUser() && request.auth.uid == request.resource.data.ownerUid; }
 
     match /mathSessions/{sessionId} {
       allow get, list: if mathLabUser() && resource.data.ownerUid == request.auth.uid;
-      allow create: if mathLabUser()
-        && sessionId == request.resource.data.sessionId
-        && ownsMathLabCreate()
-        && request.resource.data.sessionType == "practice"
-        && request.resource.data.trustStatus == "client-untrusted";
-      allow update: if ownsMathLabDocument()
-        && request.resource.data.ownerUid == resource.data.ownerUid
-        && request.resource.data.sessionId == resource.data.sessionId
-        && request.resource.data.sessionType == resource.data.sessionType
-        && request.resource.data.diff(resource.data).affectedKeys().hasOnly([
-          "currentIndex", "status", "finishedAt", "responses", "updatedAt", "trustStatus"
-        ])
-        && request.resource.data.trustStatus == "client-untrusted";
+      allow create: if mathLabUser() && sessionId == request.resource.data.sessionId && ownsMathLabCreate() && request.resource.data.sessionType == "practice" && request.resource.data.trustStatus == "client-untrusted";
+      allow update: if ownsMathLabDocument() && request.resource.data.ownerUid == resource.data.ownerUid && request.resource.data.sessionId == resource.data.sessionId && request.resource.data.sessionType == resource.data.sessionType && request.resource.data.diff(resource.data).affectedKeys().hasOnly(["currentIndex", "status", "finishedAt", "responses", "updatedAt", "trustStatus"]) && request.resource.data.trustStatus == "client-untrusted";
       allow delete: if false;
     }
 
     match /mathResults/{resultId} {
       allow get, list: if mathLabUser() && resource.data.ownerUid == request.auth.uid;
-      allow create: if mathLabUser()
-        && resultId == request.resource.data.resultId
-        && ownsMathLabCreate()
-        && request.resource.data.sessionType == "practice"
-        && request.resource.data.trustStatus == "client-untrusted"
-        && request.resource.data.diagnosticSummary == null
-        && request.resource.data.mastery == null
-        && request.resource.data.recommendations.size() == 0;
+      allow create: if mathLabUser() && resultId == request.resource.data.resultId && ownsMathLabCreate() && request.resource.data.sessionType == "practice" && request.resource.data.trustStatus == "client-untrusted" && request.resource.data.diagnosticSummary == null && request.resource.data.mastery == null && request.resource.data.recommendations.size() == 0;
       allow update, delete: if false;
     }
 
     match /mathDiagnosticResults/{resultId} {
       allow get, list: if mathLabUser() && resource.data.ownerUid == request.auth.uid;
-      allow create: if mathLabUser()
-        && resultId == request.resource.data.resultId
-        && request.resource.data.ownerUid == request.auth.uid
-        && request.resource.data.sessionType == "diagnostic"
-        && request.resource.data.trustStatus == "client-untrusted"
-        && request.resource.data.diagnosticSummary is map
-        && request.resource.data.mastery is list
-        && request.resource.data.recommendations is list;
+      allow create: if mathLabUser() && resultId == request.resource.data.resultId && request.resource.data.ownerUid == request.auth.uid && request.resource.data.sessionType == "diagnostic" && request.resource.data.trustStatus == "client-untrusted" && request.resource.data.diagnosticSummary is map && request.resource.data.mastery is list && request.resource.data.recommendations is list;
       allow update, delete: if false;
     }
 
-    match /mathContent/{docId} {
-      allow read, write: if false;
-    }
-
-    match /mathEvaluations/{docId} {
-      allow read, write: if false;
-    }
-
-    match /mathMastery/{docId} {
-      allow read, write: if false;
-    }
-
-    match /mathTaxonomy/{docId} {
-      allow read, write: if false;
-    }
-
-    match /{document=**} {
-      allow read, write: if false;
-    }
+    match /mathContent/{docId} { allow read, write: if false; }
+    match /mathEvaluations/{docId} { allow read, write: if false; }
+    match /mathMastery/{docId} { allow read, write: if false; }
+    match /mathTaxonomy/{docId} { allow read, write: if false; }
+    match /{document=**} { allow read, write: if false; }
   }
 }
