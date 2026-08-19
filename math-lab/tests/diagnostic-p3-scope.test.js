@@ -1,0 +1,10 @@
+const assert = require('assert');
+const persistence = require('../core/firestore/diagnostic-persistence.js');
+const presentation = require('../core/diagnostic/presentation.js');
+assert.strictEqual(persistence.COLLECTION, 'mathDiagnosticResults');
+assert.strictEqual(presentation.recommendation({ indicator: 'concept', action: 'maintain_indicator' }).text, 'Pertahankan kemampuan');
+const result = presentation.sanitizeResult({ score: 100, correctCount: 12, totalQuestions: 12, mastery: [{ indicator: 'concept', percentage: 100, status: 'mastered' }], recommendations: [{ indicator: 'concept', action: 'maintain_indicator', priority: 'low' }] });
+assert.strictEqual(result.recommendations[0].indicator, 'Konsep');
+assert.strictEqual(result.recommendations[0].text, 'Pertahankan kemampuan');
+assert.ok(!JSON.stringify(result).includes('client-untrusted'));
+console.log('diagnostic P3 scope contract PASS');
