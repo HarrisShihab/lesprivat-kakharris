@@ -27,6 +27,7 @@ async function persistDiagnosticResult(token, result, responses) {
   const resultId = String(result.resultId || "").trim();
   if (!resultId) throw new Error("Diagnostic resultId tidak valid.");
 
+  const summary = result.diagnosticSummary || {};
   const document = {
     fields: fsFields({
       contractVersion: String(result.contractVersion || "1.0"),
@@ -39,14 +40,14 @@ async function persistDiagnosticResult(token, result, responses) {
       phase: result.phase == null ? null : String(result.phase),
       subject: result.subject == null ? null : String(result.subject),
       topicId: String(result.topicId || ""),
-      score: Number(result.score || 0),
-      accuracy: Number(result.accuracy || 0),
-      correctCount: Number(result.correctCount || 0),
-      wrongCount: Number(result.wrongCount || 0),
-      totalQuestions: Number(result.totalQuestions || 0),
+      score: Number(result.score ?? summary.score ?? 0),
+      accuracy: Number(result.accuracy ?? (summary.totalQuestions ? summary.correctCount / summary.totalQuestions : 0)),
+      correctCount: Number(result.correctCount ?? summary.correctCount ?? 0),
+      wrongCount: Number(result.wrongCount ?? summary.wrongCount ?? 0),
+      totalQuestions: Number(result.totalQuestions ?? summary.totalQuestions ?? summary.questionCount ?? 0),
       questionVersions: result.questionVersions || {},
       responses: Array.isArray(responses) ? responses : [],
-      diagnosticSummary: result.diagnosticSummary || {},
+      diagnosticSummary: summary,
       mastery: Array.isArray(result.mastery) ? result.mastery : [],
       recommendations: Array.isArray(result.recommendations) ? result.recommendations : [],
       trustStatus: "client-untrusted",
@@ -87,9 +88,21 @@ exports.handler = async (event) => {
       totalQuestions,
       score: Number(((correctCount / totalQuestions) * 100).toFixed(2)),
     };
+    const pilotQuestion = pilot.RECORDS[0]?.question || {};
     const result = {
       ...analyzed.result,
       ownerUid: auth.uid,
+      educationLevel: String(pilotQuestion.educationLevel || "SMP"),
+      grade: pilotQuestion.grade == null ? 7 : pilotQuestion.grade,
+      phase: String(pilotQuestion.phase || "D"),
+      subject: String(pilotQuestion.subject || "matematika"),
+      topicId: String(pilotQuestion.topicId || "aljabar"),
+      score: diagnosticSummary.score,
+      accuracy: totalQuestions ? correctCount / totalQuestions : 0,
+      correctCount,
+      wrongCount: totalQuestions - correctCount,
+      totalQuestions,
+      questionVersions: Object.fromEntries(pilot.RECORDS.map((record) => [record.question.questionId, record.question.version.contentVersion])),
       diagnosticSummary,
       trustStatus: "client-untrusted",
     };
