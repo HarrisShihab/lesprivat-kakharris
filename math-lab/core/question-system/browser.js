@@ -1,16 +1,15 @@
 /**
- * Authenticated-safe browser entry for Math Lab.
- *
- * The evaluation-bearing Question System is deliberately isolated from this
- * entry. The anonymous Public Math Lab may opt into the separate public entry;
- * authenticated Math Lab must use the trusted evaluation boundary.
+ * Deterministic Math Lab browser boundary.
+ * Student pages never load evaluation-bearing Question System modules.
+ * Public and privileged admin pages use explicitly separated entries.
  */
 const root = globalThis;
 root.KakHarrisMathLab = root.KakHarrisMathLab || {};
 
 const ready = (async () => {
-  const isPublic = typeof location !== "undefined" && /(?:^|\/)math-lab-public\.html(?:$|[?#])/.test(location.pathname + location.search + location.hash);
-  if (isPublic) return import("./public-browser.js").then((module) => module.default || root.KakHarrisMathLab?.publicQuestionSystemReady);
+  const current = typeof location !== "undefined" ? `${location.pathname}${location.search}${location.hash}` : "";
+  if (/(?:^|\/)math-lab-public\.html(?:$|[?#])/.test(current)) return (await import("./public-browser.js")).default;
+  if (/(?:^|\/)math-lab-my-learning\.html(?:$|[?#])/.test(current)) return (await import("./admin-browser.js")).default;
   return null;
 })();
 
