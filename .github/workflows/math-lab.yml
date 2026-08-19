@@ -5,6 +5,7 @@ on:
     paths:
       - 'math-lab/**'
       - 'functions/**'
+      - 'netlify/**'
       - 'firestore.rules'
       - 'firebase.json'
       - 'test-quiz-engine.js'
@@ -14,6 +15,7 @@ on:
     paths:
       - 'math-lab/**'
       - 'functions/**'
+      - 'netlify/**'
       - 'firestore.rules'
       - 'firebase.json'
       - 'test-quiz-engine.js'
