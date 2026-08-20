@@ -2,7 +2,7 @@ window.FIREBASE_CONFIG = {
   apiKey: "AIzaSyA2BVsutEZOJmh3-aBUoPBjJeVmJ2YO7cQ",
   authDomain: "les-privat-kak-harris.firebaseapp.com",
   projectId: "les-privat-kak-harris",
-  storageBucket: "les-privat-kak-harris.firebasestorage.app",
+  storageBucket: "lesprivat-kak-harris.firebasestorage.app",
   messagingSenderId: "204257135435",
   appId: "1:204257135435:web:8b36821ba9a8bc1127f6ce",
   measurementId: "G-4F2C2VGSTT",
@@ -21,11 +21,6 @@ if (document?.body?.dataset?.portalRole === "murid") {
   script.defer = true;
   document.head.appendChild(script);
 
-  const finishFix = document.createElement("script");
-  finishFix.src = "math-lab/ui/practice-finish-fix.js?v=597b44e";
-  finishFix.defer = true;
-  document.head.appendChild(finishFix);
-
   // Diagnostic console is opt-in only: /murid-dashboard.html?debug=1
   const params = new URLSearchParams(window.location.search);
   if (params.get("debug") === "1") {
@@ -34,4 +29,9 @@ if (document?.body?.dataset?.portalRole === "murid") {
     debugScript.defer = true;
     document.head.appendChild(debugScript);
   }
+
+  const finishFix = document.createElement("script");
+  finishFix.src = "math-lab/ui/practice-finish-fix.js?v=20cebc6";
+  finishFix.defer = true;
+  document.head.appendChild(finishFix);
 }
