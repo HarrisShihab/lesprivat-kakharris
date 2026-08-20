@@ -26,7 +26,7 @@ if (document?.body?.dataset?.portalRole === "murid") {
   const params = new URLSearchParams(window.location.search);
   if (params.get("debug") === "1") {
     const debugScript = document.createElement("script");
-    debugScript.src = "math-lab/ui/debug-console.js?v=54ef1ab";
+    debugScript.src = "math-lab/ui/debug-console.js?v=fdc82f27";
     debugScript.defer = true;
     document.head.appendChild(debugScript);
   }
@@ -42,4 +42,15 @@ if (document?.body?.dataset?.portalRole === "murid") {
   practiceHistory.src = "math-lab/ui/practice-history-presentation.js?v=597f3d69";
   practiceHistory.defer = true;
   document.head.appendChild(practiceHistory);
+}
+
+// Admin My Learning uses the same shared Practice UI/engine. Debug is opt-in only.
+if (document?.body?.dataset?.portalRole === "admin") {
+  const params = new URLSearchParams(window.location.search);
+  if (params.get("debug") === "1") {
+    const debugScript = document.createElement("script");
+    debugScript.src = "math-lab/ui/debug-console.js?v=fdc82f27";
+    debugScript.defer = true;
+    document.head.appendChild(debugScript);
+  }
 }
