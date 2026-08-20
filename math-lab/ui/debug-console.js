@@ -1,6 +1,8 @@
 (function (root) {
   "use strict";
-  if (typeof document === "undefined" || document.body?.dataset?.portalRole !== "murid") return;
+  if (typeof document === "undefined") return;
+  const role = document.body?.dataset?.portalRole;
+  if (role !== "murid" && role !== "admin") return;
   const params = new URLSearchParams(root.location?.search || "");
   if (params.get("debug") !== "1") return;
 
@@ -43,7 +45,7 @@
       readyState: document.readyState,
       online: navigator.onLine,
       userAgent: navigator.userAgent,
-      portalRole: document.body?.dataset?.portalRole || null,
+      portalRole: role,
       firebase: {
         loaded: !!root.firebase,
         apps: Array.isArray(root.firebase?.apps) ? root.firebase.apps.length : null,
