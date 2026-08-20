@@ -1,6 +1,7 @@
 (function (root, factory) {
   "use strict";
   const api = factory();
+  if (typeof module !== "undefined" && module.exports) module.exports = api;
   root.KakHarrisMathLab = root.KakHarrisMathLab || {};
   root.KakHarrisMathLab.firestore = root.KakHarrisMathLab.firestore || {};
   root.KakHarrisMathLab.firestore.diagnosticPersistence = api;
