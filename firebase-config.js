@@ -14,9 +14,10 @@ window.FIREBASE_USERNAME_DOMAIN = "akun.lesprivat-kakharris.id";
 
 // P3 student-facing presentation layer. Trust metadata remains in persistence,
 // but architecture-only labels are removed from the student's UI.
+// Query version memaksa browser mengambil implementation terbaru setelah fix.
 if (document?.body?.dataset?.portalRole === "murid") {
   const script = document.createElement("script");
-  script.src = "math-lab/ui/diagnostic-student-presentation.js";
+  script.src = "math-lab/ui/diagnostic-student-presentation.js?v=64c0c94";
   script.defer = true;
   document.head.appendChild(script);
 }
