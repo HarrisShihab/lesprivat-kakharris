@@ -22,7 +22,7 @@ if (document?.body?.dataset?.portalRole === "murid") {
   document.head.appendChild(script);
 
   const finishFix = document.createElement("script");
-  finishFix.src = "math-lab/ui/practice-finish-fix.js?v=cde1351";
+  finishFix.src = "math-lab/ui/practice-finish-fix.js?v=b847c84";
   finishFix.defer = true;
   document.head.appendChild(finishFix);
 }
