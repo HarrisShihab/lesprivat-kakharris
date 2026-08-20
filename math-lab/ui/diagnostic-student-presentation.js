@@ -160,7 +160,12 @@
         const { user, db } = await firebaseContext();
         const snap = await db.collection("mathDiagnosticResults").where("ownerUid", "==", user.uid).limit(5).get();
         const rows = snap.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
-        const toMillis = (value) => value?.toMillis?.() ?? value?.toDate?.()?.getTime?.() ?? Date.parse(value || "") || 0;
+        const toMillis = (value) => {
+          const millis = value?.toMillis?.() ?? value?.toDate?.()?.getTime?.();
+          if (Number.isFinite(millis)) return millis;
+          const parsed = Date.parse(value || "");
+          return Number.isFinite(parsed) ? parsed : 0;
+        };
         rows.sort((a, b) => toMillis(b.createdAt) - toMillis(a.createdAt));
 
         if (!rows.length) {
