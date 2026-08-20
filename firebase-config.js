@@ -1,5 +1,5 @@
 window.FIREBASE_CONFIG = {
-  apiKey: "AIzaSyA2BVsutEZOJmh3-aBUoPBjJeVmJ2YO7cM",
+  apiKey: "AIzaSyA2BVsutEZOJmh3-aBUoPBjJeVmJ2YO7cQ",
   authDomain: "les-privat-kak-harris.firebaseapp.com",
   projectId: "les-privat-kak-harris",
   storageBucket: "lesprivat-kak-harris.firebasestorage.app",
