@@ -20,4 +20,9 @@ if (document?.body?.dataset?.portalRole === "murid") {
   script.src = "math-lab/ui/diagnostic-student-presentation.js?v=64c0c94";
   script.defer = true;
   document.head.appendChild(script);
+
+  const finishFix = document.createElement("script");
+  finishFix.src = "math-lab/ui/practice-finish-fix.js?v=449734b";
+  finishFix.defer = true;
+  document.head.appendChild(finishFix);
 }
