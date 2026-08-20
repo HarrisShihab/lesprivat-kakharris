@@ -25,4 +25,13 @@ if (document?.body?.dataset?.portalRole === "murid") {
   finishFix.src = "math-lab/ui/practice-finish-fix.js?v=597b44e";
   finishFix.defer = true;
   document.head.appendChild(finishFix);
+
+  // Diagnostic console is opt-in only: /murid-dashboard.html?debug=1
+  const params = new URLSearchParams(window.location.search);
+  if (params.get("debug") === "1") {
+    const debugScript = document.createElement("script");
+    debugScript.src = "math-lab/ui/debug-console.js?v=54ef1ab";
+    debugScript.defer = true;
+    document.head.appendChild(debugScript);
+  }
 }
