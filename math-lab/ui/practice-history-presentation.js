@@ -1,7 +1,8 @@
 (function (root) {
   "use strict";
 
-  if (typeof document === "undefined" || document.body?.dataset?.portalRole !== "murid") return;
+  const portalRole = document?.body?.dataset?.portalRole;
+  if (typeof document === "undefined" || !["murid", "admin"].includes(portalRole)) return;
 
   const $ = (id) => document.getElementById(id);
 
