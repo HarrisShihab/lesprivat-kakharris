@@ -114,8 +114,7 @@
       setPanel("math-lab-result", true);
       setStatus("Latihan selesai. Hasil berhasil disimpan.", "success");
 
-      const refresh = $("math-lab-refresh-history");
-      refresh?.click();
+      $("math-lab-refresh-history")?.click();
     } catch (error) {
       console.error("Math Lab finish fix:", error);
       setStatus(error?.message || "Latihan belum dapat diselesaikan.", "error");
