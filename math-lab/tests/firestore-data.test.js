@@ -113,7 +113,7 @@ function fakeFirebase(uid, profile, db) {
   assert.equal((await store.listHistory()).length, 1);
   assert.equal(db._docs.get('mathResults/r1').trustStatus, 'client-untrusted');
   const historyLog = debugLogs.find((entry) => entry.path === 'mathResults' && entry.operation === 'LIST');
-  assert.deepEqual(historyLog.meta, { authUid: 'u1', role: 'murid', limit: 50 });
+  assert.deepEqual(historyLog.meta, { authUid: 'u1', role: 'murid', limit: 5 });
 
   const other = fakeFirebase('u2', null, db);
   db._docs.set('users/u2', { aktif: true, role: 'murid' });
