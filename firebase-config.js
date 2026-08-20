@@ -1,5 +1,5 @@
 window.FIREBASE_CONFIG = {
-  apiKey: "AIzaSyA2BVsutEZOJmh3-aBUoPBjJeVmJ2YO7cQ",
+  apiKey: "AIzaSyA2BVsutEZOJmh3-aBUoPBjJeVmJ2YO7cM",
   authDomain: "les-privat-kak-harris.firebaseapp.com",
   projectId: "les-privat-kak-harris",
   storageBucket: "lesprivat-kak-harris.firebasestorage.app",
@@ -31,7 +31,7 @@ if (document?.body?.dataset?.portalRole === "murid") {
   }
 
   const finishFix = document.createElement("script");
-  finishFix.src = "math-lab/ui/practice-finish-fix.js?v=20cebc6";
+  finishFix.src = "math-lab/ui/practice-finish-fix.js?v=0ddad03";
   finishFix.defer = true;
   document.head.appendChild(finishFix);
 }
