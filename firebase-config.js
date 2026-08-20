@@ -2,7 +2,7 @@ window.FIREBASE_CONFIG = {
   apiKey: "AIzaSyA2BVsutEZOJmh3-aBUoPBjJeVmJ2YO7cQ",
   authDomain: "les-privat-kak-harris.firebaseapp.com",
   projectId: "les-privat-kak-harris",
-  storageBucket: "lesprivat-kak-harris.firebasestorage.app",
+  storageBucket: "lesprivat-kakharris.firebasestorage.app",
   messagingSenderId: "204257135435",
   appId: "1:204257135435:web:8b36821ba9a8bc1127f6ce",
   measurementId: "G-4F2C2VGSTT",
@@ -35,4 +35,11 @@ if (document?.body?.dataset?.portalRole === "murid") {
   finishFix.src = "math-lab/ui/practice-finish-fix.js?v=0ddad03";
   finishFix.defer = true;
   document.head.appendChild(finishFix);
+
+  // Practice history presentation: preserve and display Firestore createdAt
+  // even when the shared persistence layer returns a JSON-cloned Timestamp.
+  const practiceHistory = document.createElement("script");
+  practiceHistory.src = "math-lab/ui/practice-history-presentation.js?v=597f3d69";
+  practiceHistory.defer = true;
+  document.head.appendChild(practiceHistory);
 }
