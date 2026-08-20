@@ -29,6 +29,8 @@
     mastered: "Hasil menunjukkan indikator ini sudah dikuasai dan perlu dipertahankan.",
   });
 
+  let historyLoadPromise = null;
+
   function indicatorLabel(id) {
     return INDICATOR_LABELS[id] || String(id || "Indikator").replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
   }
@@ -62,7 +64,6 @@
     result.querySelectorAll("p, li, strong, div").forEach((element) => {
       const raw = (element.textContent || "").trim();
       if (!raw) return;
-
       if (INDICATOR_LABELS[raw]) element.textContent = indicatorLabel(raw);
       else if (LEVEL_LABELS[raw.toLowerCase()]) element.textContent = levelLabel(raw);
     });
@@ -71,7 +72,6 @@
       const raw = item.textContent || "";
       const actionMatch = raw.match(/\b(review_indicator|practice_indicator|maintain_indicator)\b/);
       if (!actionMatch) return;
-
       const indicatorMatch = raw.match(/^(.*?)\s+—\s+/);
       const indicator = indicatorMatch ? indicatorMatch[1].trim() : "Indikator";
       const recommendation = {
@@ -97,42 +97,92 @@
     return Number.isNaN(date.getTime()) ? "-" : new Intl.DateTimeFormat("id-ID", { dateStyle: "medium", timeStyle: "short" }).format(date);
   }
 
-  function firebaseContext() {
+  function ensureFirebaseApp() {
     const fb = root.firebase;
-    const user = fb?.auth?.().currentUser;
-    const db = fb?.firestore?.();
-    if (!fb || !user?.uid || !db) throw new Error("Sesi login atau Firestore belum siap.");
-    return { user, db };
+    if (!fb || typeof fb.auth !== "function" || typeof fb.firestore !== "function") {
+      throw new Error("Firebase SDK belum tersedia.");
+    }
+
+    if (Array.isArray(fb.apps) && fb.apps.length === 0) {
+      const config = root.FIREBASE_CONFIG;
+      if (!config || !config.apiKey || !config.appId || !config.projectId) {
+        throw new Error("Firebase belum dikonfigurasi.");
+      }
+      fb.initializeApp(config);
+    }
+
+    return fb;
   }
 
-  function renderHistoryItem(item, type) {
+  function waitForAuth(timeoutMs = 10000) {
+    const fb = ensureFirebaseApp();
+    const auth = fb.auth();
+    if (auth.currentUser?.uid) return Promise.resolve(auth.currentUser);
+
+    return new Promise((resolve, reject) => {
+      let settled = false;
+      let timer = null;
+      let unsubscribe = null;
+      const finish = (callback, value) => {
+        if (settled) return;
+        settled = true;
+        if (timer) clearTimeout(timer);
+        try { unsubscribe?.(); } catch {}
+        callback(value);
+      };
+      unsubscribe = auth.onAuthStateChanged((user) => {
+        if (user?.uid) finish(resolve, user);
+      });
+      timer = setTimeout(() => finish(reject, new Error("Sesi login belum siap.")), timeoutMs);
+    });
+  }
+
+  async function firebaseContext() {
+    const fb = ensureFirebaseApp();
+    const user = await waitForAuth();
+    return { user, db: fb.firestore() };
+  }
+
+  function renderHistoryItem(item) {
     const topic = item.topicId === "aljabar" ? "Aljabar" : String(item.topicId || "Materi").replace(/-/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
-    const label = type === "diagnostic" ? "Diagnostic" : "Practice";
-    return `<article class="math-lab-history-item"><div><strong>${escapeHtml(topic)}</strong><div class="math-lab-muted">${escapeHtml(formatDate(item.createdAt))} · ${escapeHtml(item.totalQuestions || 0)} soal · ${label}</div></div><div><div class="math-lab-score">${escapeHtml(item.score ?? 0)}/100</div></div></article>`;
+    const score = item.score ?? item.diagnosticSummary?.score ?? 0;
+    return `<article class="math-lab-history-item"><div><strong>${escapeHtml(topic)}</strong><div class="math-lab-muted">${escapeHtml(formatDate(item.createdAt))} · ${escapeHtml(item.totalQuestions || 0)} soal · Diagnostic</div></div><div><div class="math-lab-score">${escapeHtml(score)}/100</div></div></article>`;
   }
 
   async function loadDiagnosticHistory(target) {
     const container = target || document.getElementById("math-lab-diagnostic-history-list");
     if (!container) return;
-    container.innerHTML = '<div class="math-lab-status">Memuat riwayat diagnostic...</div>';
-    try {
-      const { user, db } = firebaseContext();
-      const snap = await db.collection("mathDiagnosticResults").where("ownerUid", "==", user.uid).orderBy("createdAt", "desc").limit(5).get();
-      if (!snap.docs.length) {
-        container.innerHTML = '<div class="math-lab-status empty">Belum ada riwayat diagnostic.</div>';
-        return;
+    if (historyLoadPromise) return historyLoadPromise;
+
+    historyLoadPromise = (async () => {
+      container.innerHTML = '<div class="math-lab-status">Memuat riwayat diagnostic...</div>';
+      try {
+        const { user, db } = await firebaseContext();
+        const snap = await db.collection("mathDiagnosticResults").where("ownerUid", "==", user.uid).limit(5).get();
+        const rows = snap.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
+        const toMillis = (value) => value?.toMillis?.() ?? value?.toDate?.()?.getTime?.() ?? Date.parse(value || "") || 0;
+        rows.sort((a, b) => toMillis(b.createdAt) - toMillis(a.createdAt));
+
+        if (!rows.length) {
+          container.innerHTML = '<div class="math-lab-status empty">Belum ada riwayat diagnostic.</div>';
+          return;
+        }
+        container.innerHTML = rows.map(renderHistoryItem).join("");
+      } catch (error) {
+        const message = String(error?.message || error || "Gagal memuat riwayat diagnostic.");
+        if (/permission|insufficient/i.test(message)) {
+          container.innerHTML = '<div class="math-lab-status error">Riwayat diagnostic belum dapat dimuat karena izin akses.</div>';
+        } else if (/login belum siap|SDK belum tersedia|Firebase belum/i.test(message)) {
+          container.innerHTML = '<div class="math-lab-status info">Menunggu sesi login dan Firestore siap. Tekan Muat ulang setelah portal selesai dimuat.</div>';
+        } else {
+          container.innerHTML = `<div class="math-lab-status error">Riwayat diagnostic belum dapat dimuat. ${escapeHtml(message)}</div>`;
+        }
+      } finally {
+        historyLoadPromise = null;
       }
-      container.innerHTML = snap.docs.map((doc) => renderHistoryItem({ id: doc.id, ...doc.data() }, "diagnostic")).join("");
-    } catch (error) {
-      const message = String(error?.message || error || "Gagal memuat riwayat diagnostic.");
-      if (/requires an index|FAILED_PRECONDITION|create_composite/i.test(message)) {
-        container.innerHTML = '<div class="math-lab-status info">Riwayat diagnostic sedang menyiapkan index Firestore. Coba muat ulang setelah index selesai dibuat.</div>';
-      } else if (/permission|insufficient/i.test(message)) {
-        container.innerHTML = '<div class="math-lab-status error">Riwayat diagnostic belum dapat dimuat karena izin akses.</div>';
-      } else {
-        container.innerHTML = `<div class="math-lab-status error">Riwayat diagnostic belum dapat dimuat. ${escapeHtml(message)}</div>`;
-      }
-    }
+    })();
+
+    return historyLoadPromise;
   }
 
   function ensureHistorySections() {
@@ -149,21 +199,35 @@
     const diagnosticSection = document.createElement("section");
     diagnosticSection.id = "math-lab-diagnostic-history";
     diagnosticSection.className = "math-lab-card";
-    diagnosticSection.innerHTML = '<div class="section-title"><div><h3>Riwayat Diagnostic</h3><p>5 hasil Diagnostic terbaru milik akun ini.</p></div><button id="math-lab-refresh-diagnostic-history" class="small-action bg-slate-100 text-slate-700" type="button"><i class="fa-solid fa-rotate"></i> Muat ulang</button></div><div id="math-lab-diagnostic-history-list" class="math-lab-history mt-4"><div class="math-lab-status">Memuat riwayat diagnostic...</div></div>';
+    diagnosticSection.innerHTML = '<div class="section-title"><div><h3>Riwayat Diagnostic</h3><p>5 hasil Diagnostic terbaru milik akun ini.</p></div><button id="math-lab-refresh-diagnostic-history" class="small-action bg-slate-100 text-slate-700" type="button"><i class="fa-solid fa-rotate"></i> Muat ulang</button></div><div id="math-lab-diagnostic-history-list" class="math-lab-history mt-4"><div class="math-lab-status">Menunggu sesi login...</div></div>';
     practiceSection.parentElement?.insertBefore(diagnosticSection, practiceSection.nextSibling);
     document.getElementById("math-lab-refresh-diagnostic-history")?.addEventListener("click", () => loadDiagnosticHistory());
-    loadDiagnosticHistory();
   }
 
-  function refresh() {
+  async function refreshHistoryWhenReady() {
+    ensureHistorySections();
+    try {
+      await waitForAuth();
+      await loadDiagnosticHistory();
+    } catch {
+      const container = document.getElementById("math-lab-diagnostic-history-list");
+      if (container) container.innerHTML = '<div class="math-lab-status info">Sesi login belum siap. Muat ulang setelah portal selesai dimuat.</div>';
+    }
+  }
+
+  function refreshPresentation() {
     ensureHistorySections();
     presentDiagnosticResult();
     hideTrustMetadataFromUi();
   }
 
-  const observer = new MutationObserver(refresh);
+  refreshPresentation();
+  void refreshHistoryWhenReady();
+
+  const observer = new MutationObserver(() => {
+    refreshPresentation();
+  });
   observer.observe(document.body, { childList: true, subtree: true });
-  refresh();
 
   root.KakHarrisMathLab = root.KakHarrisMathLab || {};
   root.KakHarrisMathLab.diagnosticStudentPresentation = Object.freeze({
@@ -171,7 +235,7 @@
     levelLabel,
     recommendationText,
     loadDiagnosticHistory,
-    refresh,
+    refresh: refreshPresentation,
     INDICATOR_LABELS,
     LEVEL_LABELS,
     ACTION_LABELS,
