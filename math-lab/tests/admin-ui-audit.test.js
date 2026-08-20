@@ -33,7 +33,6 @@ const requiredIds = [
   "math-lab-result",
   "math-lab-result-score",
   "math-lab-result-summary",
-  "math-lab-result-trust",
   "math-lab-new",
   "learning-history",
   "math-lab-refresh-history",
@@ -44,6 +43,8 @@ for (const id of requiredIds) {
   assert.match(html, new RegExp(`id=["']${id}["']`), `Missing UI contract: ${id}`);
 }
 
+assert.doesNotMatch(html, /client-untrusted/i, "Admin UI must not expose architecture-only trust labels");
+assert.doesNotMatch(html, /math-lab-result-trust/, "Admin UI must not require the internal trust badge");
 assert.match(html, /math-lab\/ui\/student-math-lab\.js/);
 assert.match(html, /math-lab\/admin-math-lab\.js/);
 assert.match(html, /firebasePortal\.guard\(\["admin"\]\)/);
