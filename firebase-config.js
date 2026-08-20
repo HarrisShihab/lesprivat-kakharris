@@ -8,19 +8,14 @@ window.FIREBASE_CONFIG = {
   measurementId: "G-4F2C2VGSTT",
 };
 
-// Username tanpa tanda @ akan diubah menjadi alamat internal berikut.
-// Nilai ini harus sama dengan tools/migration-config.json.
 window.FIREBASE_USERNAME_DOMAIN = "akun.lesprivat-kakharris.id";
 
-// P3 student-facing presentation. Trust metadata remains in persistence,
-// but architecture-only labels are removed from the student's UI.
 if (document?.body?.dataset?.portalRole === "murid") {
   const script = document.createElement("script");
   script.src = "math-lab/ui/diagnostic-student-presentation.js?v=64c0c94";
   script.defer = true;
   document.head.appendChild(script);
 
-  // Diagnostic console is opt-in only: /murid-dashboard.html?debug=1
   const params = new URLSearchParams(window.location.search);
   if (params.get("debug") === "1") {
     const debugScript = document.createElement("script");
@@ -29,20 +24,18 @@ if (document?.body?.dataset?.portalRole === "murid") {
     document.head.appendChild(debugScript);
   }
 
-  const finishFix = document.createElement("script");
-  finishFix.src = "math-lab/ui/practice-finish-fix.js?v=0ddad03";
-  finishFix.defer = true;
-  document.head.appendChild(finishFix);
+  // Final Practice Result is now verified and persisted by the trusted backend.
+  const trustedFinish = document.createElement("script");
+  trustedFinish.src = "math-lab/ui/trusted-practice-finish.js?v=1";
+  trustedFinish.defer = true;
+  document.head.appendChild(trustedFinish);
 
-  // Practice history presentation: preserve and display Firestore createdAt
-  // even when the shared persistence layer returns a JSON-cloned Timestamp.
   const practiceHistory = document.createElement("script");
   practiceHistory.src = "math-lab/ui/practice-history-presentation.js?v=2578ee91";
   practiceHistory.defer = true;
   document.head.appendChild(practiceHistory);
 }
 
-// Admin My Learning uses the same shared Practice UI/engine. Debug is opt-in only.
 if (document?.body?.dataset?.portalRole === "admin") {
   const params = new URLSearchParams(window.location.search);
   if (params.get("debug") === "1") {
@@ -52,7 +45,12 @@ if (document?.body?.dataset?.portalRole === "admin") {
     document.head.appendChild(debugScript);
   }
 
-  // Reuse the same Practice history presentation as the learner view.
+  // Admin My Learning uses the same trusted Practice finalization path.
+  const trustedFinish = document.createElement("script");
+  trustedFinish.src = "math-lab/ui/trusted-practice-finish.js?v=1";
+  trustedFinish.defer = true;
+  document.head.appendChild(trustedFinish);
+
   const practiceHistory = document.createElement("script");
   practiceHistory.src = "math-lab/ui/practice-history-presentation.js?v=2578ee91";
   practiceHistory.defer = true;
