@@ -58,8 +58,11 @@
       if (!session) throw new Error("Sesi Practice aktif tidak ditemukan.");
 
       const responses = Array.isArray(session.responses) ? session.responses.filter(Boolean) : [];
-      const total = Number(session.questionRefs?.length || session.questionVersions ? Object.keys(session.questionVersions || {}).length : 0);
-      const totalQuestions = total || responses.length;
+      const totalQuestions = Number(
+        session.questionRefs?.length ||
+        Object.keys(session.questionVersions || {}).length ||
+        responses.length
+      );
       if (!totalQuestions || responses.length < totalQuestions) {
         throw new Error("Belum semua jawaban tersimpan. Tunggu sebentar lalu coba Selesaikan lagi.");
       }
