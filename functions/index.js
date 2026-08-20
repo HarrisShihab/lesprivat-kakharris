@@ -3,14 +3,13 @@ const { getFirestore, FieldValue } = require("firebase-admin/firestore");
 const { initializeApp } = require("firebase-admin/app");
 const crypto = require("crypto");
 const pilot = require("./math-lab-pilot.js");
-const diagnosticPilot = require("../netlify/functions/diagnostic-pilot.js");
+const diagnosticPilot = require("./diagnostic-trusted-pilot.js");
 const { evaluatePracticeResponses, normalizeDiagnosticResult } = require("./trusted-finalization.js");
 
 initializeApp();
 const db = getFirestore();
 
 function sessionId() { return `math-session-${crypto.randomUUID()}`; }
-function diagnosticSessionId() { return `math-diagnostic-${crypto.randomUUID()}`; }
 function requireAuth(request) {
   if (!request.auth?.uid) throw new HttpsError("unauthenticated", "Authentication is required.");
   return request.auth.uid;
@@ -68,10 +67,9 @@ exports.completeMathLabPractice = onCall(async (request) => {
     if (session.sessionType !== "practice") throw Object.assign(new Error("Only Practice sessions can be finalized here."), { code: "failed-precondition" });
 
     const trustedResultId = String(session.trustedResultId || `math-result-${sessionIdValue}`);
-    const existingResult = await db.collection("mathResults").doc(trustedResultId).get();
-    if (existingResult.exists && existingResult.data()?.trustStatus === "trusted") {
-      return { result: existingResult.data(), idempotent: true };
-    }
+    const resultRef = db.collection("mathResults").doc(trustedResultId);
+    const existingResult = await resultRef.get();
+    if (existingResult.exists && existingResult.data()?.trustStatus === "trusted") return { result: existingResult.data(), idempotent: true };
 
     const evaluated = evaluatePracticeResponses({ pilot, session, responses: session.responses });
     const finishedAt = Date.now();
@@ -105,9 +103,9 @@ exports.completeMathLabPractice = onCall(async (request) => {
       const fresh = await tx.get(sessionRef);
       const current = fresh.data() || {};
       if (current.ownerUid !== uid) throw Object.assign(new Error("Session ownership mismatch."), { code: "permission-denied" });
-      const currentResult = await tx.get(db.collection("mathResults").doc(trustedResultId));
+      const currentResult = await tx.get(resultRef);
       if (currentResult.exists && currentResult.data()?.trustStatus === "trusted") return;
-      tx.set(db.collection("mathResults").doc(trustedResultId), result);
+      tx.set(resultRef, result);
       tx.update(sessionRef, {
         status: "completed",
         finishedAt: FieldValue.serverTimestamp(),
@@ -132,7 +130,8 @@ exports.completeMathLabDiagnostic = onCall(async (request) => {
     if (!sessionIdValue.startsWith("math-diagnostic-")) throw Object.assign(new Error("A valid diagnostic sessionId is required."), { code: "invalid-argument" });
     const responses = Array.isArray(request.data?.responses) ? request.data.responses : [];
     const resultId = `math-diagnostic-result-${sessionIdValue}`;
-    const existing = await db.collection("mathDiagnosticResults").doc(resultId).get();
+    const resultRef = db.collection("mathDiagnosticResults").doc(resultId);
+    const existing = await resultRef.get();
     if (existing.exists && existing.data()?.ownerUid === uid && existing.data()?.trustStatus === "trusted") {
       return { result: existing.data(), responses: existing.data()?.responses || [], persisted: true, idempotent: true };
     }
@@ -142,7 +141,6 @@ exports.completeMathLabDiagnostic = onCall(async (request) => {
     result.createdAt = FieldValue.serverTimestamp();
 
     await db.runTransaction(async (tx) => {
-      const resultRef = db.collection("mathDiagnosticResults").doc(resultId);
       const current = await tx.get(resultRef);
       if (current.exists && current.data()?.ownerUid === uid && current.data()?.trustStatus === "trusted") return;
       tx.set(resultRef, result);
