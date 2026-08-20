@@ -28,6 +28,57 @@
     return Number.isFinite(numeric) ? numeric : Date.now();
   }
 
+  function getResultTrustElement(resultPanel) {
+    let element = $("math-lab-result-trust");
+    if (element || !resultPanel) return element;
+    element = document.createElement("p");
+    element.id = "math-lab-result-trust";
+    element.className = "math-lab-trust mt-2";
+    element.textContent = "Hasil latihan — client-untrusted";
+    const summary = $("math-lab-result-summary");
+    if (summary?.parentElement) summary.parentElement.appendChild(element);
+    else resultPanel.appendChild(element);
+    debug("INFO", "Elemen Result trust dibuat otomatis", { reason: "missing-dom-element" });
+    return element;
+  }
+
+  async function loadActiveSession(db, uid) {
+    const snapshot = await db.collection("mathSessions").where("ownerUid", "==", uid).limit(10).get();
+    const activeDocs = snapshot.docs
+      .map((doc) => ({ id: doc.id, ...doc.data() }))
+      .filter((session) => session.sessionType === "practice" && session.status === "active")
+      .sort((a, b) => toMillis(b.updatedAt || b.startedAt) - toMillis(a.updatedAt || a.startedAt));
+    return activeDocs[0] || null;
+  }
+
+  async function waitForCompleteSession(db, uid, maxAttempts = 12, delayMs = 350) {
+    let lastState = null;
+    for (let attempt = 1; attempt <= maxAttempts; attempt += 1) {
+      const session = await loadActiveSession(db, uid);
+      if (!session) throw new Error("Sesi Practice aktif tidak ditemukan.");
+
+      const responses = Array.isArray(session.responses) ? session.responses.filter(Boolean) : [];
+      const totalQuestions = Number(session.questionRefs?.length || Object.keys(session.questionVersions || {}).length || responses.length);
+      lastState = {
+        attempt,
+        sessionId: session.id,
+        totalQuestions,
+        persistedResponses: responses.length,
+        currentIndex: Number(session.currentIndex || 0),
+        status: session.status,
+      };
+      debug("INFO", "Menunggu persistence jawaban terakhir", lastState);
+
+      if (totalQuestions > 0 && responses.length >= totalQuestions) {
+        return { session, responses, totalQuestions };
+      }
+
+      if (attempt < maxAttempts) await new Promise((resolve) => setTimeout(resolve, delayMs));
+    }
+
+    throw new Error(`Belum semua jawaban tersimpan (${lastState?.persistedResponses || 0}/${lastState?.totalQuestions || 0}). Tunggu sebentar lalu coba Selesaikan lagi.`);
+  }
+
   async function finishFromPersistedSession(event) {
     event.preventDefault();
     event.stopImmediatePropagation();
@@ -54,21 +105,7 @@
       if (!user?.uid) throw new Error("Sesi login tidak aktif.");
 
       const db = firebase.firestore();
-      const snapshot = await db.collection("mathSessions").where("ownerUid", "==", user.uid).limit(10).get();
-      const activeDocs = snapshot.docs
-        .map((doc) => ({ id: doc.id, ...doc.data() }))
-        .filter((session) => session.sessionType === "practice" && session.status === "active")
-        .sort((a, b) => toMillis(b.updatedAt || b.startedAt) - toMillis(a.updatedAt || a.startedAt));
-
-      const session = activeDocs[0];
-      if (!session) throw new Error("Sesi Practice aktif tidak ditemukan.");
-
-      const responses = Array.isArray(session.responses) ? session.responses.filter(Boolean) : [];
-      const totalQuestions = Number(session.questionRefs?.length || Object.keys(session.questionVersions || {}).length || responses.length);
-      if (!totalQuestions || responses.length < totalQuestions) {
-        throw new Error("Belum semua jawaban tersimpan. Tunggu sebentar lalu coba Selesaikan lagi.");
-      }
-
+      const { session, responses, totalQuestions } = await waitForCompleteSession(db, user.uid);
       const correct = responses.filter((response) => response.isCorrect === true).length;
       const wrong = totalQuestions - correct;
       const finishedAt = Date.now();
@@ -113,8 +150,8 @@
 
       const resultScore = $("math-lab-result-score");
       const resultSummary = $("math-lab-result-summary");
-      const resultTrust = $("math-lab-result-trust");
       const resultPanel = $("math-lab-result");
+      const resultTrust = getResultTrustElement(resultPanel);
       debug("DOM_CHECK", "Elemen Result sebelum render", {
         score: !!resultScore,
         summary: !!resultSummary,
@@ -122,7 +159,7 @@
         panel: !!resultPanel,
       });
 
-      if (!resultScore || !resultSummary || !resultTrust || !resultPanel) {
+      if (!resultScore || !resultSummary || !resultPanel || !resultTrust) {
         const missing = [
           !resultScore && "math-lab-result-score",
           !resultSummary && "math-lab-result-summary",
