@@ -126,15 +126,6 @@ app.post("/v1/math-lab/diagnostic/complete", requireAuth, async (req, res, next)
   } catch (e) { next(e); }
 });
 
-app.get("/firebase-check", async (_req, res, next) => {
-  try {
-    await db.collection("mathSessions").limit(1).get();
-    res.json({ ok: true, firestore: true });
-  } catch (e) {
-    next(e);
-  }
-});
-
 app.use((error, _req, res, _next) => {
   console.error(error);
   res.status(Number(error.status) || 500).json({ error: { message: error.message || "Trusted Math Lab request failed." } });
