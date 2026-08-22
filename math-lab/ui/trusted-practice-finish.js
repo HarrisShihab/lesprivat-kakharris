@@ -45,7 +45,7 @@
     const active = snapshot.docs
       .map((doc) => ({ id: doc.id, ...doc.data() }))
       .filter((session) => session.sessionType === "practice" && session.status === "active")
-      .sort((a, b) => toMillis(b.updatedAt || b.startedAt) - toMillis(a, b.updatedAt || a.startedAt));
+      .sort((a, b) => toMillis(b.updatedAt || b.startedAt) - toMillis(a.updatedAt || a.startedAt));
     return active[0] || null;
   }
 
