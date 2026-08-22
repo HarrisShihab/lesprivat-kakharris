@@ -4,8 +4,7 @@
   if (role !== "murid" && role !== "admin") return;
 
   const $ = (id) => document.getElementById(id);
-  const PROJECT_ID = "les-privat-kak-harris";
-  const FUNCTIONS_BASE = `https://us-central1-${PROJECT_ID}.cloudfunctions.net`;
+  const RAILWAY_URL = "https://lesprivat-kakharris-production.up.railway.app";
   const setStatus = (message, type) => {
     const el = $("math-lab-status");
     if (!el) return;
@@ -22,23 +21,23 @@
     return Number.isFinite(numeric) ? numeric : Date.now();
   }
 
-  async function callTrusted(name, data) {
+  async function callTrusted(data) {
     const user = root.firebase?.auth?.().currentUser;
     if (!user?.uid) throw new Error("Sesi login tidak aktif.");
     const token = await user.getIdToken();
-    const response = await fetch(`${FUNCTIONS_BASE}/${name}`, {
+    const response = await fetch(`${RAILWAY_URL}/v1/math-lab/practice/complete`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
         Authorization: `Bearer ${token}`,
       },
-      body: JSON.stringify({ data: data || {} }),
+      body: JSON.stringify(data || {}),
     });
     const payload = await response.json().catch(() => ({}));
     if (!response.ok || payload.error) {
       throw new Error(payload?.error?.message || `Trusted Math Lab request gagal (${response.status}).`);
     }
-    return payload.data;
+    return payload;
   }
 
   async function loadActiveSession(db, uid) {
@@ -69,7 +68,7 @@
         throw new Error(`Belum semua jawaban tersimpan (${responses.length}/${totalQuestions}).`);
       }
 
-      const resultData = await callTrusted("completeMathLabPractice", { sessionId: String(session.sessionId || session.id) });
+      const resultData = await callTrusted({ sessionId: String(session.sessionId || session.id) });
       const result = resultData?.result;
       if (!result || result.trustStatus !== "trusted") throw new Error("Trusted Result tidak diterima dari backend.");
 
